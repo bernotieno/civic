@@ -1,0 +1,29 @@
+# Core Django
+Django==4.2.23
+python-decouple==3.8
+psycopg2-binary==2.9.10
+dj-database-url==3.0.1
+bcrypt>=4.0.1
+phonenumbers==8.12.42
+
+# Production server
+gunicorn>=21.2.0
+
+# Static files
+whitenoise>=6.5.0
+
+# Caching
+redis>=4.6.0
+django-redis>=5.3.0
+
+# Development tools
+django-extensions==4.1
+django-debug-toolbar==6.0.0
+
+# Core dependencies
+asgiref==3.9.1
+sqlparse==0.5.3
+typing_extensions==4.14.1
+
+# Optional production monitoring
+# sentry-sdk[django]>=1.32.0  # Uncomment for error tracking
