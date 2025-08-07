@@ -1,10 +1,10 @@
 # =============================================================================
-# STEP 7: URL Configuration
-# FILE: apps/api/urls.py
+# FILE: apps/api/urls.py (ENHANCED WITH ORGANIZED URL STRUCTURE)
 # =============================================================================
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
+from apps.feedback import views as feedback_views
 
 app_name = 'api'
 
@@ -25,6 +25,14 @@ location_urls = [
     path('hierarchy/', views.LocationHierarchyView.as_view(), name='hierarchy'),
 ]
 
+# Feedback URLs
+feedback_urls = [
+    path('submit/', feedback_views.FeedbackSubmissionView.as_view(), name='submit'),
+    path('anonymous/', feedback_views.AnonymousFeedbackView.as_view(), name='anonymous_submit'),
+    path('track/<str:tracking_id>/', feedback_views.track_feedback, name='track'),
+    path('categories/', feedback_views.feedback_categories, name='categories'),
+]
+
 urlpatterns = [
     # Health check
     path('health/', views.system_health, name='health'),
@@ -34,4 +42,7 @@ urlpatterns = [
     
     # Location endpoints  
     path('locations/', include(location_urls)),
+    
+    # Feedback endpoints
+    path('feedback/', include(feedback_urls)),
 ]
