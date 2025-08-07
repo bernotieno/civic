@@ -24,13 +24,17 @@ from drf_spectacular.types import OpenApiTypes
 from apps.users.models import CustomUser, County, Location
 from apps.core.anonymous import AnonymousSessionManager
 from apps.users.anonymous import AnonymousUserHandler
+from apps.feedback.models import Feedback
 from .serializers import (
     RegisterSerializer, LoginSerializer, AnonymousSessionSerializer,
     UserProfileSerializer, LocationSerializer, CountySerializer,
     LoginResponseSerializer, RegisterResponseSerializer, 
     AnonymousSessionResponseSerializer, AnonymousSessionStatusSerializer,
     SystemHealthSerializer, ErrorResponseSerializer, LogoutRequestSerializer,
-    ProfileResponseSerializer, LocationListResponseSerializer, SuccessResponseSerializer
+    ProfileResponseSerializer, LocationListResponseSerializer, SuccessResponseSerializer,
+    #feedback
+    FeedbackCreateSerializer, FeedbackDetailSerializer, 
+    FeedbackCreateResponseSerializer, FeedbackListResponseSerializer,
 )
 
 
@@ -818,4 +822,145 @@ def system_health(request):
             'jwt_auth': True
         }
     })
+
+# =============================================================================
+# FEEDBACK APIS
+# =============================================================================
+
+@extend_schema(
+    tags=['Feedback'],
+    summary="📮 Submit Feedback (Authenticated or Anonymous)",
+    description="""
+    Submit feedback for a specific county. This endpoint smartly handles both **authenticated** and **anonymous** users.
+    
+    ### Authenticated Users:
+    - Just include your JWT `Bearer` token in the `Authorization` header.
+    - Your feedback will be automatically linked to your user profile and home county.
+    
+    ### Anonymous Users:
+    1. First, get a session ID from `POST /api/auth/anonymous/` (you must include a `county_id` in the body).
+    2. Include the `session_id` you receive in a custom header for this request: **`X-Anonymous-Session-ID`**.
+       - *Example:* `X-Anonymous-Session-ID: ANON_8f3a2c1e4d6b`
+    
+    You have a limit of 3 submissions per anonymous session.
+    """,
+    request=FeedbackCreateSerializer,
+    responses={
+        201: OpenApiResponse(response=FeedbackCreateResponseSerializer, description="Feedback successfully submitted."),
+        400: OpenApiResponse(response=ErrorResponseSerializer, description="Validation error or invalid session ID."),
+        403: OpenApiResponse(response=ErrorResponseSerializer, description="Anonymous submission limit has been reached."),
+    }
+)
+@method_decorator(csrf_exempt, name='dispatch')
+class FeedbackCreateView(APIView):
+    """Creates feedback from either an authenticated or an anonymous user."""
+    permission_classes = [permissions.AllowAny] # Allow anyone to access, logic is handled inside
+
+    def post(self, request, *args, **kwargs):
+        serializer = FeedbackCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                'success': False, 'message': 'Invalid data submitted', 'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        validated_data = serializer.validated_data
+        
+        if request.user.is_authenticated:
+            # --- HANDLE AUTHENTICATED USER ---
+            feedback = serializer.save(
+                user=request.user,
+                county=request.user.tenant # Automatically link to the user's home county (tenant)
+            )
+        else:
+            # --- HANDLE ANONYMOUS USER ---
+            session_id = request.headers.get('X-Anonymous-Session-ID')
+            if not session_id:
+                return Response({
+                    'success': False, 'message': 'Authentication failed', 
+                    'errors': {'detail': 'X-Anonymous-Session-ID header is required for anonymous submissions.'}
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Check if session is valid and can submit
+            can_submit, message = AnonymousSessionManager.can_submit(session_id)
+            if not can_submit:
+                return Response({
+                    'success': False, 'message': 'Submission limit reached', 'errors': {'detail': message}
+                }, status=status.HTTP_403_FORBIDDEN)
+
+            session_data = AnonymousSessionManager.get_session(session_id)
+            if not session_data:
+                return Response({
+                    'success': False, 'message': 'Session is invalid', 'errors': {'detail': 'Anonymous session not found or has expired.'}
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                county = County.objects.get(id=session_data['county_id'])
+            except County.DoesNotExist:
+                 return Response({
+                    'success': False, 'message': 'Invalid County', 'errors': {'detail': 'County associated with session not found.'}
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Save the feedback linked to the session and the session's county
+            feedback = serializer.save(
+                anonymous_session_id=session_id,
+                county=county
+            )
+            # IMPORTANT: Record that a submission was made for this session
+            AnonymousSessionManager.update_session(session_id, submission_count=session_data['submission_count'] + 1, last_submission=timezone.now().isoformat())
+        
+        # Return a detailed response
+        response_serializer = FeedbackDetailSerializer(feedback)
+        return Response({
+            'success': True,
+            'message': 'Feedback submitted successfully',
+            'feedback': response_serializer.data
+        }, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(
+    tags=['Feedback'],
+    summary="📄 List Feedback (For Your Scope)",
+    description="""
+    Lists feedback according to your user role and "Invisible Boundaries".
+    
+    - **Citizens**: See only the feedback *they* have personally submitted.
+    - **Local Government Officials**: See *all* feedback (both authenticated and anonymous) submitted for their single county.
+    - **Regional/National Officials**: See *all* feedback for all counties they have access to.
+    """,
+    responses={200: OpenApiResponse(response=FeedbackListResponseSerializer)}
+)
+class FeedbackListView(generics.ListAPIView):
+    """Lists feedback with access control based on user role and their "Invisible Boundaries"."""
+    serializer_class = FeedbackDetailSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        
+        if user.role == 'citizen':
+            # A citizen can only see their own feedback submissions.
+            return Feedback.objects.filter(user=user)
+
+        # For any type of government official, they see feedback for their accessible counties.
+        # Your get_accessible_counties() method does all the hard work!
+        accessible_counties = user.get_accessible_counties()
+        return Feedback.objects.filter(county__in=accessible_counties)
+    
+    def list(self, request, *args, **kwargs):
+        # We override the default list method to provide our standard success response format.
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            paginated_response = self.get_paginated_response(serializer.data)
+            # Add our custom fields to the paginated response
+            paginated_response.data['success'] = True
+            return paginated_response
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            'success': True,
+            'count': len(serializer.data),
+            'results': serializer.data
+        })
     
