@@ -8,6 +8,12 @@ from . import views
 
 app_name = 'api'
 
+#FEEDBACK URLS
+feedback_urls = [
+    path('', views.FeedbackCreateView.as_view(), name='feedback-create'),
+    path('list/', views.FeedbackListView.as_view(), name='feedback-list'),
+]
+
 # Authentication URLs
 auth_urls = [
     path('register/', views.RegisterView.as_view(), name='register'),
@@ -34,4 +40,7 @@ urlpatterns = [
     
     # Location endpoints  
     path('locations/', include(location_urls)),
+
+     # Feedback endpoints - ADD THIS LINE
+    path('feedback/', include(feedback_urls)),
 ]
