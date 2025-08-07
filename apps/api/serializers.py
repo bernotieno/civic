@@ -7,6 +7,7 @@ from drf_spectacular.utils import extend_schema_field
 from apps.users.models import CustomUser, County, Location, hash_national_id
 from apps.users.utils import validate_kenyan_national_id
 from apps.core.anonymous import AnonymousSessionManager
+from apps.feedback.models import Feedback
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -424,3 +425,59 @@ class LocationListResponseSerializer(serializers.Serializer):
         help_text="List of locations in hierarchy"
     )
     
+
+# =============================================================================
+# FEEDBACK SERIALIZERS
+# =============================================================================
+
+class FeedbackCreateSerializer(serializers.ModelSerializer):
+    """📮 Serializer for creating new feedback."""
+    # We only ask the user for the essential info.
+    # The user's ID and county will be figured out automatically in the view.
+    location_id = serializers.IntegerField(
+        write_only=True, required=False, allow_null=True,
+        help_text="Optional: ID of a specific location (sub-county, ward, village) this feedback relates to."
+    )
+
+    class Meta:
+        model = Feedback
+        fields = ['content', 'category', 'location_id']
+    
+    def validate_location_id(self, value):
+        if value and not Location.objects.filter(id=value, is_deleted=False).exists():
+            raise serializers.ValidationError("Location not found.")
+        return value
+
+
+class FeedbackDetailSerializer(serializers.ModelSerializer):
+    """📄 Serializer for displaying detailed feedback information."""
+    user = UserProfileSerializer(read_only=True) # Re-use your existing user profile serializer!
+    location = LocationSerializer(read_only=True) # Re-use your existing location serializer!
+    county_name = serializers.CharField(source='county.name', read_only=True)
+    is_anonymous = serializers.SerializerMethodField()
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = Feedback
+        fields = [
+            'id', 'content', 'category', 'category_display', 'status', 'status_display', 
+            'created_at', 'county_name', 'location', 'user', 'is_anonymous'
+        ]
+
+    def get_is_anonymous(self, obj):
+        # This is True if the feedback was submitted by an anonymous user
+        return obj.user is None
+
+# For Swagger Documentation
+class FeedbackCreateResponseSerializer(serializers.Serializer):
+    """Standard success response for creating feedback"""
+    success = serializers.BooleanField(default=True)
+    message = serializers.CharField(default="Feedback submitted successfully")
+    feedback = FeedbackDetailSerializer()
+
+class FeedbackListResponseSerializer(serializers.Serializer):
+    """Standard success response for listing feedback"""
+    success = serializers.BooleanField(default=True)
+    count = serializers.IntegerField()
+    results = FeedbackDetailSerializer(many=True)
