@@ -35,6 +35,7 @@ LOCAL_APPS = [
     'apps.users',  # CivicAI user management
     'apps.core',   # CivicAI core - Invisible Boundaries system
     'apps.api',    # CivicAI API
+    'apps.feedback',
     # Add more apps here as you build them:
     # 'apps.feedback',
     # 'apps.analytics',
