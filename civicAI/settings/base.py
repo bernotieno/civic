@@ -218,7 +218,9 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",    # React dev server
     "http://127.0.0.1:3000",
-    "http://localhost:8080",    # Vue dev server  
+    "http://localhost:5173",    # Vite dev server (default)
+    "http://127.0.0.1:5173",
+    "http://localhost:8080",    # Vue dev server
     "http://127.0.0.1:8080",
     "http://localhost:4200",    # Angular dev server
     "http://127.0.0.1:4200",
