@@ -1,50 +1,53 @@
 import React from 'react';
 import { Building, Heart, GraduationCap, Shield, Leaf, Bus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { FeedbackCategory } from '../types';
 
 const Services: React.FC = () => {
+  const { t } = useTranslation();
+
   const categories: FeedbackCategory[] = [
     {
       id: 'infrastructure',
-      name: 'Infrastructure',
+      name: t('services.categories.infrastructure.name'),
       icon: 'building',
-      description: 'Report issues with roads, water supply, electricity, and public facilities in your area.',
-      subcategories: ['Roads', 'Water Supply', 'Electricity', 'Public Buildings']
+      description: t('services.categories.infrastructure.description'),
+      subcategories: t('services.categories.infrastructure.subcategories', { returnObjects: true }) as string[]
     },
     {
       id: 'healthcare',
-      name: 'Healthcare',
+      name: t('services.categories.healthcare.name'),
       icon: 'heart',
-      description: 'Share feedback about hospitals, clinics, medical services, and healthcare accessibility.',
-      subcategories: ['Hospitals', 'Clinics', 'Medical Services', 'Health Programs']
+      description: t('services.categories.healthcare.description'),
+      subcategories: t('services.categories.healthcare.subcategories', { returnObjects: true }) as string[]
     },
     {
       id: 'education',
-      name: 'Education',
+      name: t('services.categories.education.name'),
       icon: 'graduation-cap',
-      description: 'Provide input on schools, universities, educational programs, and learning facilities.',
-      subcategories: ['Primary Schools', 'Secondary Schools', 'Universities', 'Vocational Training']
+      description: t('services.categories.education.description'),
+      subcategories: t('services.categories.education.subcategories', { returnObjects: true }) as string[]
     },
     {
       id: 'security',
-      name: 'Security & Safety',
+      name: t('services.categories.security.name'),
       icon: 'shield',
-      description: 'Report security concerns, safety issues, and feedback about police services.',
-      subcategories: ['Police Services', 'Public Safety', 'Emergency Response', 'Crime Prevention']
+      description: t('services.categories.security.description'),
+      subcategories: t('services.categories.security.subcategories', { returnObjects: true }) as string[]
     },
     {
       id: 'environment',
-      name: 'Environment',
+      name: t('services.categories.environment.name'),
       icon: 'leaf',
-      description: 'Address environmental concerns including waste management, pollution, and conservation.',
-      subcategories: ['Waste Management', 'Air Quality', 'Water Pollution', 'Conservation']
+      description: t('services.categories.environment.description'),
+      subcategories: t('services.categories.environment.subcategories', { returnObjects: true }) as string[]
     },
     {
       id: 'transport',
-      name: 'Transportation',
+      name: t('services.categories.transport.name'),
       icon: 'bus',
-      description: 'Share feedback about public transport, traffic management, and transportation infrastructure.',
-      subcategories: ['Public Transport', 'Traffic Management', 'Road Safety', 'Transport Infrastructure']
+      description: t('services.categories.transport.description'),
+      subcategories: t('services.categories.transport.subcategories', { returnObjects: true }) as string[]
     },
   ];
 
@@ -73,13 +76,13 @@ const Services: React.FC = () => {
         {/* Section Header */}
         <div className="text-center mb-16">
           <span className="text-blue-600 font-semibold text-sm uppercase tracking-wide">
-            FEEDBACK CATEGORIES
+            {t('services.title').toUpperCase()}
           </span>
           <h2 className="mt-2 text-3xl lg:text-4xl font-bold text-gray-900">
-            What Would You Like to Report?
+            {t('services.subtitle')}
           </h2>
           <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-            Choose the category that best matches your feedback. Your input helps us improve public services.
+            {t('services.description')}
           </p>
         </div>
 
@@ -100,7 +103,7 @@ const Services: React.FC = () => {
                 {category.description}
               </p>
               <div className="text-sm text-blue-600 font-medium">
-                {category.subcategories.length} subcategories available
+                {category.subcategories.length} {t('services.subcategoriesAvailable')}
               </div>
             </div>
           ))}
@@ -109,10 +112,10 @@ const Services: React.FC = () => {
         {/* CTA Button */}
         <div className="text-center">
           <button className="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 shadow-lg hover:shadow-xl">
-            Start Feedback Submission
+            {t('services.submitFeedback')}
           </button>
           <p className="mt-4 text-sm text-gray-500">
-            Anonymous submissions are welcome • Average response time: 3-5 business days
+            {t('services.getStarted')}
           </p>
         </div>
       </div>

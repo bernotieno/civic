@@ -1,43 +1,46 @@
 import React from 'react';
 import { Clock, Shield, Users, Zap, Eye, MessageCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { Feature } from '../types';
 
 const WhyChooseUs: React.FC = () => {
+  const { t } = useTranslation();
+
   const features: Feature[] = [
     {
       number: '01',
-      title: 'Fast Response Times',
-      description: 'Government officials respond to feedback within 3-5 business days with regular status updates.',
+      title: t('whyChooseUs.features.fastResponse.title'),
+      description: t('whyChooseUs.features.fastResponse.description'),
       icon: 'clock'
     },
     {
       number: '02',
-      title: 'Secure & Anonymous',
-      description: 'Your privacy is protected with secure data handling and anonymous submission options.',
+      title: t('whyChooseUs.features.secure.title'),
+      description: t('whyChooseUs.features.secure.description'),
       icon: 'shield'
     },
     {
       number: '03',
-      title: 'Direct Government Access',
-      description: 'Your feedback reaches the right government departments and officials directly.',
+      title: t('whyChooseUs.features.directAccess.title'),
+      description: t('whyChooseUs.features.directAccess.description'),
       icon: 'users'
     },
     {
       number: '04',
-      title: 'Real-time Tracking',
-      description: 'Track your feedback status in real-time from submission to resolution.',
+      title: t('whyChooseUs.features.realTimeTracking.title'),
+      description: t('whyChooseUs.features.realTimeTracking.description'),
       icon: 'zap'
     },
     {
       number: '05',
-      title: 'Full Transparency',
-      description: 'Access public statistics and see how your community feedback is being addressed.',
+      title: t('whyChooseUs.features.transparency.title'),
+      description: t('whyChooseUs.features.transparency.description'),
       icon: 'eye'
     },
     {
       number: '06',
-      title: 'Multiple Channels',
-      description: 'Submit feedback via web, WhatsApp, or phone - choose what works best for you.',
+      title: t('whyChooseUs.features.multipleChannels.title'),
+      description: t('whyChooseUs.features.multipleChannels.description'),
       icon: 'message-circle'
     },
   ];
@@ -67,13 +70,13 @@ const WhyChooseUs: React.FC = () => {
         {/* Section Header */}
         <div className="text-center mb-16">
           <span className="text-blue-600 font-semibold text-sm uppercase tracking-wide">
-            PLATFORM BENEFITS
+            {t('whyChooseUs.subtitle').toUpperCase()}
           </span>
           <h2 className="mt-2 text-3xl lg:text-4xl font-bold text-gray-900">
-            Why Use CitizenPortal?
+            {t('whyChooseUs.title')}
           </h2>
           <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-            We've built a platform that prioritizes transparency, efficiency, and citizen satisfaction.
+            {t('whyChooseUs.description')}
           </p>
         </div>
 
@@ -111,15 +114,15 @@ const WhyChooseUs: React.FC = () => {
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div>
               <div className="text-2xl font-bold text-green-600 mb-2">99.9%</div>
-              <div className="text-gray-600">Platform Uptime</div>
+              <div className="text-gray-600">{t('whyChooseUs.trustIndicators.uptime')}</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-blue-600 mb-2">256-bit</div>
-              <div className="text-gray-600">SSL Encryption</div>
+              <div className="text-gray-600">{t('whyChooseUs.trustIndicators.encryption')}</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-purple-600 mb-2">24/7</div>
-              <div className="text-gray-600">System Monitoring</div>
+              <div className="text-gray-600">{t('whyChooseUs.trustIndicators.monitoring')}</div>
             </div>
           </div>
         </div>

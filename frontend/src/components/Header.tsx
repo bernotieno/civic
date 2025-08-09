@@ -1,14 +1,17 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Phone, Mail, Facebook, Twitter, Linkedin, Search, Globe, User, LogIn, LogOut } from 'lucide-react';
+import { Phone, Mail, Facebook, Twitter, Linkedin, Search, User, LogIn, LogOut } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { NavItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { getNavigationItems, getRoleDisplayName } from '../utils/roleBasedRouting';
+import LanguageSwitcher from './LanguageSwitcher';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
+  const { t } = useTranslation();
 
   // Get navigation items based on user authentication status
   const navItems: NavItem[] = getNavigationItems(user);
@@ -33,7 +36,7 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="w-full">
+    <header className="w-full fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
       {/* Contact Info Bar */}
       <div className="bg-gray-50 py-2">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -41,11 +44,11 @@ const Header: React.FC = () => {
             <div className="flex items-center space-x-6">
               <div className="flex items-center">
                 <Phone className="w-4 h-4 mr-2" />
-                <span>+254 (0) 20 123-4567</span>
+                <span>{t('header.phone')}</span>
               </div>
               <div className="flex items-center">
                 <Mail className="w-4 h-4 mr-2" />
-                <span>feedback@citizenportal.go.ke</span>
+                <span>{t('header.email')}</span>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -67,7 +70,7 @@ const Header: React.FC = () => {
                 <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
                   <div className="w-4 h-4 bg-white rounded-sm"></div>
                 </div>
-                <span className="text-2xl font-bold text-gray-900">CitizenPortal</span>
+                <span className="text-2xl font-bold text-gray-900">{t('header.brandName')}</span>
               </div>
             </div>
 
@@ -89,10 +92,7 @@ const Header: React.FC = () => {
             {/* Right Side Actions */}
             <div className="flex items-center space-x-4">
               <Search className="w-5 h-5 text-gray-500 hover:text-blue-600 cursor-pointer transition-colors" />
-              <div className="flex items-center space-x-1 cursor-pointer">
-                <Globe className="w-4 h-4 text-gray-500" />
-                <span className="text-sm text-gray-600">En</span>
-              </div>
+              <LanguageSwitcher />
               {/* Authentication Section */}
               <div className="flex items-center space-x-2">
                 {isAuthenticated && user ? (
@@ -109,7 +109,7 @@ const Header: React.FC = () => {
                       className="flex items-center space-x-1 text-gray-600 hover:text-red-600 transition-colors"
                     >
                       <LogOut className="w-4 h-4" />
-                      <span className="text-sm">Logout</span>
+                      <span className="text-sm">{t('header.logout')}</span>
                     </button>
                   </div>
                 ) : (
@@ -120,7 +120,7 @@ const Header: React.FC = () => {
                       className="flex items-center space-x-1 text-gray-600 hover:text-blue-600 transition-colors"
                     >
                       <LogIn className="w-4 h-4" />
-                      <span className="text-sm">Login</span>
+                      <span className="text-sm">{t('header.login')}</span>
                     </button>
                     <span className="text-gray-300">|</span>
                     <button
@@ -128,7 +128,7 @@ const Header: React.FC = () => {
                       className="flex items-center space-x-1 text-gray-600 hover:text-blue-600 transition-colors"
                     >
                       <User className="w-4 h-4" />
-                      <span className="text-sm">Register</span>
+                      <span className="text-sm">{t('header.register')}</span>
                     </button>
                   </>
                 )}

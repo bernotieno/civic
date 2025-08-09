@@ -1,21 +1,24 @@
 import React from 'react';
 import { Phone, Mail, MapPin, Facebook, Twitter, Linkedin, Instagram, MessageSquare, Search, BarChart3 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const Footer: React.FC = () => {
+  const { t } = useTranslation();
+
   const quickLinks = [
-    { name: 'Submit Feedback', href: '#submit' },
-    { name: 'Track Feedback', href: '#track' },
-    { name: 'Transparency Portal', href: '#transparency' },
-    { name: 'Government Portal', href: '#government' },
-    { name: 'Help & Support', href: '#help' },
+    { name: t('footer.quickLinks.submitFeedback'), href: '#submit' },
+    { name: t('footer.quickLinks.trackFeedback'), href: '#track' },
+    { name: t('footer.quickLinks.transparencyPortal'), href: '#transparency' },
+    { name: t('footer.quickLinks.governmentPortal'), href: '#government' },
+    { name: t('footer.quickLinks.helpSupport'), href: '#help' },
   ];
 
   const categories = [
-    { name: 'Infrastructure', href: '#infrastructure' },
-    { name: 'Healthcare', href: '#healthcare' },
-    { name: 'Education', href: '#education' },
-    { name: 'Security & Safety', href: '#security' },
-    { name: 'Environment', href: '#environment' },
+    { name: t('footer.categories.infrastructure'), href: '#infrastructure' },
+    { name: t('footer.categories.healthcare'), href: '#healthcare' },
+    { name: t('footer.categories.education'), href: '#education' },
+    { name: t('footer.categories.security'), href: '#security' },
+    { name: t('footer.categories.environment'), href: '#environment' },
   ];
 
   return (
@@ -29,11 +32,10 @@ const Footer: React.FC = () => {
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
                 <div className="w-4 h-4 bg-white rounded-sm"></div>
               </div>
-              <span className="text-2xl font-bold">CitizenPortal</span>
+              <span className="text-2xl font-bold">{t('header.brandName')}</span>
             </div>
             <p className="text-gray-300 mb-6 leading-relaxed">
-              Empowering citizens to engage with their government through transparent, 
-              efficient feedback and response systems. Building stronger communities together.
+              {t('footer.description')}
             </p>
             <div className="flex space-x-4">
               <Facebook className="w-5 h-5 text-gray-400 hover:text-blue-400 cursor-pointer transition-colors" />
@@ -45,7 +47,7 @@ const Footer: React.FC = () => {
 
           {/* Quick Actions */}
           <div>
-            <h3 className="text-lg font-semibold mb-6">Quick Actions</h3>
+            <h3 className="text-lg font-semibold mb-6">{t('footer.quickLinks.title')}</h3>
             <ul className="space-y-3">
               {quickLinks.map((link, index) => (
                 <li key={index}>
@@ -65,7 +67,7 @@ const Footer: React.FC = () => {
 
           {/* Feedback Categories */}
           <div>
-            <h3 className="text-lg font-semibold mb-6">Feedback Categories</h3>
+            <h3 className="text-lg font-semibold mb-6">{t('footer.categories.title')}</h3>
             <ul className="space-y-3">
               {categories.map((category, index) => (
                 <li key={index}>
@@ -82,23 +84,21 @@ const Footer: React.FC = () => {
 
           {/* Contact Info */}
           <div>
-            <h3 className="text-lg font-semibold mb-6">Contact Information</h3>
+            <h3 className="text-lg font-semibold mb-6">{t('footer.contact.title')}</h3>
             <div className="space-y-4">
               <div className="flex items-start">
                 <MapPin className="w-5 h-5 text-blue-400 mr-3 mt-1 flex-shrink-0" />
                 <div className="text-gray-300">
-                  <p>Government Digital Services</p>
-                  <p>P.O. Box 30007-00100</p>
-                  <p>Nairobi, Kenya</p>
+                  <p>{t('footer.contact.address')}</p>
                 </div>
               </div>
               <div className="flex items-center">
                 <Phone className="w-5 h-5 text-blue-400 mr-3 flex-shrink-0" />
-                <span className="text-gray-300">+254 (0) 20 123-4567</span>
+                <span className="text-gray-300">{t('footer.contact.phone')}</span>
               </div>
               <div className="flex items-center">
                 <Mail className="w-5 h-5 text-blue-400 mr-3 flex-shrink-0" />
-                <span className="text-gray-300">feedback@citizenportal.go.ke</span>
+                <span className="text-gray-300">{t('footer.contact.email')}</span>
               </div>
             </div>
           </div>
@@ -132,17 +132,17 @@ const Footer: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="md:flex md:items-center md:justify-between">
             <div className="text-gray-400 text-sm mb-4 md:mb-0">
-              © 2025 Government of Kenya - CitizenPortal. All rights reserved.
+              {t('footer.legal.copyright')}
             </div>
             <div className="flex space-x-6 text-sm">
               <a href="#privacy" className="text-gray-400 hover:text-white transition-colors">
-                Privacy Policy
+                {t('footer.legal.privacy')}
               </a>
               <a href="#terms" className="text-gray-400 hover:text-white transition-colors">
-                Terms of Service
+                {t('footer.legal.terms')}
               </a>
               <a href="#accessibility" className="text-gray-400 hover:text-white transition-colors">
-                Accessibility
+                {t('footer.legal.accessibility')}
               </a>
             </div>
           </div>

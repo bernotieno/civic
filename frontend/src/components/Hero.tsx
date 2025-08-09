@@ -1,9 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { MessageSquare, Search, TrendingUp, Shield, UserPlus } from 'lucide-react';
 
 const Hero: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <section 
@@ -20,12 +22,10 @@ const Hero: React.FC = () => {
           {/* Content */}
           <div>
             <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
-              Your Voice{' '}
-              <span className="text-blue-600">Matters</span>
+              {t('hero.title')}
             </h1>
             <p className="text-lg text-gray-700 mb-8 max-w-2xl mx-auto">
-              Submit feedback, track progress, and engage with your government. 
-              Together, we build better communities through transparent communication.
+              {t('hero.subtitle')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <button
@@ -33,27 +33,26 @@ const Hero: React.FC = () => {
                 className="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"
               >
                 <UserPlus className="w-5 h-5 mr-2" />
-                Get Started - Register Now
+                {t('hero.getStarted')}
               </button>
               <button className="border-2 border-blue-600 text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-blue-600 hover:text-white transition-all duration-200 flex items-center justify-center">
                 <Search className="w-5 h-5 mr-2" />
-                Track Existing Feedback
+                {t('hero.trackFeedback')}
               </button>
             </div>
 
             {/* Registration CTA */}
             <div className="bg-white/90 backdrop-blur-sm rounded-lg p-6 mb-12 max-w-2xl mx-auto">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                🇰🇪 Register with Your Kenyan National ID
+                {t('hero.registerCTA.title')}
               </h3>
               <p className="text-gray-600 text-sm mb-4">
-                Join thousands of Kenyans already using CivicAI to engage with their county governments.
-                Registration takes less than 2 minutes with your 8-digit National ID.
+                {t('hero.registerCTA.description')}
               </p>
               <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
-                <span>✓ Secure & Private</span>
-                <span>✓ Government Approved</span>
-                <span>✓ Free to Use</span>
+                <span>✓ {t('hero.registerCTA.secure')}</span>
+                <span>✓ {t('hero.registerCTA.approved')}</span>
+                <span>✓ {t('hero.registerCTA.free')}</span>
               </div>
             </div>
 
@@ -61,23 +60,23 @@ const Hero: React.FC = () => {
             <div className="grid md:grid-cols-4 gap-6 mb-12">
               <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 text-center">
                 <MessageSquare className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-                <h3 className="font-semibold text-gray-900 mb-2">Your Voice Matters</h3>
-                <p className="text-sm text-gray-600">Every feedback counts towards building better communities</p>
+                <h3 className="font-semibold text-gray-900 mb-2">{t('hero.valueProps.voiceMatters.title')}</h3>
+                <p className="text-sm text-gray-600">{t('hero.valueProps.voiceMatters.description')}</p>
               </div>
               <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 text-center">
                 <TrendingUp className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-                <h3 className="font-semibold text-gray-900 mb-2">Get Real Responses</h3>
-                <p className="text-sm text-gray-600">Receive official responses from government officials</p>
+                <h3 className="font-semibold text-gray-900 mb-2">{t('hero.valueProps.realResponses.title')}</h3>
+                <p className="text-sm text-gray-600">{t('hero.valueProps.realResponses.description')}</p>
               </div>
               <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 text-center">
                 <Search className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-                <h3 className="font-semibold text-gray-900 mb-2">Track Progress</h3>
-                <p className="text-sm text-gray-600">Monitor the status of your feedback in real-time</p>
+                <h3 className="font-semibold text-gray-900 mb-2">{t('hero.valueProps.trackProgress.title')}</h3>
+                <p className="text-sm text-gray-600">{t('hero.valueProps.trackProgress.description')}</p>
               </div>
               <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 text-center">
                 <Shield className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-                <h3 className="font-semibold text-gray-900 mb-2">Anonymous Option</h3>
-                <p className="text-sm text-gray-600">Submit feedback anonymously when needed</p>
+                <h3 className="font-semibold text-gray-900 mb-2">{t('hero.valueProps.anonymous.title')}</h3>
+                <p className="text-sm text-gray-600">{t('hero.valueProps.anonymous.description')}</p>
               </div>
             </div>
 
@@ -85,15 +84,15 @@ const Hero: React.FC = () => {
             <div className="grid md:grid-cols-3 gap-8 bg-white/90 backdrop-blur-sm rounded-2xl p-8">
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600 mb-2">12,847</div>
-                <div className="text-gray-600">Total Feedback Received</div>
+                <div className="text-gray-600">{t('hero.stats.totalFeedback')}</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-green-600 mb-2">9,234</div>
-                <div className="text-gray-600">Issues Resolved</div>
+                <div className="text-gray-600">{t('hero.stats.issuesResolved')}</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-purple-600 mb-2">87%</div>
-                <div className="text-gray-600">Response Rate</div>
+                <div className="text-gray-600">{t('hero.stats.responseRate')}</div>
               </div>
             </div>
           </div>
