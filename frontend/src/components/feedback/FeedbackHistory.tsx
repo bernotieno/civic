@@ -44,18 +44,29 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
     try {
       setLoading(true);
       setError(null);
-      
+
+      console.log('🔍 Loading feedback list for page:', page);
       const response: UserFeedbackListResponse = await apiService.getUserFeedbackList(itemsPerPage, page);
-      
+      console.log('📡 Feedback list response:', response);
+
       if (response.success && response.data) {
+        console.log('✅ Feedback data received:', {
+          resultsCount: response.data.results.length,
+          totalCount: response.data.count,
+          hasNext: !!response.data.next,
+          hasPrevious: !!response.data.previous
+        });
+
         setFeedbackList(response.data.results);
         setTotalCount(response.data.count);
         setHasNext(!!response.data.next);
         setHasPrevious(!!response.data.previous);
       } else {
+        console.error('❌ API response indicates failure:', response);
         setError('Failed to load feedback history');
       }
     } catch (err) {
+      console.error('❌ Error loading feedback list:', err);
       setError(err instanceof Error ? err.message : 'Failed to load feedback history');
     } finally {
       setLoading(false);
@@ -306,7 +317,7 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
                         <code className="ml-1 font-mono">{item.tracking_id}</code>
                       </span>
                       <span>{getCategoryDisplay(item.category)}</span>
-                      <span>{formatDate(item.submitted_at)}</span>
+                      <span>{formatDate(item.created_at)}</span>
                     </div>
                   </div>
                   

@@ -353,16 +353,21 @@ class CivicAIApiService {
         console.error('❌ Error message:', error.message);
       }
 
-      // Return empty list if endpoint doesn't exist yet
-      return {
-        success: true,
-        data: {
-          results: [],
-          count: 0,
-          next: undefined,
-          previous: undefined
-        }
-      };
+      // Only return empty list for network errors, not authentication errors
+      if (error instanceof Error && error.message.includes('Network error')) {
+        return {
+          success: true,
+          data: {
+            results: [],
+            count: 0,
+            next: undefined,
+            previous: undefined
+          }
+        };
+      }
+
+      // Re-throw authentication and other errors so the component can handle them
+      throw error;
     }
   }
 

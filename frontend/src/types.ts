@@ -211,10 +211,23 @@ export interface LoginFormErrors {
 export interface FeedbackItem {
   id: string;
   title: string;
-  status: 'submitted' | 'under_review' | 'in_progress' | 'resolved';
+  status: 'pending' | 'in_review' | 'responded' | 'resolved' | 'closed';
   tracking_id: string;
-  submitted_at: string;
+  created_at: string;
+  updated_at: string;
   category: string;
+  category_display: string;
+  priority: string;
+  priority_display: string;
+  status_display: string;
+  response_count: number;
+  last_response_at?: string;
+  view_count: number;
+  location_path: string;
+  can_edit: boolean;
+  can_delete: boolean;
+  edit_restriction_reason?: string;
+  delete_restriction_reason?: string;
 }
 
 export interface FeedbackStats {
