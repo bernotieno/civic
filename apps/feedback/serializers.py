@@ -2,6 +2,7 @@
 # FILE: apps/feedback/serializers.py (ENHANCED WITH AWARD-WINNING OPENAPI DOCS)
 # =============================================================================
 from rest_framework import serializers
+from typing import Union
 from django.utils import timezone
 from django.db.models import Count, Avg
 from drf_spectacular.utils import extend_schema_field, extend_schema_serializer
@@ -789,19 +790,19 @@ class UserFeedbackDetailSerializer(serializers.ModelSerializer):
             'edit_history', 'timeline'
         ]
     
-    def get_can_edit(self, obj):
+    def get_can_edit(self, obj) -> bool:
         can_edit, reason = obj.can_be_edited()
         return can_edit
     
-    def get_can_delete(self, obj):
+    def get_can_delete(self, obj) -> bool:
         can_delete, reason = obj.can_be_deleted()
         return can_delete
     
-    def get_edit_restriction_reason(self, obj):
+    def get_edit_restriction_reason(self, obj) -> Union[str, None]:
         can_edit, reason = obj.can_be_edited()
         return None if can_edit else reason
     
-    def get_delete_restriction_reason(self, obj):
+    def get_delete_restriction_reason(self, obj) -> Union[str, None]:
         can_delete, reason = obj.can_be_deleted()
         return None if can_delete else reason
     
