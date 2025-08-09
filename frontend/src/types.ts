@@ -206,3 +206,37 @@ export interface LoginFormErrors {
   password?: string;
   general?: string;
 }
+
+// Enhanced Dashboard Types for Citizens Dashboard
+export interface FeedbackItem {
+  id: string;
+  title: string;
+  status: 'submitted' | 'under_review' | 'in_progress' | 'resolved';
+  tracking_id: string;
+  submitted_at: string;
+  category: string;
+}
+
+export interface FeedbackStats {
+  totalFeedback: number;
+  pendingResponses: number;
+  resolvedIssues: number;
+  averageResponseTime: number;
+}
+
+export interface CommunityStats {
+  resolvedInArea: number;
+  monthlyTrend: number;
+  governmentResponses: Array<{
+    title: string;
+    date: string;
+    department: string;
+  }>;
+}
+
+export interface CitizenDashboardData {
+  stats: FeedbackStats;
+  recentFeedback: FeedbackItem[];
+  communityStats: CommunityStats;
+  loading?: boolean;
+}

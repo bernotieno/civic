@@ -1,3 +1,6 @@
+/* Import accessibility and responsive styles */
+@import './styles/accessibility.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

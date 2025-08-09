@@ -245,6 +245,211 @@ class CivicAIApiService {
       throw error;
     }
   }
+
+  // =============================================================================
+  // FEEDBACK API METHODS
+  // =============================================================================
+
+  /**
+   * Get user feedback statistics
+   */
+  async getUserFeedbackStats() {
+    try {
+      const response = await fetch(`${this.baseURL}/api/feedback/my-stats/`, {
+        method: 'GET',
+        headers: this.getHeaders(true),
+      });
+
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching user feedback stats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user's recent feedback submissions
+   */
+  async getUserFeedbackList(limit: number = 10) {
+    try {
+      const response = await fetch(`${this.baseURL}/api/feedback/my-submissions/?limit=${limit}`, {
+        method: 'GET',
+        headers: this.getHeaders(true),
+      });
+
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching user feedback list:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get feedback categories
+   */
+  async getFeedbackCategories() {
+    try {
+      const response = await fetch(`${this.baseURL}/api/feedback/categories/`, {
+        method: 'GET',
+        headers: this.getHeaders(false),
+      });
+
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching feedback categories:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Track feedback by tracking ID
+   */
+  async trackFeedback(trackingId: string) {
+    try {
+      const response = await fetch(`${this.baseURL}/api/feedback/track/${trackingId}/`, {
+        method: 'GET',
+        headers: this.getHeaders(false),
+      });
+
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('Error tracking feedback:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Submit new feedback
+   */
+  async submitFeedback(feedbackData: any) {
+    try {
+      const response = await fetch(`${this.baseURL}/api/feedback/submit/`, {
+        method: 'POST',
+        headers: this.getHeaders(true),
+        body: JSON.stringify(feedbackData),
+      });
+
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Submit anonymous feedback
+   */
+  async submitAnonymousFeedback(feedbackData: any) {
+    try {
+      const response = await fetch(`${this.baseURL}/api/feedback/anonymous/`, {
+        method: 'POST',
+        headers: this.getHeaders(false),
+        body: JSON.stringify(feedbackData),
+      });
+
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('Error submitting anonymous feedback:', error);
+      throw error;
+    }
+  }
+
+  // =============================================================================
+  // DASHBOARD DATA METHODS
+  // =============================================================================
+
+  /**
+   * Get dashboard data for citizens
+   */
+  async getDashboardData() {
+    try {
+      // For now, we'll make multiple API calls to get the data
+      // In a real implementation, this might be a single endpoint
+      const [stats, recentFeedback] = await Promise.all([
+        this.getUserFeedbackStats(),
+        this.getUserFeedbackList(5)
+      ]);
+
+      return {
+        stats: stats.data || {
+          totalFeedback: 0,
+          pendingResponses: 0,
+          resolvedIssues: 0,
+          averageResponseTime: 0,
+        },
+        recentFeedback: recentFeedback.data?.results || [],
+        communityStats: {
+          resolvedInArea: 47, // Mock data - would come from API
+          monthlyTrend: 15,
+          governmentResponses: [
+            {
+              title: 'New water pumps installed in Eastlands',
+              date: '2024-01-12',
+              department: 'Water & Sanitation',
+            },
+            {
+              title: 'Road repairs completed on Mombasa Road',
+              date: '2024-01-10',
+              department: 'Infrastructure',
+            },
+          ],
+        },
+      };
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      // Return mock data on error for development
+      return {
+        stats: {
+          totalFeedback: 12,
+          pendingResponses: 3,
+          resolvedIssues: 8,
+          averageResponseTime: 2.5,
+        },
+        recentFeedback: [
+          {
+            id: '1',
+            title: 'Road maintenance needed on Uhuru Highway',
+            status: 'in_progress',
+            tracking_id: 'FB-2024-001',
+            submitted_at: '2024-01-15T10:30:00Z',
+            category: 'infrastructure',
+          },
+          {
+            id: '2',
+            title: 'Water shortage in Kibera area',
+            status: 'under_review',
+            tracking_id: 'FB-2024-002',
+            submitted_at: '2024-01-14T14:20:00Z',
+            category: 'utilities',
+          },
+          {
+            id: '3',
+            title: 'Healthcare facility needs equipment',
+            status: 'resolved',
+            tracking_id: 'FB-2024-003',
+            submitted_at: '2024-01-10T09:15:00Z',
+            category: 'healthcare',
+          },
+        ],
+        communityStats: {
+          resolvedInArea: 47,
+          monthlyTrend: 15,
+          governmentResponses: [
+            {
+              title: 'New water pumps installed in Eastlands',
+              date: '2024-01-12',
+              department: 'Water & Sanitation',
+            },
+            {
+              title: 'Road repairs completed on Mombasa Road',
+              date: '2024-01-10',
+              department: 'Infrastructure',
+            },
+          ],
+        },
+      };
+    }
+  }
 }
 
 // Export singleton instance
