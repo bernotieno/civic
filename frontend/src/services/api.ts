@@ -264,7 +264,7 @@ class CivicAIApiService {
   /**
    * Get user profile
    */
-  async getUserProfile() {
+  async getUserProfile(): Promise<any> {
     try {
       const response = await fetch(`${this.baseURL}/api/auth/profile/`, {
         method: 'GET',
@@ -285,7 +285,18 @@ class CivicAIApiService {
   /**
    * Get user feedback statistics
    */
-  async getUserFeedbackStats() {
+  async getUserFeedbackStats(): Promise<{
+    success: boolean;
+    data?: {
+      totalFeedback: number;
+      pendingResponses: number;
+      resolvedIssues: number;
+      averageResponseTime: number;
+      today_submissions: number;
+      this_week_submissions: number;
+      this_month_submissions: number;
+    };
+  }> {
     try {
       const response = await fetch(`${this.baseURL}/api/feedback/my-stats/`, {
         method: 'GET',
@@ -337,8 +348,10 @@ class CivicAIApiService {
       return this.handleResponse<UserFeedbackListResponse>(response);
     } catch (error) {
       console.error('❌ Error fetching user feedback list:', error);
-      console.error('❌ Error type:', error.constructor.name);
-      console.error('❌ Error message:', error.message);
+      if (error instanceof Error) {
+        console.error('❌ Error type:', error.constructor.name);
+        console.error('❌ Error message:', error.message);
+      }
 
       // Return empty list if endpoint doesn't exist yet
       return {
@@ -346,8 +359,8 @@ class CivicAIApiService {
         data: {
           results: [],
           count: 0,
-          next: null,
-          previous: null
+          next: undefined,
+          previous: undefined
         }
       };
     }
@@ -356,7 +369,7 @@ class CivicAIApiService {
   /**
    * Get detailed feedback item by ID
    */
-  async getFeedbackDetail(feedbackId: string) {
+  async getFeedbackDetail(feedbackId: string): Promise<any> {
     try {
       const response = await fetch(`${this.baseURL}/api/feedback/my-submissions/${feedbackId}/`, {
         method: 'GET',
@@ -600,7 +613,7 @@ class CivicAIApiService {
   /**
    * Submit anonymous feedback
    */
-  async submitAnonymousFeedback(feedbackData: any) {
+  async submitAnonymousFeedback(feedbackData: any): Promise<any> {
     try {
       const response = await fetch(`${this.baseURL}/api/feedback/anonymous/`, {
         method: 'POST',
@@ -622,7 +635,24 @@ class CivicAIApiService {
   /**
    * Get dashboard data for citizens
    */
-  async getDashboardData() {
+  async getDashboardData(): Promise<{
+    stats: {
+      totalFeedback: number;
+      pendingResponses: number;
+      resolvedIssues: number;
+      averageResponseTime: number;
+    };
+    recentFeedback: any[];
+    communityStats: {
+      resolvedInArea: number;
+      monthlyTrend: number;
+      governmentResponses: Array<{
+        title: string;
+        date: string;
+        department: string;
+      }>;
+    };
+  }> {
     try {
       // For now, we'll make multiple API calls to get the data
       // In a real implementation, this might be a single endpoint

@@ -60,7 +60,7 @@ if DEBUG:
             'debug_toolbar.panels.signals.SignalsPanel',
             'debug_toolbar.panels.logging.LoggingPanel',
             # 'debug_toolbar.panels.redirects.RedirectsPanel',  # DISABLED
-            'debug_toolbar.panels.profiling.ProfilingPanel',
+            #'debug_toolbar.panels.profiling.ProfilingPanel',
         ]
         
     except ImportError:
