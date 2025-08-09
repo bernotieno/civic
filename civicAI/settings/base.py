@@ -35,8 +35,8 @@ LOCAL_APPS = [
     'apps.users',  # CivicAI user management
     'apps.core',   # CivicAI core - Invisible Boundaries system
     'apps.api',    # CivicAI API
+    'apps.feedback',
     # Add more apps here as you build them:
-    # 'apps.feedback',
     # 'apps.analytics',
 ]
 
@@ -134,8 +134,9 @@ Authorization: Bearer <your-jwt-token>
     'TAGS': [
         {'name': 'Authentication', 'description': 'User registration, login, and session management'},
         {'name': 'Locations', 'description': 'Kenya administrative hierarchy (Counties, Sub-counties, Wards, Villages)'},
+        {'name': 'Feedback', 'description': 'Citizen feedback submission and tracking system'},
         {'name': 'System', 'description': 'Health checks and system information'},
-    ],
+    ],  
     'EXTERNAL_DOCS': {
         'description': 'CivicAI Documentation',
         'url': 'https://your-docs-url.com',
@@ -187,6 +188,7 @@ REST_FRAMEWORK = {
         'anon': '100/hour',
         'user': '1000/hour',
         'auth': '5/min',  # For auth endpoints
+        'feedback': '20/hour',  # For feedback endpoints
     }
 }
 

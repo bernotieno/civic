@@ -4,7 +4,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from drf_spectacular.utils import extend_schema_field
-from apps.users.models import CustomUser, County, Location, hash_national_id
+from apps.users.models import CustomUser, County, Location, verify_national_id
 from apps.users.utils import validate_kenyan_national_id
 from apps.core.anonymous import AnonymousSessionManager
 
@@ -58,12 +58,20 @@ class RegisterSerializer(serializers.Serializer):
         if not validate_kenyan_national_id(value):
             raise serializers.ValidationError("Invalid National ID format")
         
+        
         # Check if already registered
-        national_id_hash = hash_national_id(value)
-        if CustomUser.objects.filter(national_id_hash=national_id_hash).exists():
-            raise serializers.ValidationError("User with this National ID already exists")
+        existing_users = CustomUser.objects.all()
+        for user in existing_users:
+            if verify_national_id(value, user.national_id_hash):
+                raise serializers.ValidationError("User with this National ID already exists")
         
         return value
+
+    def validate_email(self, value):
+        """Check if email already exists"""
+        if CustomUser.objects.filter(email=value).exists():
+            raise serializers.ValidationError("User with this email already exists")
+        return value    
     
     def validate_county_id(self, value):
         """Validate county exists"""
@@ -423,4 +431,3 @@ class LocationListResponseSerializer(serializers.Serializer):
         child=LocationSerializer(),
         help_text="List of locations in hierarchy"
     )
-    
