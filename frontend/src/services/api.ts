@@ -10,7 +10,15 @@ import {
   RegistrationResponse,
   LocationResponse,
   AuthTokens,
-  LoginResponse
+  LoginResponse,
+  FeedbackSubmissionData,
+  FeedbackSubmissionResponse,
+  FeedbackTrackingResponse,
+  FeedbackCategoriesResponse,
+  UserFeedbackListResponse,
+  RateLimitError,
+  FeedbackCategoryOption,
+  PriorityOption
 } from '../types';
 
 class CivicAIApiService {
@@ -268,16 +276,21 @@ class CivicAIApiService {
   }
 
   /**
-   * Get user's recent feedback submissions
+   * Get user's feedback submissions with pagination support
    */
-  async getUserFeedbackList(limit: number = 10) {
+  async getUserFeedbackList(limit: number = 10, page: number = 1): Promise<UserFeedbackListResponse> {
     try {
-      const response = await fetch(`${this.baseURL}/api/feedback/my-submissions/?limit=${limit}`, {
+      const params = new URLSearchParams({
+        limit: limit.toString(),
+        page: page.toString()
+      });
+
+      const response = await fetch(`${this.baseURL}/api/feedback/my-submissions/?${params}`, {
         method: 'GET',
         headers: this.getHeaders(true),
       });
 
-      return this.handleResponse(response);
+      return this.handleResponse<UserFeedbackListResponse>(response);
     } catch (error) {
       console.error('Error fetching user feedback list:', error);
       throw error;
@@ -285,33 +298,189 @@ class CivicAIApiService {
   }
 
   /**
-   * Get feedback categories
+   * Get detailed feedback item by ID
    */
-  async getFeedbackCategories() {
+  async getFeedbackDetail(feedbackId: string) {
+    try {
+      const response = await fetch(`${this.baseURL}/api/feedback/my-submissions/${feedbackId}/`, {
+        method: 'GET',
+        headers: this.getHeaders(true),
+      });
+
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching feedback detail:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check current user's rate limit status
+   */
+  async checkRateLimit(): Promise<{ canSubmit: boolean; remaining: number; resetTime?: string }> {
+    try {
+      // This would typically be a dedicated endpoint, but we can infer from user stats
+      const stats = await this.getUserFeedbackStats();
+
+      // Mock rate limit logic - in real implementation this would come from API
+      const dailyLimit = 10; // Citizens: 10 submissions/day
+      const todaySubmissions = stats.data?.today_submissions || 0;
+
+      return {
+        canSubmit: todaySubmissions < dailyLimit,
+        remaining: Math.max(0, dailyLimit - todaySubmissions),
+        resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // Next midnight
+      };
+    } catch (error) {
+      console.error('Error checking rate limit:', error);
+      // Default to allowing submission on error
+      return {
+        canSubmit: true,
+        remaining: 10
+      };
+    }
+  }
+
+  /**
+   * Get feedback categories with department routing information
+   */
+  async getFeedbackCategories(): Promise<FeedbackCategoriesResponse> {
     try {
       const response = await fetch(`${this.baseURL}/api/feedback/categories/`, {
         method: 'GET',
         headers: this.getHeaders(false),
       });
 
-      return this.handleResponse(response);
+      const data = await this.handleResponse<FeedbackCategoriesResponse>(response);
+
+      // If API doesn't return categories in expected format, provide defaults
+      if (!data.data?.categories) {
+        return {
+          success: true,
+          data: {
+            categories: this.getDefaultFeedbackCategories()
+          }
+        };
+      }
+
+      return data;
     } catch (error) {
       console.error('Error fetching feedback categories:', error);
-      throw error;
+      // Return default categories on error
+      return {
+        success: true,
+        data: {
+          categories: this.getDefaultFeedbackCategories()
+        }
+      };
     }
   }
 
   /**
-   * Track feedback by tracking ID
+   * Get default feedback categories with department routing
    */
-  async trackFeedback(trackingId: string) {
+  private getDefaultFeedbackCategories(): FeedbackCategoryOption[] {
+    return [
+      {
+        value: 'infrastructure',
+        label: 'Infrastructure & Roads',
+        department: 'Public Works',
+        description: 'Road maintenance, bridges, public buildings'
+      },
+      {
+        value: 'healthcare',
+        label: 'Healthcare Services',
+        department: 'Health',
+        description: 'Hospitals, clinics, medical equipment'
+      },
+      {
+        value: 'education',
+        label: 'Education & Schools',
+        department: 'Education',
+        description: 'Schools, teachers, educational resources'
+      },
+      {
+        value: 'water_sanitation',
+        label: 'Water & Sanitation',
+        department: 'Water',
+        description: 'Water supply, sewerage, waste management'
+      },
+      {
+        value: 'security',
+        label: 'Security & Safety',
+        department: 'Security',
+        description: 'Police services, public safety, crime'
+      },
+      {
+        value: 'environment',
+        label: 'Environment & Waste',
+        department: 'Environment',
+        description: 'Pollution, waste collection, environmental protection'
+      },
+      {
+        value: 'governance',
+        label: 'Governance & Corruption',
+        department: 'Ethics',
+        description: 'Government services, corruption, transparency'
+      },
+      {
+        value: 'economic',
+        label: 'Economic Development',
+        department: 'Development',
+        description: 'Business permits, economic opportunities, markets'
+      },
+      {
+        value: 'other',
+        label: 'Other Issues',
+        department: 'General Administration',
+        description: 'Issues not covered by other categories'
+      }
+    ];
+  }
+
+  /**
+   * Get priority options with time expectations
+   */
+  getPriorityOptions(): PriorityOption[] {
+    return [
+      {
+        value: 'low',
+        label: 'Low Priority',
+        timeframe: '3–7 days',
+        description: 'Non-urgent issues that can wait for regular processing'
+      },
+      {
+        value: 'medium',
+        label: 'Medium Priority',
+        timeframe: '1–3 days',
+        description: 'Standard issues requiring timely attention'
+      },
+      {
+        value: 'high',
+        label: 'High Priority',
+        timeframe: '6–24 hours',
+        description: 'Important issues affecting community services'
+      },
+      {
+        value: 'urgent',
+        label: 'Urgent',
+        timeframe: '2–6 hours',
+        description: 'Critical issues requiring immediate government response'
+      }
+    ];
+  }
+
+  /**
+   * Track feedback by tracking ID (public endpoint - no auth required)
+   */
+  async trackFeedback(trackingId: string): Promise<FeedbackTrackingResponse> {
     try {
       const response = await fetch(`${this.baseURL}/api/feedback/track/${trackingId}/`, {
         method: 'GET',
         headers: this.getHeaders(false),
       });
 
-      return this.handleResponse(response);
+      return this.handleResponse<FeedbackTrackingResponse>(response);
     } catch (error) {
       console.error('Error tracking feedback:', error);
       throw error;
@@ -319,20 +488,56 @@ class CivicAIApiService {
   }
 
   /**
-   * Submit new feedback
+   * Submit authenticated feedback with comprehensive validation and error handling
    */
-  async submitFeedback(feedbackData: any) {
+  async submitFeedback(feedbackData: FeedbackSubmissionData): Promise<FeedbackSubmissionResponse> {
     try {
+      // Validate required fields before submission
+      this.validateFeedbackData(feedbackData);
+
       const response = await fetch(`${this.baseURL}/api/feedback/submit/`, {
         method: 'POST',
         headers: this.getHeaders(true),
         body: JSON.stringify(feedbackData),
       });
 
-      return this.handleResponse(response);
+      // Handle rate limiting specifically
+      if (response.status === 429) {
+        const rateLimitData = await response.json() as RateLimitError;
+        throw new Error(`Rate limit exceeded: ${rateLimitData.message}`);
+      }
+
+      return this.handleResponse<FeedbackSubmissionResponse>(response);
     } catch (error) {
       console.error('Error submitting feedback:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Validate feedback data before submission
+   */
+  private validateFeedbackData(data: FeedbackSubmissionData): void {
+    if (!data.title || data.title.length < 10 || data.title.length > 200) {
+      throw new Error('Title must be between 10 and 200 characters');
+    }
+
+    if (!data.content || data.content.length < 50) {
+      throw new Error('Content must be at least 50 characters');
+    }
+
+    if (!data.category) {
+      throw new Error('Category is required');
+    }
+
+    if (!data.county_id) {
+      throw new Error('County selection is required');
+    }
+
+    // Validate priority
+    const validPriorities = ['low', 'medium', 'high', 'urgent'];
+    if (!validPriorities.includes(data.priority)) {
+      throw new Error('Invalid priority level');
     }
   }
 

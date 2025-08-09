@@ -30,15 +30,21 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useRealTimeUpdates } from '../../hooks/useRealTimeUpdates';
 import FeedbackCategoriesGrid from './FeedbackCategoriesGrid';
 
+type DashboardView = 'home' | 'submit-feedback' | 'my-feedback' | 'track-feedback';
+
 interface DashboardSidebarProps {
   isMobileMenuOpen?: boolean;
   onMobileMenuClose?: () => void;
   onCollapseChange?: (collapsed: boolean) => void;
+  currentView?: DashboardView;
+  onViewChange?: (view: DashboardView) => void;
 }
 
 const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   isMobileMenuOpen = false,
-  onMobileMenuClose
+  onMobileMenuClose,
+  currentView = 'home',
+  onViewChange
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -54,28 +60,28 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const mainNavItems = [
     {
       name: 'Dashboard',
-      href: '/dashboard',
+      view: 'home' as DashboardView,
       icon: Home,
-      current: location.pathname === '/dashboard'
+      current: currentView === 'home'
     },
     {
       name: 'Submit Feedback',
-      href: '/submit-feedback',
+      view: 'submit-feedback' as DashboardView,
       icon: MessageSquare,
-      current: location.pathname === '/submit-feedback'
+      current: currentView === 'submit-feedback'
     },
     {
       name: 'My Feedback',
-      href: '/my-feedback',
+      view: 'my-feedback' as DashboardView,
       icon: FileText,
-      current: location.pathname === '/my-feedback',
+      current: currentView === 'my-feedback',
       badge: '3' // Example pending count
     },
     {
       name: 'Track Feedback',
-      href: '/track-feedback',
+      view: 'track-feedback' as DashboardView,
       icon: Search,
-      current: location.pathname === '/track-feedback'
+      current: currentView === 'track-feedback'
     },
     {
       name: 'Public Updates',
@@ -127,8 +133,15 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     }
   ];
 
-  const handleNavigation = (href: string) => {
-    navigate(href);
+  const handleNavigation = (item: any) => {
+    if (item.view && onViewChange) {
+      // Handle dashboard view changes
+      onViewChange(item.view);
+    } else if (item.href) {
+      // Handle external navigation
+      navigate(item.href);
+    }
+
     // Close mobile menu after navigation
     if (onMobileMenuClose) {
       onMobileMenuClose();
@@ -217,7 +230,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                 return (
                   <li key={item.name}>
                     <button
-                      onClick={() => handleNavigation(item.href)}
+                      onClick={() => handleNavigation(item)}
                       className={`group flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                         item.current
                           ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
@@ -258,7 +271,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                 return (
                   <li key={item.name}>
                     <button
-                      onClick={() => handleNavigation(item.href)}
+                      onClick={() => navigate(item.href)}
                       className="group flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:text-gray-900 hover:bg-gray-50 transition-colors"
                     >
                       <Icon className={`flex-shrink-0 h-5 w-5 ${item.color} group-hover:text-gray-500`} />
@@ -282,7 +295,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                   return (
                     <button
                       key={category.name}
-                      onClick={() => handleNavigation(category.href)}
+                      onClick={() => onViewChange && onViewChange('submit-feedback')}
                       className="group flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-colors"
                       title={`Submit feedback about ${category.name.toLowerCase()}`}
                     >
@@ -292,7 +305,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                   );
                 })}
                 <button
-                  onClick={() => handleNavigation('/submit-feedback')}
+                  onClick={() => onViewChange && onViewChange('submit-feedback')}
                   className="group flex items-center w-full px-3 py-2 text-sm font-medium text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
                 >
                   <span className="text-xs">View all categories →</span>

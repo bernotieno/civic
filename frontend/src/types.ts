@@ -240,3 +240,148 @@ export interface CitizenDashboardData {
   communityStats: CommunityStats;
   loading?: boolean;
 }
+
+// =============================================================================
+// ENHANCED FEEDBACK SYSTEM TYPES
+// =============================================================================
+
+// Feedback Categories with Department Routing
+export interface FeedbackCategoryOption {
+  value: string;
+  label: string;
+  department: string;
+  description: string;
+}
+
+// Priority Levels with Time Expectations
+export interface PriorityOption {
+  value: 'low' | 'medium' | 'high' | 'urgent';
+  label: string;
+  timeframe: string;
+  description: string;
+}
+
+// Feedback Form Data for Submission
+export interface FeedbackSubmissionData {
+  title: string;
+  content: string;
+  category: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  county_id: number;
+  sub_county_id?: number;
+  ward_id?: number;
+  village_id?: number;
+}
+
+// Feedback Form Validation Errors
+export interface FeedbackFormErrors {
+  title?: string;
+  content?: string;
+  category?: string;
+  priority?: string;
+  county_id?: string;
+  sub_county_id?: string;
+  ward_id?: string;
+  village_id?: string;
+  general?: string;
+}
+
+// Feedback Submission Response
+export interface FeedbackSubmissionResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    feedback_id: string;
+    tracking_id: string;
+    status: string;
+    submitted_at: string;
+    location_path: string;
+  };
+  errors?: FeedbackFormErrors;
+}
+
+// Feedback Tracking Response
+export interface FeedbackTrackingResponse {
+  success: boolean;
+  data?: {
+    tracking_id: string;
+    title: string;
+    category: string;
+    category_display: string;
+    status: string;
+    status_display: string;
+    submitted_at: string;
+    location_path: string;
+    response_count: number;
+    last_response_at?: string;
+  };
+  message?: string;
+}
+
+// Rate Limit Information
+export interface RateLimitInfo {
+  limit: number;
+  remaining: number;
+  reset_time: string;
+  exceeded: boolean;
+}
+
+// Rate Limit Error Response
+export interface RateLimitError {
+  success: false;
+  message: string;
+  rate_limit: RateLimitInfo;
+}
+
+// Location Selection State for Cascading Dropdowns
+export interface LocationSelectionState {
+  county: LocationHierarchy | null;
+  subCounty: LocationHierarchy | null;
+  ward: LocationHierarchy | null;
+  village: LocationHierarchy | null;
+
+  // Available options for each level
+  counties: LocationHierarchy[];
+  subCounties: LocationHierarchy[];
+  wards: LocationHierarchy[];
+  villages: LocationHierarchy[];
+
+  // Loading states
+  loadingSubCounties: boolean;
+  loadingWards: boolean;
+  loadingVillages: boolean;
+}
+
+// Feedback Categories Response
+export interface FeedbackCategoriesResponse {
+  success: boolean;
+  data: {
+    categories: FeedbackCategoryOption[];
+  };
+}
+
+// User Feedback List Response
+export interface UserFeedbackListResponse {
+  success: boolean;
+  data: {
+    results: FeedbackItem[];
+    count: number;
+    next?: string;
+    previous?: string;
+  };
+}
+
+// Enhanced Feedback Item with Full Details
+export interface DetailedFeedbackItem extends FeedbackItem {
+  content: string;
+  priority: string;
+  priority_display: string;
+  location_path: string;
+  response_count: number;
+  last_response_at?: string;
+  view_count: number;
+  can_edit: boolean;
+  can_delete: boolean;
+  edit_restriction_reason?: string;
+  delete_restriction_reason?: string;
+}
