@@ -1,3 +1,4 @@
+# EXISTING DEPENDENCIES (UNCHANGED)
 asgiref==3.9.1
 async-timeout==5.0.1
 bcrypt==4.3.0
@@ -21,3 +22,25 @@ redis==6.3.0
 sqlparse==0.5.3
 typing_extensions==4.14.1
 whitenoise==6.9.0
+
+# 🚀 NEW: AI & ASYNC PROCESSING DEPENDENCIES
+# Celery for distributed task processing
+celery==5.4.0
+django-celery-results==2.5.1
+django-celery-beat==2.7.0
+
+# LLM API Integration
+openai==1.54.3
+anthropic==0.40.0
+
+# AI Data Processing & Analysis
+numpy==1.26.4
+pandas==2.2.2
+
+# Enhanced Caching & Performance
+django-extensions==4.1
+python-dotenv==1.0.1
+
+# Development & Monitoring (Optional)
+flower==2.0.1  # Celery monitoring dashboard
+django-silk==5.3.0  # Performance profiling (development only)
