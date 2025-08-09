@@ -31,6 +31,13 @@ feedback_urls = [
     path('anonymous/', feedback_views.AnonymousFeedbackView.as_view(), name='anonymous_submit'),
     path('track/<str:tracking_id>/', feedback_views.track_feedback, name='track'),
     path('categories/', feedback_views.feedback_categories, name='categories'),
+
+    # User feedback management
+    path('feedback/my-submissions/', feedback_views.UserFeedbackListView.as_view(), name='user_feedback_list'),
+    path('feedback/my-submissions/<uuid:id>/', feedback_views.UserFeedbackDetailView.as_view(), name='user_feedback_detail'),
+    path('feedback/my-submissions/<uuid:id>/edit/', feedback_views.UserFeedbackUpdateView.as_view(), name='user_feedback_update'),
+    path('feedback/my-submissions/<uuid:id>/delete/', feedback_views.UserFeedbackDeleteView.as_view(), name='user_feedback_delete'),
+    path('feedback/my-stats/', feedback_views.user_feedback_statistics, name='user_feedback_stats'),
 ]
 
 urlpatterns = [

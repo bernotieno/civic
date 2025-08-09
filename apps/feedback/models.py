@@ -108,6 +108,12 @@ class Feedback(SoftDeleteModel):
     view_count = models.IntegerField(default=0)
     sentiment_score = models.FloatField(null=True, blank=True)  # Future ML integration
     
+    # Edit control fields
+    can_edit = models.BooleanField(default=True, help_text="Admin can disable editing")
+    can_delete = models.BooleanField(default=True, help_text="Admin can disable deletion")
+    edited_at = models.DateTimeField(null=True, blank=True)
+    edit_count = models.IntegerField(default=0)
+
     class Meta:
         indexes = [
             models.Index(fields=['county', 'status']),
@@ -169,6 +175,78 @@ class Feedback(SoftDeleteModel):
             return self.county in accessible_counties
         
         return False
+
+    def can_be_edited(self):
+        """Check if feedback can be edited by owner with detailed reason"""
+        if not self.can_edit:
+            return False, "Editing disabled by administrator"
+    
+        # Status restrictions
+        EDIT_ALLOWED_STATUSES = ['pending', 'in_review']
+        if self.status not in EDIT_ALLOWED_STATUSES:
+            return False, "Cannot edit feedback after official response"
+    
+        # Edit count limit
+        MAX_EDIT_COUNT = 3
+        if self.edit_count >= MAX_EDIT_COUNT:
+            return False, "Maximum edit limit reached (3 edits allowed)"
+    
+        # Time limit (24 hours)
+        EDIT_TIME_LIMIT = 24 * 60 * 60  # 24 hours in seconds
+        time_since_creation = timezone.now() - self.created_at
+        if time_since_creation.total_seconds() > EDIT_TIME_LIMIT:
+            return False, "Edit time limit exceeded (24 hours)"
+    
+        return True, "OK"
+
+    def can_be_deleted(self):
+        """Check if feedback can be deleted by owner"""
+        if not self.can_delete:
+            return False, "Deletion disabled by administrator"
+    
+        # Cannot delete if there are official responses
+        if self.response_count > 0:
+            return False, "Cannot delete feedback with official responses"
+    
+        return True, "OK"
+    
+    def record_edit(self, previous_data):
+        """Record feedback edit for audit trail"""
+        self.edit_count += 1
+        self.edited_at = timezone.now()
+        self.save(update_fields=['edit_count', 'edited_at'])
+    
+        # Create edit history record
+        FeedbackEdit.objects.create(
+            feedback=self,
+            previous_title=previous_data.get('title', ''),
+            previous_content=previous_data.get('content', ''),
+            previous_category=previous_data.get('category', ''),
+            edited_at=timezone.now()
+            )
+
+
+class FeedbackEdit(SoftDeleteModel):
+    """
+    Track all feedback edits for transparency and audit trail.
+    Enables users and officials to see edit history.
+    """
+    feedback = models.ForeignKey(
+        Feedback, 
+        on_delete=models.CASCADE, 
+        related_name='edit_history'
+    )
+    previous_title = models.CharField(max_length=200)
+    previous_content = models.TextField()
+    previous_category = models.CharField(max_length=20)
+    edit_reason = models.CharField(max_length=200, blank=True)
+    edited_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-edited_at']
+    
+    def __str__(self):
+        return f"Edit of {self.feedback.title} at {self.edited_at}"
 
 
 class FeedbackResponse(SoftDeleteModel):

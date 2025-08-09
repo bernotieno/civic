@@ -5,6 +5,7 @@ from rest_framework import permissions
 from django.utils import timezone
 from datetime import timedelta
 from apps.core.decorators import _has_required_level
+from django.http import Http404
 
 
 class CanSubmitFeedback(permissions.BasePermission):
@@ -259,6 +260,58 @@ class CanExportData(permissions.BasePermission):
         
         return True
 
+class IsOwnerOrReadOnly(permissions.BasePermission):
+    """
+    CRITICAL: Users can only access their own feedback.
+    Implements invisible boundaries - returns 404 for unauthorized access.
+    """
+    
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated
+    
+    def has_object_permission(self, request, view, obj):
+        # Check ownership
+        if obj.user != request.user:
+            # Don't reveal existence - raise 404
+            raise Http404("Feedback not found")
+        
+        # Check if soft deleted
+        if obj.is_deleted:
+            raise Http404("Feedback not found")
+        
+        # Anonymous feedback cannot be accessed via user endpoints
+        if obj.is_anonymous:
+            raise Http404("Feedback not found")
+        
+        return True
+
+
+class CanEditFeedback(permissions.BasePermission):
+    """Permission to edit feedback with business rules"""
+    
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        
+        can_edit, reason = obj.can_be_edited()
+        if not can_edit:
+            # Store reason in request for detailed error message
+            request.edit_restriction_reason = reason
+            return False
+        
+        return True
+
+
+class CanDeleteFeedback(permissions.BasePermission):
+    """Permission to delete feedback with business rules"""
+    
+    def has_object_permission(self, request, view, obj):
+        can_delete, reason = obj.can_be_deleted()
+        if not can_delete:
+            request.delete_restriction_reason = reason
+            return False
+        
+        return True
 
 # =============================================================================
 # COMPATIBILITY ALIASES (For your existing code)
