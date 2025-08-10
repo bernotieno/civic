@@ -1324,19 +1324,19 @@ class UserFeedbackListView(generics.ListAPIView):
         """Enhanced list response with user statistics and filters"""
         # Get filtered queryset
         queryset = self.filter_queryset(self.get_queryset())
-        
+
         # Pagination
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            
+
             # Get user statistics (cached for 15 minutes)
             cache_key = f"user_feedback_stats_{request.user.id}"
             user_stats = cache.get(cache_key)
             if user_stats is None:
                 user_stats = calculate_user_feedback_stats(request.user)
                 cache.set(cache_key, user_stats, 15 * 60)  # 15 minutes
-            
+
             # Get available filter options
             all_user_feedback = self.get_queryset()
             filter_options = {
@@ -1350,22 +1350,32 @@ class UserFeedbackListView(generics.ListAPIView):
                     'priority', flat=True
                 ).distinct()),
             }
-            
-            # Custom paginated response
-            return self.get_paginated_response({
-                'results': serializer.data,
-                'user_stats': user_stats,
-                'filters': filter_options,
-                'applied_filters': {
-                    'status': request.query_params.get('status'),
-                    'category': request.query_params.get('category'),
-                    'priority': request.query_params.get('priority'),
-                    'has_response': request.query_params.get('has_response'),
-                    'search': request.query_params.get('search'),
-                    'ordering': request.query_params.get('ordering', '-created_at'),
+
+            # Get pagination info
+            paginator = self.paginator
+            page_number = request.query_params.get(paginator.page_query_param, 1)
+
+            # Custom response format that matches frontend expectations
+            return Response({
+                'success': True,
+                'data': {
+                    'results': serializer.data,
+                    'count': paginator.page.paginator.count,
+                    'next': paginator.get_next_link(),
+                    'previous': paginator.get_previous_link(),
+                    'user_stats': user_stats,
+                    'filters': filter_options,
+                    'applied_filters': {
+                        'status': request.query_params.get('status'),
+                        'category': request.query_params.get('category'),
+                        'priority': request.query_params.get('priority'),
+                        'has_response': request.query_params.get('has_response'),
+                        'search': request.query_params.get('search'),
+                        'ordering': request.query_params.get('ordering', '-created_at'),
+                    }
                 }
             })
-        
+
         # Non-paginated response (fallback)
         serializer = self.get_serializer(queryset, many=True)
         return Response({

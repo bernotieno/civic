@@ -1,0 +1,98 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-08-10 02:21+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+#: apps/feedback/utils.py:201 apps/feedback/validators.py:14
+msgid "Title cannot be empty"
+msgstr ""
+
+#: apps/feedback/utils.py:207 apps/feedback/validators.py:20
+msgid "Title must be at least 10 characters long"
+msgstr ""
+
+#: apps/feedback/utils.py:210 apps/feedback/validators.py:23
+msgid "Title cannot exceed 200 characters"
+msgstr ""
+
+#: apps/feedback/utils.py:214 apps/feedback/validators.py:27
+msgid "Please provide a descriptive title"
+msgstr ""
+
+#: apps/feedback/utils.py:225 apps/feedback/validators.py:42
+msgid "Content cannot be empty"
+msgstr ""
+
+#: apps/feedback/utils.py:231 apps/feedback/validators.py:48
+msgid "Content must be at least 50 characters long"
+msgstr ""
+
+#: apps/feedback/utils.py:234 apps/feedback/validators.py:51
+msgid "Content cannot exceed 5000 characters"
+msgstr ""
+
+#: apps/feedback/utils.py:238 apps/feedback/validators.py:55
+msgid "Please provide detailed feedback content"
+msgstr ""
+
+#: apps/feedback/utils.py:243 apps/feedback/validators.py:64
+msgid "Content must contain at least 5 words"
+msgstr ""
+
+#: apps/feedback/utils.py:254 apps/feedback/validators.py:74
+msgid "County is required"
+msgstr ""
+
+#: apps/feedback/utils.py:259 apps/feedback/validators.py:79
+msgid "Sub-county does not belong to the selected county"
+msgstr ""
+
+#: apps/feedback/utils.py:264 apps/feedback/validators.py:84
+msgid "Ward requires a sub-county to be selected"
+msgstr ""
+
+#: apps/feedback/utils.py:266 apps/feedback/validators.py:86
+msgid "Ward does not belong to the selected sub-county"
+msgstr ""
+
+#: apps/feedback/utils.py:271 apps/feedback/validators.py:91
+msgid "Village requires a ward to be selected"
+msgstr ""
+
+#: apps/feedback/utils.py:273 apps/feedback/validators.py:93
+msgid "Village does not belong to the selected ward"
+msgstr ""
+
+#: apps/feedback/validators.py:32
+msgid "Title contains too many special characters"
+msgstr ""
+
+#: apps/feedback/validators.py:59
+msgid "Content contains excessive repetitive characters"
+msgstr ""
+
+#: apps/feedback/validators.py:105
+msgid ", "
+msgstr ""
+
+#: apps/feedback/validators.py:116
+msgid "Tracking ID is required"
+msgstr ""
+
+#: apps/feedback/validators.py:121
+msgid "Invalid tracking ID format"
+msgstr ""

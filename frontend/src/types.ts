@@ -48,9 +48,50 @@ export interface FeedbackForm {
   description: string;
   location: Location;
   priority: 'low' | 'medium' | 'high' | 'urgent';
-  attachments: File[];
-  isAnonymous: boolean;
-  contactMethod: 'email' | 'phone' | 'whatsapp';
+}
+
+// Anonymous Session Types
+export interface AnonymousSession {
+  session_id: string;
+  expires_in: number;
+  max_submissions: number;
+  created_at?: string;
+  expires_at?: string;
+}
+
+export interface AnonymousSessionResponse {
+  success: boolean;
+  message: string;
+  session_id: string;
+  expires_in: number;
+  max_submissions: number;
+  errors?: Record<string, string[]>;
+}
+
+export interface AnonymousSessionStatus {
+  success: boolean;
+  session_id: string;
+  can_submit: boolean;
+  message: string;
+  submissions_used: number;
+  submissions_limit: number;
+  expires_at: string;
+}
+
+export interface AnonymousSessionRequest {
+  county_id: number;
+}
+
+export interface AnonymousFeedbackData {
+  session_id: string;
+  title: string;
+  content: string;
+  category: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  county_id: number;
+  sub_county_id?: number;
+  ward_id?: number;
+  village_id?: number;
 }
 
 // Dashboard Types
@@ -67,6 +108,7 @@ export interface DashboardData {
 export interface Statistic {
   value: string;
   label: string;
+  numericValue: number;
   trend?: 'up' | 'down' | 'stable';
 }
 
@@ -211,10 +253,23 @@ export interface LoginFormErrors {
 export interface FeedbackItem {
   id: string;
   title: string;
-  status: 'submitted' | 'under_review' | 'in_progress' | 'resolved';
+  status: 'pending' | 'in_review' | 'responded' | 'resolved' | 'closed';
   tracking_id: string;
-  submitted_at: string;
+  created_at: string;
+  updated_at: string;
   category: string;
+  category_display: string;
+  priority: string;
+  priority_display: string;
+  status_display: string;
+  response_count: number;
+  last_response_at?: string;
+  view_count: number;
+  location_path: string;
+  can_edit: boolean;
+  can_delete: boolean;
+  edit_restriction_reason?: string;
+  delete_restriction_reason?: string;
 }
 
 export interface FeedbackStats {

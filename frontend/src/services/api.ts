@@ -18,6 +18,10 @@ import {
   UserFeedbackListResponse,
   RateLimitError,
   FeedbackCategoryOption,
+  AnonymousSession,
+  AnonymousSessionResponse,
+  AnonymousSessionStatus,
+  AnonymousFeedbackData,
   PriorityOption
 } from '../types';
 
@@ -125,14 +129,24 @@ class CivicAIApiService {
 
       const data = await this.handleResponse<any>(response);
 
+      console.log('Counties API response:', data); // Debug log
+
       // Handle paginated response - extract results array
       if (data && typeof data === 'object' && Array.isArray(data.results)) {
+        console.log('Found paginated counties:', data.results.length);
         return data.results;
       }
 
       // Handle direct array response (fallback)
       if (Array.isArray(data)) {
+        console.log('Found direct array counties:', data.length);
         return data;
+      }
+
+      // Handle success wrapper response
+      if (data && data.success && Array.isArray(data.data)) {
+        console.log('Found wrapped counties:', data.data.length);
+        return data.data;
       }
 
       console.error('Unexpected counties response format:', data);
@@ -264,7 +278,7 @@ class CivicAIApiService {
   /**
    * Get user profile
    */
-  async getUserProfile() {
+  async getUserProfile(): Promise<any> {
     try {
       const response = await fetch(`${this.baseURL}/api/auth/profile/`, {
         method: 'GET',
@@ -285,7 +299,18 @@ class CivicAIApiService {
   /**
    * Get user feedback statistics
    */
-  async getUserFeedbackStats() {
+  async getUserFeedbackStats(): Promise<{
+    success: boolean;
+    data?: {
+      totalFeedback: number;
+      pendingResponses: number;
+      resolvedIssues: number;
+      averageResponseTime: number;
+      today_submissions: number;
+      this_week_submissions: number;
+      this_month_submissions: number;
+    };
+  }> {
     try {
       const response = await fetch(`${this.baseURL}/api/feedback/my-stats/`, {
         method: 'GET',
@@ -337,26 +362,33 @@ class CivicAIApiService {
       return this.handleResponse<UserFeedbackListResponse>(response);
     } catch (error) {
       console.error('❌ Error fetching user feedback list:', error);
-      console.error('❌ Error type:', error.constructor.name);
-      console.error('❌ Error message:', error.message);
+      if (error instanceof Error) {
+        console.error('❌ Error type:', error.constructor.name);
+        console.error('❌ Error message:', error.message);
+      }
 
-      // Return empty list if endpoint doesn't exist yet
-      return {
-        success: true,
-        data: {
-          results: [],
-          count: 0,
-          next: null,
-          previous: null
-        }
-      };
+      // Only return empty list for network errors, not authentication errors
+      if (error instanceof Error && error.message.includes('Network error')) {
+        return {
+          success: true,
+          data: {
+            results: [],
+            count: 0,
+            next: undefined,
+            previous: undefined
+          }
+        };
+      }
+
+      // Re-throw authentication and other errors so the component can handle them
+      throw error;
     }
   }
 
   /**
    * Get detailed feedback item by ID
    */
-  async getFeedbackDetail(feedbackId: string) {
+  async getFeedbackDetail(feedbackId: string): Promise<any> {
     try {
       const response = await fetch(`${this.baseURL}/api/feedback/my-submissions/${feedbackId}/`, {
         method: 'GET',
@@ -600,7 +632,7 @@ class CivicAIApiService {
   /**
    * Submit anonymous feedback
    */
-  async submitAnonymousFeedback(feedbackData: any) {
+  async submitAnonymousFeedback(feedbackData: any): Promise<any> {
     try {
       const response = await fetch(`${this.baseURL}/api/feedback/anonymous/`, {
         method: 'POST',
@@ -616,13 +648,130 @@ class CivicAIApiService {
   }
 
   // =============================================================================
+  // ANONYMOUS SESSION METHODS
+  // =============================================================================
+
+  /**
+   * Create an anonymous session for feedback submission
+   */
+  async createAnonymousSession(countyId: number): Promise<AnonymousSessionResponse> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/auth/anonymous/`, {
+        method: 'POST',
+        headers: this.getHeaders(false),
+        body: JSON.stringify({ county_id: countyId }),
+      });
+
+      const data = await this.handleResponse(response) as AnonymousSessionResponse;
+
+      if (data.success) {
+        // Store session info in localStorage for later use
+        const sessionInfo = {
+          session_id: data.session_id,
+          county_id: countyId,
+          expires_at: new Date(Date.now() + (data.expires_in * 1000)).toISOString(),
+          max_submissions: data.max_submissions,
+          submissions_used: 0
+        };
+        localStorage.setItem('anonymous_session', JSON.stringify(sessionInfo));
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error creating anonymous session:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check the status of an anonymous session
+   */
+  async checkAnonymousSessionStatus(sessionId: string): Promise<AnonymousSessionStatus> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/auth/anonymous/${sessionId}/status/`, {
+        method: 'GET',
+        headers: this.getHeaders(false),
+      });
+
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('Error checking anonymous session status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get stored anonymous session from localStorage
+   */
+  getStoredAnonymousSession(): AnonymousSession | null {
+    try {
+      const stored = localStorage.getItem('anonymous_session');
+      if (!stored) return null;
+
+      const session = JSON.parse(stored);
+
+      // Check if session has expired
+      if (new Date(session.expires_at) <= new Date()) {
+        localStorage.removeItem('anonymous_session');
+        return null;
+      }
+
+      return session;
+    } catch (error) {
+      console.error('Error getting stored anonymous session:', error);
+      localStorage.removeItem('anonymous_session');
+      return null;
+    }
+  }
+
+  /**
+   * Clear stored anonymous session
+   */
+  clearAnonymousSession(): void {
+    localStorage.removeItem('anonymous_session');
+  }
+
+  /**
+   * Update stored session submission count
+   */
+  updateAnonymousSessionUsage(): void {
+    try {
+      const stored = localStorage.getItem('anonymous_session');
+      if (stored) {
+        const session = JSON.parse(stored);
+        session.submissions_used = (session.submissions_used || 0) + 1;
+        localStorage.setItem('anonymous_session', JSON.stringify(session));
+      }
+    } catch (error) {
+      console.error('Error updating anonymous session usage:', error);
+    }
+  }
+
+  // =============================================================================
   // DASHBOARD DATA METHODS
   // =============================================================================
 
   /**
    * Get dashboard data for citizens
    */
-  async getDashboardData() {
+  async getDashboardData(): Promise<{
+    stats: {
+      totalFeedback: number;
+      pendingResponses: number;
+      resolvedIssues: number;
+      averageResponseTime: number;
+    };
+    recentFeedback: any[];
+    communityStats: {
+      resolvedInArea: number;
+      monthlyTrend: number;
+      governmentResponses: Array<{
+        title: string;
+        date: string;
+        department: string;
+      }>;
+    };
+  }> {
     try {
       // For now, we'll make multiple API calls to get the data
       // In a real implementation, this might be a single endpoint

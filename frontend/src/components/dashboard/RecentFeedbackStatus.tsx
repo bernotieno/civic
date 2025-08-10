@@ -4,24 +4,16 @@
  */
 
 import React from 'react';
-import { 
-  Clock, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  Clock,
+  CheckCircle,
+  AlertCircle,
   FileText,
   ExternalLink,
   Calendar,
   Tag
 } from 'lucide-react';
-
-interface FeedbackItem {
-  id: string;
-  title: string;
-  status: 'submitted' | 'under_review' | 'in_progress' | 'resolved';
-  tracking_id: string;
-  submitted_at: string;
-  category: string;
-}
+import { FeedbackItem } from '../../types';
 
 interface RecentFeedbackStatusProps {
   feedback: FeedbackItem[];
@@ -128,7 +120,7 @@ const FeedbackCard: React.FC<{ feedback: FeedbackItem }> = ({ feedback }) => {
         <div className="flex items-center space-x-4">
           <div className="flex items-center">
             <Calendar className="h-4 w-4 mr-1" />
-            {formatDate(feedback.submitted_at)}
+            {formatDate(feedback.created_at)}
           </div>
           <div className="flex items-center font-mono">
             <FileText className="h-4 w-4 mr-1" />

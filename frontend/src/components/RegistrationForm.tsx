@@ -93,6 +93,13 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
     }
   };
 
+  // Reset hierarchy selections
+  const resetHierarchy = () => {
+    setSubCounties([]);
+    setWards([]);
+    setVillages([]);
+  };
+
   // Load wards when sub-county changes
   const loadWards = async (subCountyId: number) => {
     try {
@@ -142,6 +149,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
 
     // Handle location hierarchy changes
     if (name === 'county_id' && value) {
+      resetHierarchy();
       loadSubCounties(parseInt(value));
       setFormData(prev => ({ 
         ...prev, 
@@ -150,6 +158,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
         village_id: undefined 
       }));
     } else if (name === 'sub_county_id' && value) {
+      setWards([]);
+      setVillages([]);
       loadWards(parseInt(value));
       setFormData(prev => ({ 
         ...prev, 
@@ -157,6 +167,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
         village_id: undefined 
       }));
     } else if (name === 'ward_id' && value) {
+      setVillages([]);
       loadVillages(parseInt(value));
       setFormData(prev => ({ 
         ...prev, 
