@@ -92,9 +92,6 @@ export interface AnonymousFeedbackData {
   sub_county_id?: number;
   ward_id?: number;
   village_id?: number;
-  attachments: File[];
-  isAnonymous: boolean;
-  contactMethod: 'email' | 'phone' | 'whatsapp';
 }
 
 // Dashboard Types
@@ -111,6 +108,7 @@ export interface DashboardData {
 export interface Statistic {
   value: string;
   label: string;
+  numericValue: number;
   trend?: 'up' | 'down' | 'stable';
 }
 

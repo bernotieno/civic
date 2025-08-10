@@ -5,12 +5,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  UserIcon,
-  ClockIcon,
-  ShieldCheckIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon
-} from '@heroicons/react/24/outline';
+  User as UserIcon,
+  Clock as ClockIcon,
+  Shield as ShieldCheckIcon,
+  AlertTriangle as ExclamationTriangleIcon,
+  Info as InformationCircleIcon
+} from 'lucide-react';
 import { 
   AnonymousSession,
   AnonymousSessionStatus,
@@ -62,10 +62,10 @@ export const AnonymousFeedbackForm: React.FC<AnonymousFeedbackFormProps> = ({
     subCounties,
     wards,
     villages,
-    loadSubCounties,
-    loadWards,
-    loadVillages,
-    resetHierarchy
+    selectCounty,
+    selectSubCounty,
+    selectWard,
+    resetSelections
   } = useLocationHierarchy();
 
   /**
@@ -188,7 +188,7 @@ export const AnonymousFeedbackForm: React.FC<AnonymousFeedbackFormProps> = ({
 
     // Handle location hierarchy changes
     if (field === 'county_id' && value !== formData.county_id) {
-      resetHierarchy();
+      resetSelections();
       setFormData(prev => ({
         ...prev,
         county_id: value,
@@ -198,7 +198,19 @@ export const AnonymousFeedbackForm: React.FC<AnonymousFeedbackFormProps> = ({
       }));
       
       if (value) {
-        loadSubCounties(value);
+        const county = counties.find(c => c.id === value);
+        if (county) {
+          const locationCounty = {
+            id: county.id,
+            name: county.name,
+            type: 'county' as const,
+            level: 0,
+            code: county.code,
+            full_path: county.name,
+            children: []
+          };
+          selectCounty(locationCounty);
+        }
       }
     } else if (field === 'sub_county_id' && value !== formData.sub_county_id) {
       setFormData(prev => ({
@@ -209,7 +221,10 @@ export const AnonymousFeedbackForm: React.FC<AnonymousFeedbackFormProps> = ({
       }));
       
       if (value) {
-        loadWards(value);
+        const subCounty = subCounties.find(sc => sc.id === value);
+        if (subCounty) {
+          selectSubCounty(subCounty);
+        }
       }
     } else if (field === 'ward_id' && value !== formData.ward_id) {
       setFormData(prev => ({
@@ -219,7 +234,10 @@ export const AnonymousFeedbackForm: React.FC<AnonymousFeedbackFormProps> = ({
       }));
       
       if (value) {
-        loadVillages(value);
+        const ward = wards.find(w => w.id === value);
+        if (ward) {
+          selectWard(ward);
+        }
       }
     }
   };

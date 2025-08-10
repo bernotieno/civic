@@ -86,10 +86,20 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
         setRateLimitInfo(rateLimitStatus);
 
         // Set user's county as default if available
-        if (user.accessible_counties && user.accessible_counties.length > 0) {
-          const userCounty = counties.find(c => c.id === user.accessible_counties[0].id);
+        if (user.accessible_counties && user.accessible_counties.length > 0 && counties.length > 0) {
+          const userCountyData = user.accessible_counties[0];
+          const userCounty = counties.find(c => c.id === userCountyData.id);
           if (userCounty) {
-            await selectCounty(userCounty);
+            const locationCounty = {
+              id: userCounty.id,
+              name: userCounty.name,
+              type: 'county' as const,
+              level: 0,
+              code: userCounty.code || '',
+              full_path: userCounty.name,
+              children: []
+            };
+            await selectCounty(locationCounty);
             setFormData(prev => ({ ...prev, county_id: userCounty.id }));
           }
         }
@@ -400,9 +410,18 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                 id="county"
                 value={county?.id || ''}
                 onChange={(e) => {
-                  const selectedCounty = counties.find(c => c.id === parseInt(e.target.value));
-                  if (selectedCounty) {
-                    selectCounty(selectedCounty);
+                  const selectedCountyData = counties.find(c => c.id === parseInt(e.target.value));
+                  if (selectedCountyData) {
+                    const locationCounty = {
+                      id: selectedCountyData.id,
+                      name: selectedCountyData.name,
+                      type: 'county' as const,
+                      level: 0,
+                      code: selectedCountyData.code || '',
+                      full_path: selectedCountyData.name,
+                      children: []
+                    };
+                    selectCounty(locationCounty);
                   }
                 }}
                 className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
