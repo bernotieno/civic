@@ -12,6 +12,7 @@ import Footer from './components/Footer';
 import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import AnonymousFeedbackPage from './pages/AnonymousFeedbackPage';
 
 // Home Page Component
 const HomePage: React.FC = () => {
@@ -41,6 +42,7 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/anonymous-feedback" element={<AnonymousFeedbackPage />} />
             {/* Role-based dashboard routes */}
             <Route path="/citizen-dashboard" element={<DashboardPage />} />
             <Route path="/gov-dashboard" element={<DashboardPage />} />

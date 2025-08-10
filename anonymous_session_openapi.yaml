@@ -1,0 +1,274 @@
+openapi: 3.0.3
+info:
+  title: CivicAI Anonymous Session API
+  description: |
+    Anonymous session management for secure, privacy-focused feedback submission.
+    
+    ## Features
+    - **No Registration Required**: Create temporary sessions without personal data
+    - **Privacy-First**: Zero PII storage, automatic session cleanup
+    - **Rate Limited**: 3 submissions per 2-hour session
+    - **Secure**: SHA-256 session IDs, Redis-backed storage
+    
+    ## Security
+    - Sessions expire automatically after 2 hours
+    - Maximum 3 submissions per session
+    - Browser fingerprinting for abuse prevention
+    - No personal data stored or logged
+  version: 1.0.0
+  contact:
+    name: CivicAI API Support
+    url: https://civicai.ke/support
+    email: api@civicai.ke
+
+servers:
+  - url: http://localhost:8000
+    description: Development server
+  - url: https://api.civicai.ke
+    description: Production server
+
+paths:
+  /api/auth/anonymous/:
+    post:
+      tags:
+        - Authentication
+      summary: Create Anonymous Session
+      description: |
+        Create a temporary anonymous session for submitting feedback without registration.
+        
+        **Session Limits:**
+        - ⏱️ **Duration**: 2 hours (7200 seconds)
+        - 📝 **Submissions**: Maximum 3 per session
+        - 🔒 **Privacy**: No personal data stored
+        
+        **Use Cases:**
+        - Citizens who want to provide feedback anonymously
+        - Quick feedback without account creation
+        - Public feedback kiosks or forms
+        
+        **Important:** Save the `session_id` - you'll need it for submitting feedback.
+      
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - county_id
+              properties:
+                county_id:
+                  type: integer
+                  description: ID of the county where feedback will be submitted
+                  example: 1
+                  minimum: 1
+            examples:
+              nairobi_session:
+                summary: Create session for Nairobi County
+                value:
+                  county_id: 1
+              mombasa_session:
+                summary: Create session for Mombasa County
+                value:
+                  county_id: 2
+      
+      responses:
+        '201':
+          description: Anonymous session created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Anonymous session created"
+                  session_id:
+                    type: string
+                    description: Unique session identifier (UUID v4 format)
+                    example: "ANON_8f3a2c1e4d6b"
+                    pattern: "^ANON_[a-f0-9]{12}$"
+                  expires_in:
+                    type: integer
+                    description: Session expiry time in seconds
+                    example: 7200
+                  max_submissions:
+                    type: integer
+                    description: Maximum submissions allowed per session
+                    example: 3
+              examples:
+                success_response:
+                  summary: Successful session creation
+                  value:
+                    success: true
+                    message: "Anonymous session created"
+                    session_id: "ANON_8f3a2c1e4d6b"
+                    expires_in: 7200
+                    max_submissions: 3
+        
+        '400':
+          description: Session creation failed due to invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Session creation failed"
+                  errors:
+                    type: object
+                    properties:
+                      county_id:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Invalid county"]
+              examples:
+                invalid_county:
+                  summary: Invalid county ID
+                  value:
+                    success: false
+                    message: "Session creation failed"
+                    errors:
+                      county_id: ["Invalid county"]
+                missing_county:
+                  summary: Missing county ID
+                  value:
+                    success: false
+                    message: "Session creation failed"
+                    errors:
+                      county_id: ["This field is required."]
+        
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Request was throttled. Expected available in 3600 seconds."
+
+  /api/auth/anonymous/{session_id}/status/:
+    get:
+      tags:
+        - Authentication
+      summary: Check Anonymous Session Status
+      description: |
+        Check the status of an anonymous session and remaining submission limits.
+        
+        **Returns:**
+        - Session validity and expiry information
+        - Number of submissions used and remaining
+        - Whether the session can still submit feedback
+      
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          description: The session ID returned from session creation
+          schema:
+            type: string
+            pattern: "^ANON_[a-f0-9]{12}$"
+            example: "ANON_8f3a2c1e4d6b"
+      
+      responses:
+        '200':
+          description: Session status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  session_id:
+                    type: string
+                    example: "ANON_8f3a2c1e4d6b"
+                  can_submit:
+                    type: boolean
+                    description: Whether the session can still submit feedback
+                    example: true
+                  message:
+                    type: string
+                    example: "Session active - 2 submissions remaining"
+                  submissions_used:
+                    type: integer
+                    description: Number of submissions already made
+                    example: 1
+                  submissions_limit:
+                    type: integer
+                    description: Maximum submissions allowed
+                    example: 3
+                  expires_at:
+                    type: string
+                    format: date-time
+                    description: Session expiry timestamp (ISO 8601)
+                    example: "2024-01-15T16:30:00Z"
+              examples:
+                active_session:
+                  summary: Active session with remaining submissions
+                  value:
+                    success: true
+                    session_id: "ANON_8f3a2c1e4d6b"
+                    can_submit: true
+                    message: "Session active - 2 submissions remaining"
+                    submissions_used: 1
+                    submissions_limit: 3
+                    expires_at: "2024-01-15T16:30:00Z"
+                expired_session:
+                  summary: Expired session
+                  value:
+                    success: true
+                    session_id: "ANON_8f3a2c1e4d6b"
+                    can_submit: false
+                    message: "Session expired"
+                    submissions_used: 2
+                    submissions_limit: 3
+                    expires_at: "2024-01-15T14:30:00Z"
+        
+        '404':
+          description: Session not found or expired
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Session not found or expired"
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties: true
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authenticated endpoints (not required for anonymous sessions)
+
+security: []  # No authentication required for anonymous endpoints

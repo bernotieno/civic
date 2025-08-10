@@ -48,6 +48,50 @@ export interface FeedbackForm {
   description: string;
   location: Location;
   priority: 'low' | 'medium' | 'high' | 'urgent';
+}
+
+// Anonymous Session Types
+export interface AnonymousSession {
+  session_id: string;
+  expires_in: number;
+  max_submissions: number;
+  created_at?: string;
+  expires_at?: string;
+}
+
+export interface AnonymousSessionResponse {
+  success: boolean;
+  message: string;
+  session_id: string;
+  expires_in: number;
+  max_submissions: number;
+  errors?: Record<string, string[]>;
+}
+
+export interface AnonymousSessionStatus {
+  success: boolean;
+  session_id: string;
+  can_submit: boolean;
+  message: string;
+  submissions_used: number;
+  submissions_limit: number;
+  expires_at: string;
+}
+
+export interface AnonymousSessionRequest {
+  county_id: number;
+}
+
+export interface AnonymousFeedbackData {
+  session_id: string;
+  title: string;
+  content: string;
+  category: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  county_id: number;
+  sub_county_id?: number;
+  ward_id?: number;
+  village_id?: number;
   attachments: File[];
   isAnonymous: boolean;
   contactMethod: 'email' | 'phone' | 'whatsapp';

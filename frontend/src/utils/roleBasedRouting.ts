@@ -160,7 +160,7 @@ export const getNavigationItems = (user: AuthUser | null) => {
   if (!user) {
     return [
       { name: 'Home', href: '/' },
-      { name: 'Submit Feedback', href: '#submit' },
+      { name: 'Anonymous Feedback', href: '/anonymous-feedback' },
       { name: 'Track Feedback', href: '#track' },
       { name: 'About', href: '#about' },
     ];
