@@ -30,7 +30,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useRealTimeUpdates } from '../../hooks/useRealTimeUpdates';
 import FeedbackCategoriesGrid from './FeedbackCategoriesGrid';
 
-type DashboardView = 'home' | 'submit-feedback' | 'my-feedback' | 'track-feedback';
+type DashboardView = 'home' | 'submit-feedback' | 'my-feedback' | 'track-feedback' | 'county-projects';
 
 interface DashboardSidebarProps {
   isMobileMenuOpen?: boolean;
@@ -82,6 +82,12 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       view: 'track-feedback' as DashboardView,
       icon: Search,
       current: currentView === 'track-feedback'
+    },
+    {
+      name: 'County Projects',
+      view: 'county-projects' as DashboardView,
+      icon: Construction,
+      current: currentView === 'county-projects'
     },
     {
       name: 'Public Updates',

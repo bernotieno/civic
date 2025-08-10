@@ -23,8 +23,11 @@ import FeedbackSuccess from '../feedback/FeedbackSuccess';
 import FeedbackError from '../feedback/FeedbackError';
 import FeedbackTracker from '../feedback/FeedbackTracker';
 import FeedbackHistory from '../feedback/FeedbackHistory';
+import CountyProjects from './CountyProjects';
+import ProjectDetailsModal from './ProjectDetailsModal';
+import { Project } from '../../data/projects';
 
-type DashboardView = 'home' | 'submit-feedback' | 'my-feedback' | 'track-feedback' | 'feedback-success' | 'feedback-error';
+type DashboardView = 'home' | 'submit-feedback' | 'my-feedback' | 'track-feedback' | 'feedback-success' | 'feedback-error' | 'county-projects';
 
 interface SubmissionData {
   feedback_id: string;
@@ -46,6 +49,7 @@ const CitizensDashboard: React.FC = () => {
   const [submissionData, setSubmissionData] = useState<SubmissionData | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [errorType, setErrorType] = useState<'validation' | 'rate_limit' | 'auth' | 'network' | 'server' | 'permission'>('server');
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [dashboardData, setDashboardData] = useState<CitizenDashboardData>({
     stats: {
       totalFeedback: 0,
@@ -65,7 +69,7 @@ const CitizensDashboard: React.FC = () => {
   // Handle URL parameters for view navigation
   useEffect(() => {
     const viewParam = searchParams.get('view');
-    if (viewParam && ['home', 'submit-feedback', 'my-feedback', 'track-feedback'].includes(viewParam)) {
+    if (viewParam && ['home', 'submit-feedback', 'my-feedback', 'track-feedback', 'county-projects'].includes(viewParam)) {
       setCurrentView(viewParam as DashboardView);
     }
   }, [searchParams]);
@@ -349,6 +353,12 @@ const CitizensDashboard: React.FC = () => {
                         >
                           View My Feedback
                         </button>
+                        <button
+                          onClick={() => handleViewChange('county-projects')}
+                          className="w-full bg-green-100 text-green-700 py-3 px-4 rounded-lg hover:bg-green-200 transition-colors font-medium"
+                        >
+                          County Projects
+                        </button>
                       </div>
                     </div>
 
@@ -471,9 +481,32 @@ const CitizensDashboard: React.FC = () => {
                 />
               </div>
             )}
+
+            {/* County Projects View */}
+            {currentView === 'county-projects' && (
+              <div className="max-w-6xl mx-auto">
+                <div className="mb-6">
+                  <button
+                    onClick={handleBackToHome}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium mb-4"
+                  >
+                    ← Back to Dashboard
+                  </button>
+                </div>
+                <CountyProjects onProjectSelect={setSelectedProject} />
+              </div>
+            )}
           </div>
         </main>
       </div>
+
+      {/* Project Details Modal */}
+      {selectedProject && (
+        <ProjectDetailsModal
+          project={selectedProject}
+          onClose={() => setSelectedProject(null)}
+        />
+      )}
     </div>
   );
 };
