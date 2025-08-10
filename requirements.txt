@@ -44,8 +44,8 @@ openai==1.54.3
 anthropic==0.40.0
 
 # AI Data Processing & Analysis
-numpy==1.26.4
-pandas==2.2.2
+# numpy==1.26.4
+# pandas==2.2.2
 
 # Enhanced Caching & Performance
 django-extensions==4.1
