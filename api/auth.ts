@@ -1,7 +1,8 @@
 import apiClient from "./apiClient";
 
 // Register
-export const registerUser = async (data: { email: string; password: string; name:string; phone: string; county: string; constituency: string; ward: string  }) => {
+
+export const registerUser = async (data: { email: string; password: string; name:string; phoneNumber: string; county: string; constituency: string; ward: string  }) => {
   const res = await apiClient.post("/auth/register", data);
   return res.data;
 };

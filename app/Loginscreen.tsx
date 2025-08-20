@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContex"; // Custom hook for auth context
 export default function SignUp() {
   const [idNumber, setIdNumber] = useState("");
   const [password, setPassword] = useState(""); 
+  const [phoneNumber, setPhoneNumber] = useState(""); 
    const { login } = useAuth(); //  custom hook for auth context   
 
   const handleLogin = async () => {
@@ -29,6 +30,13 @@ export default function SignUp() {
           placeholder="Enter Kenyan ID Number"
           value={idNumber}
           onChangeText={setIdNumber}
+          keyboardType="phone-pad"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Enter phone number"
+          value={phoneNumber}
+          onChangeText={setPhoneNumber}
           keyboardType="phone-pad"
         />
 

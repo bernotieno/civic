@@ -1,50 +1,106 @@
-import React, { createContext, useContext, useState } from "react";
-import { loginUser, registerUser, verifyOtp } from "../api/auth";
+// import React, { createContext, useContext, useState } from "react";
+// import { loginUser, registerUser, verifyOtp } from "../api/auth";
 
-interface AuthContextType {
-  user: any | null;
-  token: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
-  verify: (email: string, otp: string) => Promise<void>;
-}
+// // Define proper types
+// interface User {
+//   id: string;
+//   email: string;
+//   phoneNumber: string;
+//   idNumber: string;
+//   firstName: string;
+//   lastName: string;
+//   isVerified: boolean;
+// }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// interface LoginResponse {
+//   success: boolean;
+//   otpRequired?: boolean;
+//   token?: string;
+//   user?: User;
+//   message?: string;
+// }
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<any | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+// interface RegisterResponse {
+//   success: boolean;
+//   message: string;
+//   requiresVerification?: boolean;
+// }
 
-  const login = async (email: string, password: string) => {
-    const data = await loginUser({ email, password });
-    // Example response: { otpRequired: true } OR { token: "abc123", user: {...} }
-    if (data.token) {
-      setToken(data.token);
-      setUser(data.user);
-    }
-  };
+// interface VerifyResponse {
+//   success: boolean;
+//   token: string;
+//   user: User;
+//   message?: string;
+// }
 
-  const register = async (email: string, password: string) => {
-    await registerUser({ email, password });
-  };
+// interface AuthContextType {
+//   user: User | null;
+//   token: string | null;
+//   login: (idNumber: string, password: string) => Promise<void>;
+//   register: (data: {
+//     email: string;
+//     phoneNumber: string;
+//     idNumber: string;
+//     firstName: string;
+//     lastName: string;
+//     password: string;
+//   }) => Promise<void>;
+//   verify: (phoneNumber: string, otp: string) => Promise<void>;
+//   resendOtp: (phoneNumber: string) => Promise<void>;
+//   logout: () => void;
+// }
 
-  const verify = async (email: string, otp: string) => {
-    const data = await verifyOtp({ phoneNumber, otp });
-    setToken(data.token);
-    setUser(data.user);
-  };
+// const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-  return (
-    <AuthContext.Provider value={{ user, token, login, register, verify }}>
+// export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+//   const [user, setUser] = useState<User | null>(null);
+//   const [token, setToken] = useState<string | null>(null);
 
-      {children}
-      
-    </AuthContext.Provider>
-  );
-};
+//   const login = async (idNumber: string, password: string) => {
+//     const data: LoginResponse = await loginUser({ idNumber, password });
+//     if (data.token && data.user) {
+//       setToken(data.token);
+//       setUser(data.user);
+//     }
+//     // if otpRequired === true → navigate to OTP screen from your component
+//   };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within AuthProvider");
-  return context;
-};
+//   const register = async (formData: {
+//     email: string;
+//     phoneNumber: string;
+//     idNumber: string;
+//     name: string;
+//     county: string;
+//     constituency: string;
+//     ward: string;
+//     password: string;
+//   }) => {
+//     const data: RegisterResponse = await registerUser(formData);
+//     // handle data.requiresVerification === true → navigate to OTP screen
+//   };
+
+//   const verify = async (phoneNumber: string, otp: string) => {
+//     const data: VerifyResponse = await verifyOtp({ phoneNumber, otp });
+//     if (data.token && data.user) {
+//       setToken(data.token);
+//       setUser(data.user);
+//     }
+//   };
+
+//   const logout = () => {
+//     setToken(null);
+//     setUser(null);
+//   };
+
+//   return (
+//     <AuthContext.Provider value={{ user, token, login, register, verify, logout }}>
+//       {children}
+//     </AuthContext.Provider>
+//   );
+// };
+
+// export const useAuth = () => {
+//   const context = useContext(AuthContext);
+//   if (!context) throw new Error("useAuth must be used within AuthProvider");
+//   return context;
+// };
