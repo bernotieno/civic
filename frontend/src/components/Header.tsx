@@ -1,6 +1,13 @@
 import type React from "react"
+import { Link, useLocation } from 'react-router-dom'
 
 const Header: React.FC = () => {
+  const location = useLocation();
+  
+  const isActive = (path: string) => {
+    return location.pathname === path ? 'text-emerald-600' : 'text-gray-700 hover:text-emerald-600';
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -31,25 +38,28 @@ const Header: React.FC = () => {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <a href="#feedback" className="text-gray-700 hover:text-emerald-600 font-medium transition-colors">
-              Bills
-            </a>
-            <a href="#dashboard" className="text-gray-700 hover:text-emerald-600 font-medium transition-colors">
+            <Link to="/" className={`${isActive('/')} font-medium transition-colors`}>
+              Home
+            </Link>
+            <Link to="/projects" className={`${isActive('/projects')} font-medium transition-colors`}>
               Projects
-            </a>
-            <a href="#about" className="text-gray-700 hover:text-emerald-600 font-medium transition-colors">
+            </Link>
+            <Link to="/anonymous-feedback" className={`${isActive('/anonymous-feedback')} font-medium transition-colors`}>
+              Feedback
+            </Link>
+            <Link to="/about" className={`${isActive('/about')} font-medium transition-colors`}>
               About
-            </a>
+            </Link>
           </nav>
 
           {/* Auth Buttons */}
           <div className="flex items-center space-x-3">
-            <button className="px-4 py-2 text-gray-700 hover:text-emerald-600 font-medium transition-colors">
+            <Link to="/login" className="px-4 py-2 text-gray-700 hover:text-emerald-600 font-medium transition-colors">
               Login
-            </button>
-            <button className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium transition-colors shadow-sm">
+            </Link>
+            <Link to="/register" className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium transition-colors shadow-sm">
               Register
-            </button>
+            </Link>
           </div>
 
           {/* Mobile menu button */}

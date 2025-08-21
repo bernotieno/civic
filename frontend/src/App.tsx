@@ -15,6 +15,7 @@ import DashboardPage from './pages/DashboardPage';
 import AnonymousFeedbackPage from './pages/AnonymousFeedbackPage';
 import ProjectList from './components/ProjectList';
 import ProjectDetails from './components/ProjectDetails';
+import AboutPage from './pages/AboutPage';
 // import AdminDashboard from './components/dashboard/AdminDashboard';
 import AdminDashboardLayout from './components/dashboard/AdminDashboardLayout';
 import AdminFeedbackManagement from './components/dashboard/AdminFeedbackManagement';
@@ -55,6 +56,7 @@ function App() {
             <Route path="/anonymous-feedback" element={<AnonymousFeedbackPage />} />
             <Route path="/projects" element={<ProjectList />} />
             <Route path="/project/:id" element={<ProjectDetails />} />
+            <Route path="/about" element={<AboutPage />} />
             {/* Role-based dashboard routes */}
             <Route path="/citizen-dashboard" element={<DashboardPage />} />
             <Route path="/gov-dashboard" element={<DashboardPage />} />

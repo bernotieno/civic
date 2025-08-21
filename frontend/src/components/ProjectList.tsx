@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { mockProjects, Project } from '../data/projects';
+import Header from './Header';
+import Footer from './Footer';
 
 const ProjectList: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -38,7 +40,9 @@ const ProjectList: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <div className="py-8 pt-24">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">County Projects</h1>
@@ -78,6 +82,8 @@ const ProjectList: React.FC = () => {
           ))}
         </div>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 };

@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 export default function Hero() {
   return (
     <section className="max-w-7xl mx-auto px-6 py-16 mt-16">
@@ -18,24 +20,27 @@ export default function Hero() {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4">
-            <button className="bg-teal-700 hover:bg-teal-800 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-              Explore Bills
-            </button>
-            <button className="border border-teal-700 text-teal-700 hover:bg-teal-50 px-6 py-3 rounded-lg font-medium transition-colors">
+            <Link to="/projects" className="bg-teal-700 hover:bg-teal-800 text-white px-6 py-3 rounded-lg font-medium transition-colors text-center">
+              Explore Projects
+            </Link>
+            <Link to="/anonymous-feedback" className="border border-teal-700 text-teal-700 hover:bg-teal-50 px-6 py-3 rounded-lg font-medium transition-colors text-center">
               Anonymous Feedback
-            </button>
+            </Link>
           </div>
 
           {/* Statistics Cards */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="bg-yellow-100 px-4 py-3 rounded-lg">
               <div className="text-2xl font-bold text-gray-900">12,847</div>
+              <p>Feedback Received</p>
             </div>
             <div className="bg-teal-100 px-4 py-3 rounded-lg">
               <div className="text-2xl font-bold text-gray-900">9,234</div>
+              <p>Issues Resolved</p>
             </div>
             <div className="bg-purple-100 px-4 py-3 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">87%</div>
+              <div className="text-2xl font-bold text-gray-900">94%</div>
+              <p>Response Rate</p>
             </div>
           </div>
         </div>
