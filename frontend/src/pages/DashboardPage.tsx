@@ -54,7 +54,13 @@ const DashboardPage: React.FC = () => {
     return <CitizensDashboard />;
   }
 
-  // Fallback for other roles (government officials, admin, etc.)
+  // Redirect admin users to admin dashboard
+  if (user.role === 'super_admin' || user.role === 'national_official' || user.role === 'regional_official' || user.role === 'local_official') {
+    navigate('/admin-dashboard', { replace: true });
+    return null;
+  }
+
+  // Fallback for other roles
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center">

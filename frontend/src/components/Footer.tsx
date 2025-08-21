@@ -1,141 +1,167 @@
-import React from 'react';
-import { Phone, Mail, MapPin, Facebook, Twitter, Linkedin, Instagram, MessageSquare, Search, BarChart3 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Button } from "./ui/button"
 
-const Footer: React.FC = () => {
-  const { t } = useTranslation();
-
-  const quickLinks = [
-    { name: t('footer.quickLinks.submitFeedback'), href: '#submit', icon: <MessageSquare className="w-4 h-4" /> },
-    { name: t('footer.quickLinks.trackFeedback'), href: '#track', icon: <Search className="w-4 h-4" /> },
-    { name: t('footer.quickLinks.transparencyPortal'), href: '#transparency', icon: <BarChart3 className="w-4 h-4" /> },
-    { name: t('footer.quickLinks.governmentPortal'), href: '#government' },
-    { name: t('footer.quickLinks.helpSupport'), href: '#help' },
-  ];
-
-  const categories = [
-    { name: t('footer.categories.infrastructure'), href: '#infrastructure' },
-    { name: t('footer.categories.healthcare'), href: '#healthcare' },
-    { name: t('footer.categories.education'), href: '#education' },
-    { name: t('footer.categories.security'), href: '#security' },
-    { name: t('footer.categories.environment'), href: '#environment' },
-  ];
-
-  const socialIcons = [
-    { icon: <Facebook />, color: 'hover:text-blue-500' },
-    { icon: <Twitter />, color: 'hover:text-sky-400' },
-    { icon: <Linkedin />, color: 'hover:text-blue-400' },
-    { icon: <Instagram />, color: 'hover:text-pink-500' },
-  ];
-
+export default function Footer() {
   return (
-    <footer className="bg-gradient-to-b from-gray-900 to-gray-950 text-white">
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-        
-        {/* Brand & Social */}
-        <div>
-          <div className="flex items-center mb-6">
-            <div className="w-10 h-10 bg-gradient-to-tr from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center mr-3 shadow-lg">
-              <div className="w-4 h-4 bg-white rounded-sm" />
-            </div>
-            <span className="text-2xl font-extrabold tracking-tight">{t('header.brandName')}</span>
-          </div>
-          <p className="text-gray-400 mb-6">{t('footer.description')}</p>
-          <div className="flex space-x-4">
-            {socialIcons.map((s, i) => (
-              <div
-                key={i}
-                className={`p-2 rounded-full bg-gray-800 hover:bg-gray-700 cursor-pointer transition-all duration-300 ${s.color}`}
-              >
-                {React.cloneElement(s.icon, { className: 'w-5 h-5' })}
+    <footer className="bg-teal-700 text-white">
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        {/* Main footer content */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+          {/* Logo and description */}
+          <div className="md:col-span-1">
+            <div className="flex items-center mb-4">
+              <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center mr-3">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
               </div>
-            ))}
+            </div>
+            <p className="text-sm leading-relaxed">
+              Empowering Kenyan citizens to engage meaningfully with government documents and policies through
+              AI-powered insights and community participation.
+            </p>
+          </div>
+
+          {/* Quick Links */}
+          <div>
+            <h3 className="font-semibold text-lg mb-4">Quick Links</h3>
+            <ul className="space-y-2">
+              <li>
+                <a href="#" className="text-sm hover:text-emerald-300 transition-colors">
+                  Submit Feedback
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-sm hover:text-emerald-300 transition-colors">
+                  Track Feedback
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-sm hover:text-emerald-300 transition-colors">
+                  Transparency portal
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-sm hover:text-emerald-300 transition-colors">
+                  Government portal
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-sm hover:text-emerald-300 transition-colors">
+                  Help & Support
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Categories */}
+          <div>
+            <h3 className="font-semibold text-lg mb-4">Categories</h3>
+            <ul className="space-y-2">
+              <li>
+                <a href="#" className="text-sm hover:text-emerald-300 transition-colors">
+                  Infrastructure
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-sm hover:text-emerald-300 transition-colors">
+                  Healthcare
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-sm hover:text-emerald-300 transition-colors">
+                  Education
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-sm hover:text-emerald-300 transition-colors">
+                  Security & Safety
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-sm hover:text-emerald-300 transition-colors">
+                  Help & Support
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Contact Info */}
+          <div>
+            <h3 className="font-semibold text-lg mb-4">Contact Info</h3>
+            <div className="space-y-3">
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+                <span className="text-sm">Nairobi, Kenya</span>
+              </div>
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                  />
+                </svg>
+                <span className="text-sm">+254 (0) 20 123-4567</span>
+              </div>
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+                <span className="text-sm">feedback@civicai.go.ke</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Quick Links */}
-        <div>
-          <h3 className="text-lg font-semibold mb-6 border-l-4 border-blue-500 pl-3">{t('footer.quickLinks.title')}</h3>
-          <ul className="space-y-3">
-            {quickLinks.map((link, index) => (
-              <li key={index}>
-                <a
-                  href={link.href}
-                  className="flex items-center gap-2 text-gray-400 hover:text-white group transition-all duration-300"
-                >
-                  {link.icon && <span className="text-blue-400 group-hover:scale-110 transition-transform">{link.icon}</span>}
-                  {link.name}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Categories */}
-        <div>
-          <h3 className="text-lg font-semibold mb-6 border-l-4 border-green-500 pl-3">{t('footer.categories.title')}</h3>
-          <ul className="space-y-3">
-            {categories.map((category, index) => (
-              <li key={index}>
-                <a
-                  href={category.href}
-                  className="text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1 block"
-                >
-                  {category.name}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Contact */}
-        <div>
-          <h3 className="text-lg font-semibold mb-6 border-l-4 border-yellow-500 pl-3">{t('footer.contact.title')}</h3>
-          <div className="space-y-5 text-gray-400">
-            <div className="flex items-start gap-3">
-              <MapPin className="w-5 h-5 text-blue-400" />
-              <p>{t('footer.contact.address')}</p>
+        {/* Newsletter signup */}
+        <div className="border-t border-teal-600 pt-8 mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div className="mb-4 md:mb-0">
+              <h3 className="font-semibold text-lg mb-2">Stay Updated</h3>
+              <p className="text-sm">Get notified about new legislation and platform updates</p>
             </div>
-            <div className="flex items-center gap-3">
-              <Phone className="w-5 h-5 text-blue-400" />
-              <span>{t('footer.contact.phone')}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <Mail className="w-5 h-5 text-blue-400" />
-              <span>{t('footer.contact.email')}</span>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="px-4 py-2 rounded-lg bg-teal-600 border border-teal-500 text-white placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent"
+              />
+              <Button className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-lg transition-colors">
+                Subscribe
+              </Button>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* WhatsApp Section */}
-      <div className="border-t border-gray-800 py-10 px-6 max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-1">📲 Submit via WhatsApp</h3>
-          <p className="text-gray-400">Send feedback quickly using WhatsApp.</p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-semibold shadow-md transition-all duration-300 hover:scale-105">
-            +254 700 123 456
-          </button>
-          <button className="border border-gray-600 hover:border-white hover:text-white text-gray-400 px-6 py-3 rounded-lg font-semibold transition-all duration-300">
-            Learn How
-          </button>
-        </div>
-      </div>
-
-      {/* Bottom Bar */}
-      <div className="border-t border-gray-800 py-6 px-6 max-w-7xl mx-auto flex flex-col md:flex-row md:justify-between md:items-center gap-4 text-sm text-gray-500">
-        <span>{t('footer.legal.copyright')}</span>
-        <div className="flex gap-6">
-          <a href="#privacy" className="hover:text-white transition-colors">Privacy</a>
-          <a href="#terms" className="hover:text-white transition-colors">Terms</a>
-          <a href="#accessibility" className="hover:text-white transition-colors">Accessibility</a>
+        {/* Copyright */}
+        <div className="border-t border-teal-600 pt-6">
+          <p className="text-sm text-teal-200">© 2025 Government of Kenya - CivicAI. All rights reserved.</p>
         </div>
       </div>
     </footer>
-  );
-};
-
-export default Footer;
+  )
+}
