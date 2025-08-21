@@ -1645,11 +1645,22 @@ def user_feedback_statistics(request):
                 avg_response_days = sum(response_times) / len(response_times)
         
         # Engagement metrics
+        most_viewed = user_feedback.order_by('-view_count').first()
+        most_edited = user_feedback.order_by('-edit_count').first()
+        
         engagement_stats = {
             'total_views': user_feedback.aggregate(total=Count('view_count'))['total'] or 0,
             'total_edits': user_feedback.aggregate(total=Count('edit_count'))['total'] or 0,
-            'most_viewed_feedback': user_feedback.order_by('-view_count').first(),
-            'most_edited_feedback': user_feedback.order_by('-edit_count').first(),
+            'most_viewed_feedback': {
+                'id': str(most_viewed.id),
+                'title': most_viewed.title,
+                'view_count': most_viewed.view_count
+            } if most_viewed else None,
+            'most_edited_feedback': {
+                'id': str(most_edited.id),
+                'title': most_edited.title,
+                'edit_count': most_edited.edit_count
+            } if most_edited else None,
         }
         
         detailed_stats = {

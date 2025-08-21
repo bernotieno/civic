@@ -29,6 +29,7 @@ THIRD_PARTY_APPS = [
     'corsheaders',
     'django_filters',
     'drf_spectacular',  # 🚀 SWAGGER/OpenAPI Documentation
+    # 'django_extensions',  # Commented out for now
 ]
 
 LOCAL_APPS = [

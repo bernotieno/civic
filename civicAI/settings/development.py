@@ -8,7 +8,7 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
 # Development-specific apps
 INSTALLED_APPS += [
-    'django_extensions',  # Add useful development tools
+    # 'django_extensions',  # Add useful development tools - commented out for now
 ]
 
 # Development middleware
