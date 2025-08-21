@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { router } from 'expo-router';
 import { 
   View, 
   Text, 
@@ -18,6 +19,7 @@ const AuthScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleAuth = async (): Promise<void> => {
+    router.push(isLogin ? './AuthScreen' : './RegistrationScreen');
     setIsLoading(true);
 
     try {

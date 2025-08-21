@@ -85,6 +85,7 @@ export default function Register() {
 
   // Main register function
   const handleRegister = async () => {
+    router.push("/AuthScreen");
     // Validate form
     if (!validateForm()) {
       return;
@@ -111,14 +112,13 @@ export default function Register() {
 
         }),
       });
-
+      
       const data = await response.json();
 
       if (response.ok) {
         // Registration successful
         Alert.alert('Success', 'Registration successful!');
         // Navigate to login or home screen
-        router.push("/AuthScreen");
       } else {
         // Handle API errors
         Alert.alert('Error', data.message || 'Registration failed');
