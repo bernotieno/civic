@@ -67,12 +67,12 @@ const HomeScreen = () => {
       <Text style={styles.description}>
         Engage with Kenya's Legislative process. Read bills, vote on clauses and submit feedback to shape the future of our nation
       </Text>
-      <TouchableOpacity 
+      {/* <TouchableOpacity 
         style={styles.exploreButton}
         onPress={() => router.push("/FeedBackScreen")}
       >
         <Text style={styles.exploreButtonText}>Explore Bills</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 
@@ -102,14 +102,14 @@ const HomeScreen = () => {
           <Text style={styles.cardDescription}>{item.description}</Text>
           
           <View style={styles.actionContainer}>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={styles.feedbackButton}
               onPress={() => router.push(`./FeedBackScreen?billId=${item.id}`)}
             >
               <Text style={styles.feedbackButtonText}>Submit Feedback</Text>
-            </TouchableOpacity>
-            
-            <View style={styles.engagement}>
+            </TouchableOpacity> */}
+            {/** Removed this section */}
+            {/* <View style={styles.engagement}>
               <TouchableOpacity style={styles.engagementButton}>
                 <Text style={styles.engagementText}>👍 Like</Text>
               </TouchableOpacity>
@@ -119,7 +119,7 @@ const HomeScreen = () => {
               <TouchableOpacity style={styles.engagementButton}>
                 <Text style={styles.engagementText}>📤 Share</Text>
               </TouchableOpacity>
-            </View>
+            </View> */}
           </View>
         </View>
       </View>
@@ -138,7 +138,7 @@ const HomeScreen = () => {
         data={data}
         keyExtractor={(item, index) => ('isHeader' in item) ? 'header' : item.id}
         renderItem={renderCard}
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
@@ -208,6 +208,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#E3FEF7",
     width: SCREEN_WIDTH,
+    marginTop: 10,
+    
     minHeight: SCREEN_HEIGHT * 0.6,
     justifyContent: "center",
   },

@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type Message = {
@@ -278,13 +279,15 @@ Core elements:
   const renderChat = () => (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+       keyboardVerticalOffset={Platform.OS === "ios" ? 120 : 250} // adjust if header/nav bar present
       style={styles.chatContainer}
     >
       <ScrollView 
         ref={scrollViewRef}
         style={styles.messagesContainer}
-        contentContainerStyle={styles.messagesContent}
+        contentContainerStyle={{...styles.messagesContent}}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"   // 👈 add thi
       >
         {messages.map((message) => (
           <View 
@@ -371,6 +374,7 @@ Core elements:
   };
 
   return (
+    
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#135D66" />
       
@@ -440,6 +444,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: "#135D66",
     paddingHorizontal: 20,
+    marginTop: 30,
     paddingVertical: 20,
     paddingBottom: 25,
   },
