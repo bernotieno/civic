@@ -182,7 +182,7 @@ export default function Register() {
       }
       */
 
-      // Mock registration logic - Remove this when implementing real API
+      // Mock registration logic 
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
 
       Alert.alert(

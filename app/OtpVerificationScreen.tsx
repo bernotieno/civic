@@ -151,7 +151,7 @@ export default function OTPVerificationScreen() {
     setTimer(60);
 
     try {
-      // TODO: Replace with actual API call
+      // Replace with actual API call
       /*
       const response = await fetch('YOUR_API_ENDPOINT/resend-otp', {
         method: 'POST',
