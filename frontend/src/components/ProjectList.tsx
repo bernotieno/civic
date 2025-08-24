@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { mockProjects, Project } from '../data/projects';
-import { Users, Search, Filter } from 'lucide-react';
+import { Users, Search, Filter, ThumbsUp, ThumbsDown } from 'lucide-react';
 import Header from './Header';
 import Footer from './Footer';
 
@@ -182,9 +182,13 @@ const ProjectList: React.FC = () => {
                 </span>
               </div>
 
-              {/* County and Category */}
-              <div className="px-4 mt-2">
-                <p className="text-sm text-gray-500">{project.county} County • {project.category}</p>
+              {/* Image */}
+              <div className="mt-2">
+                <img
+                  src={project.image}
+                  alt={project.name}
+                  className="w-full h-36 object-cover rounded-md px-4"
+                />
               </div>
 
               {/* Description */}
@@ -200,17 +204,25 @@ const ProjectList: React.FC = () => {
                   onClick={() => navigate(`/project/${project.id}`)}
                   className="text-blue-600 hover:underline font-medium flex items-center gap-1"
                 >
-                  View Details →
+                  View Full Analysis →
                 </button>
               </div>
 
               {/* Actions */}
-              <div className="px-4 py-4">
+              <div className="px-4 py-4 flex justify-between items-center gap-2">
+                <div className="flex gap-2">
+                  <button className="flex items-center gap-1 border border-gray-300 rounded-md px-3 py-1 text-sm hover:bg-gray-100">
+                    <ThumbsUp size={14} /> Support
+                  </button>
+                  <button className="flex items-center gap-1 border border-gray-300 rounded-md px-3 py-1 text-sm hover:bg-gray-100">
+                    <ThumbsDown size={14} /> Oppose
+                  </button>
+                </div>
                 <button 
                   onClick={() => navigate(`/project/${project.id}`)}
-                  className="w-full bg-green-800 hover:bg-green-900 text-white text-sm px-4 py-2 rounded-md font-medium"
+                  className="bg-green-800 hover:bg-green-900 text-white text-sm px-4 py-2 rounded-md font-medium"
                 >
-                  View Full Project
+                  Submit Feedback
                 </button>
               </div>
             </div>

@@ -8,6 +8,7 @@ export interface Project {
   budget: string;
   startDate: string;
   category: string;
+  image: string;
 }
 
 export const mockProjects: Project[] = [
