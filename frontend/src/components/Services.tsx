@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import BillCard from "./BillCard";
 
 const projects = [
@@ -26,6 +27,8 @@ const projects = [
 ];
 
 const BillsProjects: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="py-10 bg-gray-50">
       <div className="max-w-6xl mx-auto px-4">
@@ -45,6 +48,16 @@ const BillsProjects: React.FC = () => {
           {projects.map((p, idx) => (
             <BillCard key={idx} {...p} />
           ))}
+        </div>
+
+        {/* View More Projects Button */}
+        <div className="text-center mt-8">
+          <button
+            onClick={() => navigate('/projects')}
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+          >
+            View More Projects
+          </button>
         </div>
       </div>
     </section>

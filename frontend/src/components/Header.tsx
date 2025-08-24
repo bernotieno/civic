@@ -44,9 +44,6 @@ const Header: React.FC = () => {
             <Link to="/projects" className={`${isActive('/projects')} font-medium transition-colors`}>
               Projects
             </Link>
-            <Link to="/anonymous-feedback" className={`${isActive('/anonymous-feedback')} font-medium transition-colors`}>
-              Feedback
-            </Link>
             <Link to="/about" className={`${isActive('/about')} font-medium transition-colors`}>
               About
             </Link>
