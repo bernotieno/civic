@@ -1,54 +1,123 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+
+interface DashboardStats {
+  total_users: number;
+  total_counties: number;
+  total_feedback: number;
+  pending_feedback: number;
+  total_projects: number;
+  active_projects: number;
+}
+
+interface Feedback {
+  id: string;
+  title: string;
+  category: string;
+  status: string;
+  county: string;
+  created_at: string;
+  has_response: boolean;
+  user_name: string;
+}
 
 const AdminOverview: React.FC = () => {
-  const stats = [
-    { title: 'Total Feedback', value: '1,247', change: '+12%', icon: '💬' },
-    { title: 'Active Users', value: '8,432', change: '+5%', icon: '👥' },
-    { title: 'Resolved Issues', value: '892', change: '+18%', icon: '✅' },
-    { title: 'Response Time', value: '2.3 hrs', change: '-15%', icon: '⏱️' },
-  ];
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentFeedback, setRecentFeedback] = useState<Feedback[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const recentFeedback = [
-    { id: 1, title: 'Road maintenance needed', category: 'Infrastructure', status: 'pending', priority: 'high' },
-    { id: 2, title: 'Water supply issues', category: 'Utilities', status: 'in-progress', priority: 'medium' },
-    { id: 3, title: 'Healthcare facility request', category: 'Healthcare', status: 'resolved', priority: 'high' },
-    { id: 4, title: 'Education funding inquiry', category: 'Education', status: 'pending', priority: 'low' },
-  ];
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+
+      // Fetch dashboard stats
+      const statsResponse = await fetch('/api/admin/dashboard/', { headers });
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        setStats(statsData.data);
+      }
+
+      // Fetch recent feedback
+      const feedbackResponse = await fetch('/api/admin/feedback/', { headers });
+      if (feedbackResponse.ok) {
+        const feedbackData = await feedbackResponse.json();
+        setRecentFeedback(feedbackData.data.slice(0, 4)); // Show only 4 recent items
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'in-progress': return 'bg-blue-100 text-blue-800';
+      case 'in_review': return 'bg-blue-100 text-blue-800';
+      case 'responded': return 'bg-green-100 text-green-800';
       case 'resolved': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-orange-100 text-orange-800';
-      case 'low': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <div key={index} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className="text-sm text-green-600">{stat.change} from last month</p>
-              </div>
-              <div className="text-3xl">{stat.icon}</div>
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Users</p>
+              <p className="text-2xl font-bold text-gray-900">{stats?.total_users || 0}</p>
             </div>
+            <div className="text-3xl">👥</div>
           </div>
-        ))}
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Feedback</p>
+              <p className="text-2xl font-bold text-gray-900">{stats?.total_feedback || 0}</p>
+            </div>
+            <div className="text-3xl">💬</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Pending Feedback</p>
+              <p className="text-2xl font-bold text-gray-900">{stats?.pending_feedback || 0}</p>
+            </div>
+            <div className="text-3xl">⏱️</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Active Projects</p>
+              <p className="text-2xl font-bold text-gray-900">{stats?.active_projects || 0}</p>
+            </div>
+            <div className="text-3xl">🏗️</div>
+          </div>
+        </div>
       </div>
 
       {/* Recent Feedback */}
@@ -58,22 +127,23 @@ const AdminOverview: React.FC = () => {
         </div>
         <div className="p-6">
           <div className="space-y-4">
-            {recentFeedback.map((feedback) => (
-              <div key={feedback.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                <div className="flex-1">
-                  <h4 className="font-medium text-gray-900">{feedback.title}</h4>
-                  <p className="text-sm text-gray-600">{feedback.category}</p>
+            {recentFeedback.length > 0 ? (
+              recentFeedback.map((feedback) => (
+                <div key={feedback.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">{feedback.title}</h4>
+                    <p className="text-sm text-gray-600">{feedback.category} • {feedback.county} • {feedback.user_name}</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(feedback.status)}`}>
+                      {feedback.status.replace('_', ' ')}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(feedback.priority)}`}>
-                    {feedback.priority}
-                  </span>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(feedback.status)}`}>
-                    {feedback.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-4">No feedback available</p>
+            )}
           </div>
         </div>
       </div>
@@ -91,14 +161,14 @@ const AdminOverview: React.FC = () => {
               <p className="text-sm text-gray-600">Review and respond to citizen feedback</p>
             </button>
             <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <div className="text-2xl mb-2">📊</div>
-              <h4 className="font-medium text-gray-900">Generate Report</h4>
-              <p className="text-sm text-gray-600">Create analytics and performance reports</p>
+              <div className="text-2xl mb-2">🏗️</div>
+              <h4 className="font-medium text-gray-900">Manage Projects</h4>
+              <p className="text-sm text-gray-600">Create and update project status</p>
             </button>
             <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
               <div className="text-2xl mb-2">👥</div>
               <h4 className="font-medium text-gray-900">Manage Users</h4>
-              <p className="text-sm text-gray-600">Add or modify user accounts</p>
+              <p className="text-sm text-gray-600">View and manage user accounts</p>
             </button>
           </div>
         </div>

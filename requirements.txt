@@ -48,6 +48,9 @@ anthropic==0.40.0
 django-extensions==4.1
 python-dotenv==1.0.1
 
+# Image processing
+Pillow==10.0.0
+
 # Development & Monitoring (Optional)
 flower==2.0.1  # Celery monitoring dashboard
 django-silk==5.3.0  # Performance profiling (development only)

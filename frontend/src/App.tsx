@@ -23,6 +23,7 @@ import AdminAnalytics from './components/dashboard/AdminAnalytics';
 import AdminOverview from './components/dashboard/AdminOverview';
 import AdminUserManagement from './components/dashboard/AdminUserManagement';
 import AdminSettings from './components/dashboard/AdminSettings';
+import ProjectsManagement from './components/dashboard/ProjectsManagement';
 import AdminGuard from './components/guards/AdminGuard';
 
 // Home Page Component
@@ -65,6 +66,7 @@ function App() {
             <Route path="/admin-dashboard" element={<AdminGuard><AdminDashboardLayout /></AdminGuard>}>
               <Route index element={<AdminOverview />} />
               <Route path="feedback" element={<AdminFeedbackManagement />} />
+              <Route path="projects" element={<ProjectsManagement />} />
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="users" element={<AdminUserManagement />} />
               <Route path="settings" element={<AdminSettings />} />

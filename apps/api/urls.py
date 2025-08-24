@@ -6,6 +6,10 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
 from apps.feedback import views as feedback_views
 from apps.ai import views as ai_views
+from .admin_views import (
+    admin_dashboard_stats, admin_users_list, admin_feedback_list,
+    respond_to_feedback, admin_projects_list, update_project_status, admin_project_detail
+)
 
 app_name = 'api'
 
@@ -45,4 +49,13 @@ urlpatterns = [
     path('ai/stats/', ai_views.ai_processing_stats, name='ai-stats'),
     path('ai/tasks/<str:task_id>/status/', ai_views.check_ai_task_status, name='ai-task-status'),
     path('ai/feedback/<uuid:feedback_id>/process/', ai_views.trigger_feedback_ai_processing, name='ai-trigger-processing'),
+    
+    # Admin endpoints
+    path('admin/dashboard/', admin_dashboard_stats, name='admin-dashboard'),
+    path('admin/users/', admin_users_list, name='admin-users'),
+    path('admin/feedback/', admin_feedback_list, name='admin-feedback'),
+    path('admin/feedback/<uuid:feedback_id>/respond/', respond_to_feedback, name='admin-respond'),
+    path('admin/projects/', admin_projects_list, name='admin-projects'),
+    path('admin/projects/<uuid:project_id>/status/', update_project_status, name='admin-project-status'),
+    path('admin/projects/<uuid:project_id>/', admin_project_detail, name='admin-project-detail'),
 ]

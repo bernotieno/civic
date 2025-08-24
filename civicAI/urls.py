@@ -53,8 +53,7 @@ urlpatterns = [
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     
-    # Admin interface
-    path('admin/', admin.site.urls),
+    # Django admin disabled - using custom React admin dashboard
     
     # API endpoints
     path('api/', include('apps.api.urls')),

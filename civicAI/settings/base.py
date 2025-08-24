@@ -38,6 +38,7 @@ LOCAL_APPS = [
     'apps.api',    # CivicAI API
     'apps.feedback',
     'apps.ai',     # 🚀 NEW: CivicAI AI Features
+    'apps.projects',  # Projects and bills management
     # Add more apps here as you build them:
     # 'apps.analytics',
 ]

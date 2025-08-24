@@ -23,8 +23,8 @@ export default function Hero() {
             <Link to="/projects" className="bg-teal-700 hover:bg-teal-800 text-white px-6 py-3 rounded-lg font-medium transition-colors text-center">
               Explore Projects
             </Link>
-            <Link to="/anonymous-feedback" className="border border-teal-700 text-teal-700 hover:bg-teal-50 px-6 py-3 rounded-lg font-medium transition-colors text-center">
-              Anonymous Feedback
+            <Link to="/login" className="border border-teal-700 text-teal-700 hover:bg-teal-50 px-6 py-3 rounded-lg font-medium transition-colors text-center">
+              Create an Account
             </Link>
           </div>
 

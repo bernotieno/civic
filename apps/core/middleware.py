@@ -16,6 +16,13 @@ class InvisibleBoundaryMiddleware(MiddlewareMixin):
     """
     
     def process_request(self, request):
+        # Skip middleware for admin interface and API docs to avoid conflicts
+        if (request.path.startswith('/admin/') or 
+            request.path.startswith('/api/docs/') or 
+            request.path.startswith('/api/schema/') or 
+            request.path.startswith('/api/redoc/')):
+            return None
+            
         if request.user.is_authenticated:
             # Create user context that determines everything they can see
             request.user_context = UserContext(request.user)

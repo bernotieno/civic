@@ -5,6 +5,7 @@ const AdminSidebar: React.FC = () => {
   const navItems = [
     { path: '/admin-dashboard', label: 'Overview', icon: '📊' },
     { path: '/admin-dashboard/feedback', label: 'Feedback Management', icon: '💬' },
+    { path: '/admin-dashboard/projects', label: 'Projects & Bills', icon: '🏗️' },
     { path: '/admin-dashboard/analytics', label: 'Analytics & Reports', icon: '📈' },
     { path: '/admin-dashboard/users', label: 'User Management', icon: '👥' },
     { path: '/admin-dashboard/settings', label: 'Settings', icon: '⚙️' },

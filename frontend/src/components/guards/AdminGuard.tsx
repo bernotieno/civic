@@ -25,8 +25,7 @@ const AdminGuard: React.FC<AdminGuardProps> = ({ children }) => {
   }
 
   // Check if user has admin privileges
-  const adminRoles = ['super_admin', 'national_official', 'regional_official', 'local_official'];
-  if (!user || !adminRoles.includes(user.role)) {
+  if (!user || user.role !== 'government_official') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
