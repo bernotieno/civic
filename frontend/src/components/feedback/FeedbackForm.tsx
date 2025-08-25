@@ -105,7 +105,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
         const rateLimitStatus = await apiService.checkRateLimit();
         setRateLimitInfo(rateLimitStatus);
 
-        // Set user's county as default if available (skip for anonymous)
+        // Set user's county as default only for authenticated mode
         if (user?.accessible_counties && !isAnonymous) {
           console.log('🏛️ Setting default county:', {
             userAccessibleCounties: user.accessible_counties,
@@ -132,6 +132,17 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
               console.log('✅ Default county set:', userCounty.id);
             }
           }
+        }
+        
+        // Clear county selection when switching to anonymous mode
+        if (isAnonymous) {
+          setFormData(prev => ({ 
+            ...prev, 
+            county_id: 0,
+            sub_county_id: undefined,
+            ward_id: undefined,
+            village_id: undefined
+          }));
         }
       } catch (error) {
         console.error('Error loading initial data:', error);
@@ -163,16 +174,40 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
    */
   const handleAnonymousToggle = async () => {
     if (!isAnonymous) {
-      // Switching to anonymous mode - create session if county is selected
-      if (formData.county_id) {
-        await createAnonymousSession(formData.county_id);
-      }
+      // Switching to anonymous mode - clear user-specific data
       setIsAnonymous(true);
+      setAnonymousSession(null);
+      // Clear location selections to force manual selection
+      setFormData(prev => ({ 
+        ...prev, 
+        county_id: 0,
+        sub_county_id: undefined,
+        ward_id: undefined,
+        village_id: undefined
+      }));
     } else {
       // Switching back to authenticated mode
       setIsAnonymous(false);
       setAnonymousSession(null);
       apiService.clearAnonymousSession();
+      // Restore user's default county if available
+      if (user?.accessible_counties && user.accessible_counties.length > 0 && counties.length > 0) {
+        const userCountyData = user.accessible_counties[0];
+        const userCounty = counties.find(c => c.id === userCountyData.id);
+        if (userCounty) {
+          const locationCounty = {
+            id: userCounty.id,
+            name: userCounty.name,
+            type: 'county' as const,
+            level: 0,
+            code: userCounty.code || '',
+            full_path: userCounty.name,
+            children: []
+          };
+          await selectCounty(locationCounty);
+          setFormData(prev => ({ ...prev, county_id: userCounty.id }));
+        }
+      }
     }
   };
 
@@ -260,8 +295,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
       newErrors.county_id = 'County selection is required';
     }
 
-    // Check if user has access to selected county (skip for anonymous)
-    if (formData.county_id && user?.accessible_counties && !isAnonymous) {
+    // Check county access only for authenticated users
+    if (!isAnonymous && formData.county_id && user?.accessible_counties) {
       const hasAccess = user.accessible_counties.some(c => c.id === formData.county_id);
       console.log('🏛️ County access check:', {
         selectedCounty: formData.county_id,

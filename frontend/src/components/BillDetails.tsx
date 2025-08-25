@@ -70,18 +70,50 @@ const BillDetails: React.FC = () => {
     
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch('http://127.0.0.1:8000/api/feedback/submit/', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...feedbackData,
-          related_bill_id: bill?.bill_number
-        })
-      });
+      if (feedbackData.is_anonymous) {
+        // Create anonymous session first
+        const sessionResponse = await fetch('http://127.0.0.1:8000/api/auth/anonymous/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ county_id: 1 }) // Default county for bills
+        });
+        
+        if (!sessionResponse.ok) throw new Error('Failed to create anonymous session');
+        const sessionData = await sessionResponse.json();
+        
+        // Submit anonymous feedback
+        const response = await fetch('http://127.0.0.1:8000/api/feedback/anonymous/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: sessionData.session_id,
+            title: feedbackData.title,
+            content: feedbackData.content,
+            category: feedbackData.category,
+            priority: feedbackData.priority,
+            county_id: 1,
+            related_bill_id: bill?.bill_number
+          })
+        });
+      } else {
+        // Submit authenticated feedback
+        const token = localStorage.getItem('access_token');
+        const response = await fetch('http://127.0.0.1:8000/api/feedback/submit/', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: feedbackData.title,
+            content: feedbackData.content,
+            category: feedbackData.category,
+            priority: feedbackData.priority,
+            county_id: 1,
+            related_bill_id: bill?.bill_number
+          })
+        });
+      }
       
       if (response.ok) {
         setShowSuccess(true);

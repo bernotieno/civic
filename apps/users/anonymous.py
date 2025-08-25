@@ -72,7 +72,7 @@ class AnonymousUserHandler:
                     name=None,  # Always None for anonymous
                     email=None,  # Always None for anonymous
                     role='anonymous',
-                    tenant=county,
+                    user_county=county,
                     county=county_location,
                     sub_county=sub_county,
                     ward=ward,

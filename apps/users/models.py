@@ -467,6 +467,13 @@ class CustomUser(AbstractUser, SoftDeleteModel):
         """
         return True  # All users have national access in this system
     
+    def get_accessible_counties(self):
+        """
+        Return counties that user can submit feedback to.
+        For national system, all users can submit to all counties.
+        """
+        return County.objects.all()
+    
     def is_anonymous_user(self):
         """Returns True if this is an anonymous submission user"""
         return self.role == 'anonymous'

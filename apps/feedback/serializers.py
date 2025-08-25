@@ -10,7 +10,7 @@ from drf_spectacular.openapi import OpenApiExample
 from apps.users.models import County, Location
 from apps.users.anonymous import AnonymousUserHandler
 from apps.core.anonymous import AnonymousSessionManager
-from .models import Feedback, FeedbackEdit, FEEDBACK_CATEGORIES, PRIORITY_CHOICES, STATUS_CHOICES
+from .models import Feedback, FeedbackEdit, FeedbackResponse, FEEDBACK_CATEGORIES, PRIORITY_CHOICES, STATUS_CHOICES
 from .validators import validate_feedback_title, validate_feedback_content, validate_location_hierarchy
 from .utils import FeedbackRateLimit
 
@@ -208,7 +208,9 @@ class FeedbackSubmissionSerializer(serializers.ModelSerializer):
     
     title = serializers.CharField(
         max_length=200,
-        help_text="📋 **Clear, descriptive title** (10-200 characters). Be specific about the issue location and nature.",
+        required=False,
+        allow_blank=True,
+        help_text="📋 **Clear, descriptive title** (optional). If not provided, will be auto-generated from content.",
         style={'placeholder': 'Poor road conditions causing traffic delays on Main Street'}
     )
     
@@ -259,8 +261,10 @@ class FeedbackSubmissionSerializer(serializers.ModelSerializer):
         }
     
     def validate_title(self, value):
-        validate_feedback_title(value)
-        return value.strip()
+        if value and value.strip():
+            validate_feedback_title(value)
+            return value.strip()
+        return value
     
     def validate_content(self, value):
         validate_feedback_content(value)
@@ -368,13 +372,25 @@ class FeedbackSubmissionSerializer(serializers.ModelSerializer):
         validated_data.pop('ward_id', None)
         validated_data.pop('village_id', None)
         
+        # Auto-generate title if not provided
+        if not validated_data.get('title') or not validated_data['title'].strip():
+            content = validated_data.get('content', '')
+            category = validated_data.get('category', 'general')
+            category_display = dict(FEEDBACK_CATEGORIES).get(category, 'General')
+            
+            # Generate title from first 50 characters of content
+            if content:
+                title_from_content = content[:50].strip()
+                if len(content) > 50:
+                    title_from_content += '...'
+                validated_data['title'] = f"{category_display}: {title_from_content}"
+            else:
+                validated_data['title'] = f"{category_display} Feedback"
+        
         # Create feedback
         feedback = Feedback.objects.create(
             user=self.context['request'].user,
-            county=county,
-            sub_county=sub_county,
-            ward=ward,
-            village=village,
+            user_county=county,  # Use user_county field from model
             submitted_via='api',
             **validated_data
         )
@@ -419,7 +435,9 @@ class AnonymousFeedbackSerializer(serializers.Serializer):
     
     title = serializers.CharField(
         max_length=200,
-        help_text="📋 **Anonymous Report Title** (10-200 characters). Be descriptive but avoid including personally identifiable information.",
+        required=False,
+        allow_blank=True,
+        help_text="📋 **Anonymous Report Title** (optional). If not provided, will be auto-generated from content.",
         style={'placeholder': 'Issue with public service - avoid personal details'}
     )
     
@@ -480,8 +498,10 @@ class AnonymousFeedbackSerializer(serializers.Serializer):
         return value
     
     def validate_title(self, value):
-        validate_feedback_title(value)
-        return value.strip()
+        if value and value.strip():
+            validate_feedback_title(value)
+            return value.strip()
+        return value
     
     def validate_content(self, value):
         validate_feedback_content(value)
@@ -560,6 +580,21 @@ class AnonymousFeedbackSerializer(serializers.Serializer):
         validated_data.pop('ward_id', None)
         validated_data.pop('village_id', None)
         
+        # Auto-generate title if not provided
+        if not validated_data.get('title') or not validated_data['title'].strip():
+            content = validated_data.get('content', '')
+            category = validated_data.get('category', 'general')
+            category_display = dict(FEEDBACK_CATEGORIES).get(category, 'General')
+            
+            # Generate title from first 50 characters of content
+            if content:
+                title_from_content = content[:50].strip()
+                if len(content) > 50:
+                    title_from_content += '...'
+                validated_data['title'] = f"{category_display}: {title_from_content}"
+            else:
+                validated_data['title'] = f"{category_display} Feedback"
+        
         # Create or get anonymous user for this session
         anonymous_user = AnonymousUserHandler.create_anonymous_user(
             session_id, county.id, {
@@ -575,10 +610,7 @@ class AnonymousFeedbackSerializer(serializers.Serializer):
         # Create feedback
         feedback = Feedback.objects.create(
             user=anonymous_user,
-            county=county,
-            sub_county=sub_county,
-            ward=ward,
-            village=village,
+            user_county=county,  # Use user_county field from model
             is_anonymous=True,
             submitted_via='api',
             **validated_data
@@ -593,6 +625,20 @@ class AnonymousFeedbackSerializer(serializers.Serializer):
 # =============================================================================
 # ENHANCED TRACKING AND RESPONSE SERIALIZERS
 # =============================================================================
+
+class FeedbackResponseSerializer(serializers.ModelSerializer):
+    """📝 **Feedback Response** - Government official responses to feedback"""
+    
+    responder_name = serializers.CharField(source='responder.name', read_only=True)
+    responder_role = serializers.CharField(source='responder.get_role_display', read_only=True)
+    
+    class Meta:
+        model = FeedbackResponse
+        fields = [
+            'id', 'content', 'is_public', 'created_at',
+            'responder_name', 'responder_role'
+        ]
+
 
 @extend_schema_serializer(
     examples=[
@@ -664,12 +710,14 @@ class FeedbackTrackingSerializer(serializers.ModelSerializer):
         help_text="📊 **Status Description** - Current stage in the government review workflow"
     )
     
+    responses = FeedbackResponseSerializer(many=True, read_only=True)
+    
     class Meta:
         model = Feedback
         fields = [
             'tracking_id', 'title', 'category', 'category_display',
             'status', 'status_display', 'submitted_at', 
-            'location_path', 'response_count', 'last_response_at'
+            'location_path', 'response_count', 'last_response_at', 'responses'
         ]
         extra_kwargs = {
             'tracking_id': {'help_text': '🔍 **Tracking ID** - Unique identifier for this feedback'},
@@ -773,7 +821,7 @@ class UserFeedbackDetailSerializer(serializers.ModelSerializer):
     
     # Related data
     edit_history = FeedbackEditHistorySerializer(many=True, read_only=True)
-    # responses = FeedbackResponseSerializer(many=True, read_only=True)  # Future implementation
+    responses = FeedbackResponseSerializer(many=True, read_only=True)
     
     # Timeline data
     timeline = serializers.SerializerMethodField()
@@ -787,7 +835,7 @@ class UserFeedbackDetailSerializer(serializers.ModelSerializer):
             'response_count', 'last_response_at', 'view_count',
             'location_path', 'can_edit', 'can_delete',
             'edit_restriction_reason', 'delete_restriction_reason',
-            'edit_history', 'timeline'
+            'edit_history', 'responses', 'timeline'
         ]
     
     def get_can_edit(self, obj) -> bool:

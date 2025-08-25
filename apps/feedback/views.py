@@ -873,7 +873,10 @@ class AnonymousFeedbackView(APIView):
 def track_feedback(request, tracking_id):
     """Track feedback status using tracking ID"""
     try:
-        feedback = get_object_or_404(Feedback, tracking_id=tracking_id.upper())
+        feedback = get_object_or_404(
+            Feedback.objects.prefetch_related('responses__responder'), 
+            tracking_id=tracking_id.upper()
+        )
         
         # Increment view count for analytics
         feedback.view_count += 1
@@ -1315,7 +1318,7 @@ class UserFeedbackListView(generics.ListAPIView):
             is_deleted=False,
             is_anonymous=False  # Exclude anonymous feedback
         ).select_related(
-            'county', 'sub_county', 'ward', 'village'
+            'user_county'
         ).prefetch_related(
             'edit_history'
         )
@@ -1416,10 +1419,10 @@ class UserFeedbackDetailView(generics.RetrieveAPIView):
             is_deleted=False,
             is_anonymous=False
         ).select_related(
-            'county', 'sub_county', 'ward', 'village'
+            'user_county'
         ).prefetch_related(
             'edit_history',
-            # 'responses'  # Future implementation
+            'responses__responder'
         )
     
     def retrieve(self, request, *args, **kwargs):

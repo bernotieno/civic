@@ -37,13 +37,19 @@ def calculate_user_feedback_stats(user):
     stats['most_used_category'] = category_stats[0]['category'] if category_stats else None
     
     # Response statistics
-    responded_feedback = user_feedback.filter(response_count__gt=0)
+    responded_feedback = user_feedback.filter(response_count__gt=0, last_response_at__isnull=False)
     if responded_feedback.exists():
-        # Calculate average response time
-        avg_response_time = responded_feedback.aggregate(
-            avg_time=Avg('last_response_at') - Avg('created_at')
-        )
-        stats['average_response_time_days'] = avg_response_time['avg_time'].days if avg_response_time['avg_time'] else 0
+        # Calculate average response time manually
+        response_times = []
+        for feedback in responded_feedback:
+            if feedback.last_response_at and feedback.created_at:
+                delta = feedback.last_response_at - feedback.created_at
+                response_times.append(delta.total_seconds() / 86400)  # Convert to days
+        
+        if response_times:
+            stats['average_response_time_days'] = sum(response_times) / len(response_times)
+        else:
+            stats['average_response_time_days'] = None
     else:
         stats['average_response_time_days'] = None
     

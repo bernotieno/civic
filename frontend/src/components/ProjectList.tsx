@@ -39,19 +39,44 @@ const ProjectList: React.FC = () => {
   const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null);
   const [feedbackData, setFeedbackData] = useState({
     content: '',
-    category: 'general',
+    category: 'infrastructure',
     priority: 'medium',
     is_anonymous: false
   });
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   useEffect(() => {
     fetchProjects();
     checkAuthentication();
   }, []);
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUserProfile();
+    }
+  }, [isAuthenticated]);
+
   const checkAuthentication = () => {
     const token = localStorage.getItem('access_token');
     setIsAuthenticated(!!token);
+  };
+
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch('http://127.0.0.1:8000/api/auth/profile/', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUserProfile(data.user);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
   };
 
   const fetchProjects = async () => {
@@ -164,7 +189,7 @@ const ProjectList: React.FC = () => {
       setExpandedFeedback(projectId);
       setFeedbackData({
         content: '',
-        category: 'general',
+        category: 'infrastructure',
         priority: 'medium',
         is_anonymous: false
       });
@@ -172,31 +197,53 @@ const ProjectList: React.FC = () => {
   };
 
   const submitFeedback = async (projectId: string) => {
+    if (!userProfile) {
+      alert('User profile not loaded. Please refresh the page.');
+      return;
+    }
+
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('http://127.0.0.1:8000/api/feedback/', {
+      
+      // Get user's county ID from profile
+      const countyResponse = await fetch('http://127.0.0.1:8000/api/locations/counties/');
+      const countiesData = await countyResponse.json();
+      const userCounty = countiesData.find((county: any) => county.name === userProfile.county_name);
+      
+      if (!userCounty) {
+        alert('Could not determine your county. Please contact support.');
+        return;
+      }
+
+      const response = await fetch('http://127.0.0.1:8000/api/feedback/submit/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          ...feedbackData,
+          content: feedbackData.content,
+          category: feedbackData.category,
+          priority: feedbackData.priority,
+          county_id: userCounty.id,
           related_project_id: projectId
         })
       });
 
       if (response.ok) {
-        alert('Feedback submitted successfully!');
+        const result = await response.json();
+        alert(`Feedback submitted successfully! Tracking ID: ${result.data.tracking_id}`);
         setExpandedFeedback(null);
         setFeedbackData({
           content: '',
-          category: 'general',
+          category: 'infrastructure',
           priority: 'medium',
           is_anonymous: false
         });
       } else {
-        alert('Failed to submit feedback');
+        const errorData = await response.json();
+        console.error('Feedback submission error:', errorData);
+        alert(`Failed to submit feedback: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error submitting feedback:', error);
@@ -413,11 +460,17 @@ const ProjectList: React.FC = () => {
                         onChange={(e) => setFeedbackData({...feedbackData, category: e.target.value})}
                         className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       >
-                        <option value="general">General</option>
-                        <option value="support">Support</option>
-                        <option value="opposition">Opposition</option>
-                        <option value="suggestion">Suggestion</option>
-                        <option value="concern">Concern</option>
+                        <option value="infrastructure">Infrastructure Development</option>
+                        <option value="budget">Budget & Finance</option>
+                        <option value="healthcare">Healthcare Policy</option>
+                        <option value="education">Education Policy</option>
+                        <option value="agriculture">Agriculture & Food Security</option>
+                        <option value="environment">Environment & Climate</option>
+                        <option value="security">National Security</option>
+                        <option value="governance">Governance & Oversight</option>
+                        <option value="economic">Economic Policy</option>
+                        <option value="social">Social Services</option>
+                        <option value="other">Other National Issues</option>
                       </select>
                       
                       <select
