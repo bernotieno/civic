@@ -4,36 +4,36 @@ import { Users, Search, Filter, ThumbsUp, ThumbsDown, MessageSquare, ChevronDown
 import Header from './Header';
 import Footer from './Footer';
 
-interface Project {
+interface Bill {
   id: string;
+  bill_number: string;
   title: string;
   description: string;
-  project_type: string;
+  summary: string;
+  sponsor: string;
+  committee?: string;
   status: string;
-  budget: string | null;
-  implementing_ministry?: string;
-  target_beneficiaries?: string;
-  start_date?: string;
-  end_date?: string;
+  status_display: string;
+  introduced_date?: string;
+  first_reading_date?: string;
+  committee_deadline?: string;
   public_participation_open: boolean;
   participation_deadline?: string;
-  image: string | null;
-  document: string | null;
-  created_by: string;
+  document?: string;
+  image?: string;
   created_at: string;
 }
 
-const ProjectList: React.FC = () => {
-  const [allProjects, setAllProjects] = useState<Project[]>([]);
-  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
-  const [displayedProjects, setDisplayedProjects] = useState<Project[]>([]);
+const BillsList: React.FC = () => {
+  const [allBills, setAllBills] = useState<Bill[]>([]);
+  const [filteredBills, setFilteredBills] = useState<Bill[]>([]);
+  const [displayedBills, setDisplayedBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [countyFilter, setCountyFilter] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const projectsPerPage = 6;
+  const [committeeFilter, setCommitteeFilter] = useState('');
+  const billsPerPage = 6;
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null);
@@ -45,7 +45,7 @@ const ProjectList: React.FC = () => {
   });
 
   useEffect(() => {
-    fetchProjects();
+    fetchBills();
     checkAuthentication();
   }, []);
 
@@ -54,52 +54,29 @@ const ProjectList: React.FC = () => {
     setIsAuthenticated(!!token);
   };
 
-  const fetchProjects = async () => {
+  const fetchBills = async () => {
     setLoading(true);
     try {
-      // Fetch public projects - no auth needed for public view
-      const response = await fetch('http://127.0.0.1:8000/api/public/projects/');
+      const response = await fetch('http://127.0.0.1:8000/api/public/bills/');
       
       if (response.ok) {
         const data = await response.json();
-        const projects = data.data || [];
+        const bills = data.data || [];
         
-        // Transform backend data to match frontend interface
-        const transformedProjects = projects.map((p: any) => ({
-          id: p.id,
-          name: p.title,
-          title: p.title,
-          description: p.description,
-          project_type: p.project_type,
-          category: p.project_type,
-          status: p.status,
-          budget: p.budget ? `KSh ${Number(p.budget).toLocaleString()}` : 'Budget not specified',
-          implementing_ministry: p.implementing_ministry,
-          target_beneficiaries: p.target_beneficiaries,
-          start_date: p.start_date,
-          end_date: p.end_date,
-          public_participation_open: p.public_participation_open,
-          participation_deadline: p.participation_deadline,
-          image: p.image ? `http://127.0.0.1:8000${p.image}` : '/api/placeholder/400/300',
-          document: p.document ? `http://127.0.0.1:8000${p.document}` : null,
-          created_by: p.created_by,
-          created_at: p.created_at
-        }));
-        
-        setAllProjects(transformedProjects);
-        setFilteredProjects(transformedProjects);
-        setDisplayedProjects(transformedProjects.slice(0, projectsPerPage));
+        setAllBills(bills);
+        setFilteredBills(bills);
+        setDisplayedBills(bills.slice(0, billsPerPage));
       } else {
-        console.error('Failed to fetch projects');
-        setAllProjects([]);
-        setFilteredProjects([]);
-        setDisplayedProjects([]);
+        console.error('Failed to fetch bills');
+        setAllBills([]);
+        setFilteredBills([]);
+        setDisplayedBills([]);
       }
     } catch (error) {
-      console.error('Error fetching projects:', error);
-      setAllProjects([]);
-      setFilteredProjects([]);
-      setDisplayedProjects([]);
+      console.error('Error fetching bills:', error);
+      setAllBills([]);
+      setFilteredBills([]);
+      setDisplayedBills([]);
     } finally {
       setLoading(false);
     }
@@ -107,61 +84,62 @@ const ProjectList: React.FC = () => {
 
   // Filter and search effect
   useEffect(() => {
-    let filtered = allProjects.filter(project => {
-      const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           project.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = !statusFilter || project.status === statusFilter;
-      const matchesMinistry = !countyFilter || (project.implementing_ministry && project.implementing_ministry.includes(countyFilter));
-      const matchesCategory = !categoryFilter || project.project_type === categoryFilter;
+    let filtered = allBills.filter(bill => {
+      const matchesSearch = bill.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           bill.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           bill.bill_number.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = !statusFilter || bill.status === statusFilter;
+      const matchesCommittee = !committeeFilter || (bill.committee && bill.committee.includes(committeeFilter));
       
-      return matchesSearch && matchesStatus && matchesMinistry && matchesCategory;
+      return matchesSearch && matchesStatus && matchesCommittee;
     });
     
-    setFilteredProjects(filtered);
-    setDisplayedProjects(filtered.slice(0, projectsPerPage));
+    setFilteredBills(filtered);
+    setDisplayedBills(filtered.slice(0, billsPerPage));
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, countyFilter, categoryFilter, allProjects]);
+  }, [searchTerm, statusFilter, committeeFilter, allBills]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'proposed': return 'bg-yellow-100 text-yellow-700';
-      case 'approved': return 'bg-blue-100 text-blue-700';
-      case 'in_progress': return 'bg-green-100 text-green-700';
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'suspended': return 'bg-red-100 text-red-700';
+      case 'draft': return 'bg-gray-100 text-gray-700';
+      case 'first_reading': return 'bg-blue-100 text-blue-700';
+      case 'committee_stage': return 'bg-yellow-100 text-yellow-700';
+      case 'second_reading': return 'bg-orange-100 text-orange-700';
+      case 'third_reading': return 'bg-purple-100 text-purple-700';
+      case 'presidential_assent': return 'bg-indigo-100 text-indigo-700';
+      case 'enacted': return 'bg-green-100 text-green-700';
+      case 'withdrawn': return 'bg-red-100 text-red-700';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
 
-  const loadMoreProjects = () => {
+  const loadMoreBills = () => {
     const nextPage = currentPage + 1;
-    const startIndex = currentPage * projectsPerPage;
-    const endIndex = startIndex + projectsPerPage;
-    const newProjects = filteredProjects.slice(startIndex, endIndex);
+    const startIndex = currentPage * billsPerPage;
+    const endIndex = startIndex + billsPerPage;
+    const newBills = filteredBills.slice(startIndex, endIndex);
     
-    setDisplayedProjects(prev => [...prev, ...newProjects]);
+    setDisplayedBills(prev => [...prev, ...newBills]);
     setCurrentPage(nextPage);
   };
 
-  const hasMoreProjects = displayedProjects.length < filteredProjects.length;
+  const hasMoreBills = displayedBills.length < filteredBills.length;
 
   // Get unique values for filters
-  const uniqueMinistries = [...new Set(allProjects.map(p => p.implementing_ministry).filter(Boolean))];
-  const uniqueCategories = [...new Set(allProjects.map(p => p.project_type))];
-  const uniqueStatuses = [...new Set(allProjects.map(p => p.status))];
+  const uniqueCommittees = [...new Set(allBills.map(b => b.committee).filter(Boolean))];
+  const uniqueStatuses = [...new Set(allBills.map(b => b.status))];
 
   const clearFilters = () => {
     setSearchTerm('');
     setStatusFilter('');
-    setCountyFilter('');
-    setCategoryFilter('');
+    setCommitteeFilter('');
   };
 
-  const toggleFeedbackForm = (projectId: string) => {
-    if (expandedFeedback === projectId) {
+  const toggleFeedbackForm = (billId: string) => {
+    if (expandedFeedback === billId) {
       setExpandedFeedback(null);
     } else {
-      setExpandedFeedback(projectId);
+      setExpandedFeedback(billId);
       setFeedbackData({
         content: '',
         category: 'general',
@@ -171,7 +149,7 @@ const ProjectList: React.FC = () => {
     }
   };
 
-  const submitFeedback = async (projectId: string) => {
+  const submitFeedback = async (billId: string) => {
     try {
       const token = localStorage.getItem('access_token');
       const response = await fetch('http://127.0.0.1:8000/api/feedback/', {
@@ -182,7 +160,7 @@ const ProjectList: React.FC = () => {
         },
         body: JSON.stringify({
           ...feedbackData,
-          related_project_id: projectId
+          related_bill_id: billId
         })
       });
 
@@ -218,8 +196,8 @@ const ProjectList: React.FC = () => {
       <div className="py-8 pt-24">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">National Projects</h1>
-          <p className="text-xl text-gray-600">Discover ongoing national development projects and parliamentary initiatives</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Parliamentary Bills</h1>
+          <p className="text-xl text-gray-600">Engage with current parliamentary bills and legislation</p>
         </div>
 
         {/* Search and Filter Section */}
@@ -230,7 +208,7 @@ const ProjectList: React.FC = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
                 type="text"
-                placeholder="Search projects by name or description..."
+                placeholder="Search bills by title, number, or description..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -247,31 +225,22 @@ const ProjectList: React.FC = () => {
             >
               <option value="">All Statuses</option>
               {uniqueStatuses.map(status => (
-                <option key={status} value={status}>{status}</option>
+                <option key={status} value={status}>{status.replace('_', ' ')}</option>
               ))}
             </select>
 
             <select
-              value={countyFilter}
-              onChange={(e) => setCountyFilter(e.target.value)}
+              value={committeeFilter}
+              onChange={(e) => setCommitteeFilter(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
-              <option value="">All Ministries</option>
-              {uniqueMinistries.map(ministry => (
-                <option key={ministry} value={ministry}>{ministry}</option>
+              <option value="">All Committees</option>
+              {uniqueCommittees.map(committee => (
+                <option key={committee} value={committee}>{committee}</option>
               ))}
             </select>
 
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value="">All Categories</option>
-              {uniqueCategories.map(category => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
+            <div></div>
 
             <button
               onClick={clearFilters}
@@ -283,49 +252,54 @@ const ProjectList: React.FC = () => {
 
           {/* Results Count */}
           <div className="mt-4 text-sm text-gray-600">
-            Showing {displayedProjects.length} of {filteredProjects.length} projects
+            Showing {displayedBills.length} of {filteredBills.length} bills
           </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-3 justify-center">
-          {displayedProjects.map((project) => (
+          {displayedBills.map((bill) => (
             <div
-              key={project.id}
+              key={bill.id}
               className="bg-white shadow-md rounded-2xl overflow-hidden border border-gray-200 w-full max-w-sm"
             >
               {/* Header */}
               <div className="flex justify-between items-center px-4 pt-4">
-                <h3 className="font-bold text-lg text-gray-800">{project.name}</h3>
-                <span className={`text-xs font-medium px-3 py-1 rounded-full ${getStatusColor(project.status)}`}>
-                  {project.status}
+                <h3 className="font-bold text-lg text-gray-800">{bill.bill_number}</h3>
+                <span className={`text-xs font-medium px-3 py-1 rounded-full ${getStatusColor(bill.status)}`}>
+                  {bill.status_display}
                 </span>
               </div>
 
               {/* Image */}
-              <div className="mt-2">
-                <img
-                  src={project.image}
-                  alt={project.name}
-                  className="w-full h-36 object-cover rounded-md px-4"
-                />
+              {bill.image && (
+                <div className="mt-2">
+                  <img
+                    src={`http://127.0.0.1:8000${bill.image}`}
+                    alt={bill.title}
+                    className="w-full h-36 object-cover rounded-md px-4"
+                  />
+                </div>
+              )}
+
+              {/* Title and Description */}
+              <div className="px-4 mt-2">
+                <h4 className="font-semibold text-gray-900 mb-1">{bill.title}</h4>
+                <p className="text-gray-600 text-sm">{bill.summary || bill.description}</p>
               </div>
 
-              {/* Description */}
-              <p className="text-gray-600 text-sm px-4 mt-2">{project.description}</p>
-
-              {/* Budget + Ministry */}
+              {/* Sponsor + Committee */}
               <div className="px-4 mt-3 text-sm text-gray-700">
                 <div className="flex items-center gap-1 mb-1">
                   <Users size={16} />
-                  <span>{project.budget}</span>
+                  <span>Sponsor: {bill.sponsor}</span>
                 </div>
-                {project.implementing_ministry && (
+                {bill.committee && (
                   <div className="text-xs text-gray-500">
-                    Ministry: {project.implementing_ministry}
+                    Committee: {bill.committee}
                   </div>
                 )}
                 <button
-                  onClick={() => navigate(`/project/${project.id}`)}
+                  onClick={() => navigate(`/bill/${bill.id}`)}
                   className="text-blue-600 hover:underline font-medium flex items-center gap-1 mt-2"
                 >
                   View Full Details →
@@ -346,7 +320,7 @@ const ProjectList: React.FC = () => {
                         </button>
                       </div>
                       <button 
-                        onClick={() => navigate(`/project/${project.id}`)}
+                        onClick={() => navigate(`/bill/${bill.id}`)}
                         className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-md font-medium"
                       >
                         View Details
@@ -381,25 +355,25 @@ const ProjectList: React.FC = () => {
                 {/* Submit Feedback Button */}
                 {isAuthenticated && (
                   <button
-                    onClick={() => toggleFeedbackForm(project.id)}
+                    onClick={() => toggleFeedbackForm(bill.id)}
                     className="w-full bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-md font-medium flex items-center justify-center gap-2"
                   >
                     <MessageSquare size={16} />
                     Submit Feedback
-                    {expandedFeedback === project.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    {expandedFeedback === bill.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </button>
                 )}
               </div>
 
               {/* Inline Feedback Form */}
-              {expandedFeedback === project.id && isAuthenticated && (
+              {expandedFeedback === bill.id && isAuthenticated && (
                 <div className="px-4 pb-4 border-t border-gray-200">
                   <div className="mt-4 space-y-3">
 
                     
                     <div>
                       <textarea
-                        placeholder="Your feedback on this project..."
+                        placeholder="Your feedback on this bill..."
                         value={feedbackData.content}
                         onChange={(e) => setFeedbackData({...feedbackData, content: e.target.value})}
                         rows={3}
@@ -416,7 +390,7 @@ const ProjectList: React.FC = () => {
                         <option value="general">General</option>
                         <option value="support">Support</option>
                         <option value="opposition">Opposition</option>
-                        <option value="suggestion">Suggestion</option>
+                        <option value="amendment">Amendment Suggestion</option>
                         <option value="concern">Concern</option>
                       </select>
                       
@@ -435,19 +409,19 @@ const ProjectList: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        id={`anonymous-${project.id}`}
+                        id={`anonymous-${bill.id}`}
                         checked={feedbackData.is_anonymous}
                         onChange={(e) => setFeedbackData({...feedbackData, is_anonymous: e.target.checked})}
                         className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
-                      <label htmlFor={`anonymous-${project.id}`} className="text-sm text-gray-700">
+                      <label htmlFor={`anonymous-${bill.id}`} className="text-sm text-gray-700">
                         Submit anonymously
                       </label>
                     </div>
                     
                     <div className="flex gap-2">
                       <button
-                        onClick={() => submitFeedback(project.id)}
+                        onClick={() => submitFeedback(bill.id)}
                         disabled={!feedbackData.content}
                         className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white text-sm px-4 py-2 rounded-md font-medium"
                       >
@@ -468,13 +442,13 @@ const ProjectList: React.FC = () => {
         </div>
 
         {/* Load More Button */}
-        {hasMoreProjects && (
+        {hasMoreBills && (
           <div className="text-center mt-8">
             <button
-              onClick={loadMoreProjects}
+              onClick={loadMoreBills}
               className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
             >
-              Load More Projects
+              Load More Bills
             </button>
           </div>
         )}
@@ -485,4 +459,4 @@ const ProjectList: React.FC = () => {
   );
 };
 
-export default ProjectList;
+export default BillsList;

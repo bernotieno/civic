@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Calendar, Users, ExternalLink, Filter, Search } from 'lucide-react';
+import { FileText, Calendar, Users, ExternalLink, Filter, Search, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
 import { Bill, Project } from '../../types';
 
 interface BillsAndProjectsProps {
@@ -13,6 +13,13 @@ const BillsAndProjects: React.FC<BillsAndProjectsProps> = ({ onFeedbackClick }) 
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null);
+  const [feedbackData, setFeedbackData] = useState({
+    content: '',
+    category: 'general',
+    priority: 'medium',
+    is_anonymous: false
+  });
 
   // Mock data - replace with actual API calls
   useEffect(() => {
@@ -136,6 +143,55 @@ const BillsAndProjects: React.FC<BillsAndProjectsProps> = ({ onFeedbackClick }) 
     const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const toggleFeedbackForm = (id: string) => {
+    if (expandedFeedback === id) {
+      setExpandedFeedback(null);
+    } else {
+      setExpandedFeedback(id);
+      setFeedbackData({
+        content: '',
+        category: 'general',
+        priority: 'medium',
+        is_anonymous: false
+      });
+    }
+  };
+
+  const submitFeedback = async (id: string, type: 'bill' | 'project') => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const payload = {
+        ...feedbackData,
+        ...(type === 'bill' ? { related_bill_id: id } : { related_project_id: id })
+      };
+      
+      const response = await fetch('http://127.0.0.1:8000/api/feedback/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        alert('Feedback submitted successfully!');
+        setExpandedFeedback(null);
+        setFeedbackData({
+          content: '',
+          category: 'general',
+          priority: 'medium',
+          is_anonymous: false
+        });
+      } else {
+        alert('Failed to submit feedback');
+      }
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      alert('Error submitting feedback');
+    }
+  };
 
   if (loading) {
     return (
@@ -282,10 +338,12 @@ const BillsAndProjects: React.FC<BillsAndProjectsProps> = ({ onFeedbackClick }) 
                     </div>
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => onFeedbackClick?.(bill.id)}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                        onClick={() => toggleFeedbackForm(bill.id)}
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm flex items-center gap-2"
                       >
+                        <MessageSquare size={16} />
                         Submit Feedback
+                        {expandedFeedback === bill.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       </button>
                       <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm">
                         <ExternalLink className="inline-block w-4 h-4 mr-1" />
@@ -293,6 +351,77 @@ const BillsAndProjects: React.FC<BillsAndProjectsProps> = ({ onFeedbackClick }) 
                       </button>
                     </div>
                   </div>
+                  
+                  {/* Inline Feedback Form for Bills */}
+                  {expandedFeedback === bill.id && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="space-y-3">
+                        <div>
+                          <textarea
+                            placeholder="Your feedback on this bill..."
+                            value={feedbackData.content}
+                            onChange={(e) => setFeedbackData({...feedbackData, content: e.target.value})}
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2">
+                          <select
+                            value={feedbackData.category}
+                            onChange={(e) => setFeedbackData({...feedbackData, category: e.target.value})}
+                            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          >
+                            <option value="general">General</option>
+                            <option value="support">Support</option>
+                            <option value="opposition">Opposition</option>
+                            <option value="amendment">Amendment Suggestion</option>
+                            <option value="concern">Concern</option>
+                          </select>
+                          
+                          <select
+                            value={feedbackData.priority}
+                            onChange={(e) => setFeedbackData({...feedbackData, priority: e.target.value})}
+                            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          >
+                            <option value="low">Low Priority</option>
+                            <option value="medium">Medium Priority</option>
+                            <option value="high">High Priority</option>
+                            <option value="urgent">Urgent</option>
+                          </select>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`anonymous-bill-${bill.id}`}
+                            checked={feedbackData.is_anonymous}
+                            onChange={(e) => setFeedbackData({...feedbackData, is_anonymous: e.target.checked})}
+                            className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                          />
+                          <label htmlFor={`anonymous-bill-${bill.id}`} className="text-sm text-gray-700">
+                            Submit anonymously
+                          </label>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => submitFeedback(bill.id, 'bill')}
+                            disabled={!feedbackData.content}
+                            className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white text-sm px-4 py-2 rounded-md font-medium"
+                          >
+                            Submit
+                          </button>
+                          <button
+                            onClick={() => setExpandedFeedback(null)}
+                            className="px-4 py-2 border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))
             )}
@@ -360,10 +489,12 @@ const BillsAndProjects: React.FC<BillsAndProjectsProps> = ({ onFeedbackClick }) 
                     </div>
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => onFeedbackClick?.(undefined, project.id)}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                        onClick={() => toggleFeedbackForm(project.id)}
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm flex items-center gap-2"
                       >
+                        <MessageSquare size={16} />
                         Submit Feedback
+                        {expandedFeedback === project.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       </button>
                       <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm">
                         <ExternalLink className="inline-block w-4 h-4 mr-1" />
@@ -371,6 +502,77 @@ const BillsAndProjects: React.FC<BillsAndProjectsProps> = ({ onFeedbackClick }) 
                       </button>
                     </div>
                   </div>
+                  
+                  {/* Inline Feedback Form for Projects */}
+                  {expandedFeedback === project.id && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="space-y-3">
+                        <div>
+                          <textarea
+                            placeholder="Your feedback on this project..."
+                            value={feedbackData.content}
+                            onChange={(e) => setFeedbackData({...feedbackData, content: e.target.value})}
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2">
+                          <select
+                            value={feedbackData.category}
+                            onChange={(e) => setFeedbackData({...feedbackData, category: e.target.value})}
+                            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          >
+                            <option value="general">General</option>
+                            <option value="support">Support</option>
+                            <option value="opposition">Opposition</option>
+                            <option value="suggestion">Suggestion</option>
+                            <option value="concern">Concern</option>
+                          </select>
+                          
+                          <select
+                            value={feedbackData.priority}
+                            onChange={(e) => setFeedbackData({...feedbackData, priority: e.target.value})}
+                            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          >
+                            <option value="low">Low Priority</option>
+                            <option value="medium">Medium Priority</option>
+                            <option value="high">High Priority</option>
+                            <option value="urgent">Urgent</option>
+                          </select>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`anonymous-project-${project.id}`}
+                            checked={feedbackData.is_anonymous}
+                            onChange={(e) => setFeedbackData({...feedbackData, is_anonymous: e.target.checked})}
+                            className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                          />
+                          <label htmlFor={`anonymous-project-${project.id}`} className="text-sm text-gray-700">
+                            Submit anonymously
+                          </label>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => submitFeedback(project.id, 'project')}
+                            disabled={!feedbackData.content}
+                            className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white text-sm px-4 py-2 rounded-md font-medium"
+                          >
+                            Submit
+                          </button>
+                          <button
+                            onClick={() => setExpandedFeedback(null)}
+                            className="px-4 py-2 border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))
             )}
