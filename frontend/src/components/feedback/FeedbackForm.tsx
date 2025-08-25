@@ -54,6 +54,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
     sub_county_id: undefined,
     ward_id: undefined,
     village_id: undefined,
+    is_anonymous: false,
   });
 
   const [errors, setErrors] = useState<FeedbackFormErrors>({});
@@ -358,7 +359,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
             ward_id: formData.ward_id,
             village_id: formData.village_id
           })
-        : await apiService.submitFeedback(formData);
+        : await apiService.submitFeedback(formData, formData.is_anonymous);
       
       console.log('📡 API Response:', response);
       
@@ -375,6 +376,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           sub_county_id: undefined,
           ward_id: undefined,
           village_id: undefined,
+          is_anonymous: false,
         });
         
         // Update rate limit info
@@ -474,6 +476,26 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                 ✅ Anonymous session active - {anonymousSession.max_submissions} submissions allowed
               </div>
             )}
+          </div>
+        )}
+        
+        {/* Authenticated Anonymous Option */}
+        {user && !allowAnonymous && (
+          <div className="mt-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.is_anonymous || false}
+                onChange={(e) => handleInputChange('is_anonymous', e.target.checked)}
+                className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-purple-900">
+                🔒 Submit this feedback anonymously
+              </span>
+            </label>
+            <p className="text-xs text-purple-700 mt-1 ml-6">
+              Your feedback will appear in your dashboard with an "Anonymous" tag, but your identity won't be shared with government officials.
+            </p>
           </div>
         )}
         
@@ -771,6 +793,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                 sub_county_id: undefined,
                 ward_id: undefined,
                 village_id: undefined,
+                is_anonymous: false,
               });
               setErrors({});
             }}

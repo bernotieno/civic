@@ -126,6 +126,11 @@ const FeedbackCard: React.FC<{ feedback: FeedbackItem }> = ({ feedback }) => {
           <div className="flex items-center space-x-2 mb-2">
             <StatusBadge status={feedback.status} />
             <CategoryBadge category={feedback.category} />
+            {feedback.is_anonymous && (
+              <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
+                👤 Anonymous
+              </span>
+            )}
           </div>
         </div>
       </div>

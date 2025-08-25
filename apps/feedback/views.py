@@ -1315,8 +1315,8 @@ class UserFeedbackListView(generics.ListAPIView):
             
         return Feedback.objects.filter(
             user=self.request.user,
-            is_deleted=False,
-            is_anonymous=False  # Exclude anonymous feedback
+            is_deleted=False
+            # Include both anonymous and normal feedback for authenticated users
         ).select_related(
             'user_county'
         ).prefetch_related(
@@ -1416,8 +1416,8 @@ class UserFeedbackDetailView(generics.RetrieveAPIView):
             
         return Feedback.objects.filter(
             user=self.request.user,
-            is_deleted=False,
-            is_anonymous=False
+            is_deleted=False
+            # Include both anonymous and normal feedback
         ).select_related(
             'user_county'
         ).prefetch_related(
@@ -1469,8 +1469,8 @@ class UserFeedbackUpdateView(generics.UpdateAPIView):
             
         return Feedback.objects.filter(
             user=self.request.user,
-            is_deleted=False,
-            is_anonymous=False
+            is_deleted=False
+            # Include both anonymous and normal feedback
         )
     
     def update(self, request, *args, **kwargs):
@@ -1537,8 +1537,8 @@ class UserFeedbackDeleteView(generics.DestroyAPIView):
             
         return Feedback.objects.filter(
             user=self.request.user,
-            is_deleted=False,
-            is_anonymous=False
+            is_deleted=False
+            # Include both anonymous and normal feedback
         )
     
     def destroy(self, request, *args, **kwargs):
@@ -1600,7 +1600,7 @@ def user_feedback_statistics(request):
     detailed_stats = cache.get(cache_key)
     
     if detailed_stats is None:
-        user_feedback = Feedback.objects.filter(user=user, is_deleted=False, is_anonymous=False)
+        user_feedback = Feedback.objects.filter(user=user, is_deleted=False)
         
         # Basic counts
         basic_stats = {

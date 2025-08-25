@@ -233,6 +233,11 @@ class FeedbackSubmissionSerializer(serializers.ModelSerializer):
         help_text="⚡ **Urgency Level** - Select based on how quickly this needs government attention"
     )
     
+    is_anonymous = serializers.BooleanField(
+        default=False,
+        help_text="👤 **Anonymous Submission** - Submit this feedback anonymously even when logged in"
+    )
+    
     # Read-only response fields
     tracking_id = serializers.CharField(
         read_only=True,
@@ -252,7 +257,7 @@ class FeedbackSubmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feedback
         fields = [
-            'title', 'content', 'category', 'priority',
+            'title', 'content', 'category', 'priority', 'is_anonymous',
             'county_id', 'sub_county_id', 'ward_id', 'village_id',
             'tracking_id', 'status', 'submitted_at', 'location_path'
         ]
@@ -775,7 +780,7 @@ class UserFeedbackListSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at', 'edited_at', 'edit_count',
             'response_count', 'last_response_at', 'view_count',
             'location_path', 'can_edit', 'can_delete',
-            'edit_restriction_reason', 'delete_restriction_reason'
+            'edit_restriction_reason', 'delete_restriction_reason', 'is_anonymous'
         ]
     def get_can_edit(self, obj):
         can_edit, reason = obj.can_be_edited()
@@ -835,7 +840,7 @@ class UserFeedbackDetailSerializer(serializers.ModelSerializer):
             'response_count', 'last_response_at', 'view_count',
             'location_path', 'can_edit', 'can_delete',
             'edit_restriction_reason', 'delete_restriction_reason',
-            'edit_history', 'responses', 'timeline'
+            'edit_history', 'responses', 'timeline', 'is_anonymous'
         ]
     
     def get_can_edit(self, obj) -> bool:

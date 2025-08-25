@@ -303,6 +303,7 @@ export interface FeedbackItem {
   can_delete: boolean;
   edit_restriction_reason?: string;
   delete_restriction_reason?: string;
+  is_anonymous: boolean;
 }
 
 export interface FeedbackStats {
@@ -355,8 +356,13 @@ export interface FeedbackSubmissionData {
   content: string;
   category: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
+  county_id: number;
+  sub_county_id?: number;
+  ward_id?: number;
+  village_id?: number;
   related_bill_id?: string;
   related_project_id?: string;
+  is_anonymous?: boolean;
 }
 
 // Feedback Form Validation Errors
@@ -468,4 +474,5 @@ export interface DetailedFeedbackItem extends FeedbackItem {
   can_delete: boolean;
   edit_restriction_reason?: string;
   delete_restriction_reason?: string;
+  is_anonymous: boolean;
 }

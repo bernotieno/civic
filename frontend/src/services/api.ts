@@ -578,7 +578,7 @@ class CivicAIApiService {
   /**
    * Submit authenticated feedback with comprehensive validation and error handling
    */
-  async submitFeedback(feedbackData: FeedbackSubmissionData): Promise<FeedbackSubmissionResponse> {
+  async submitFeedback(feedbackData: FeedbackSubmissionData, isAnonymous: boolean = false): Promise<FeedbackSubmissionResponse> {
     try {
       // Validate required fields before submission
       this.validateFeedbackData(feedbackData);
@@ -590,6 +590,7 @@ class CivicAIApiService {
         category: feedbackData.category,
         priority: feedbackData.priority,
         county_id: feedbackData.county_id,
+        is_anonymous: isAnonymous,
         ...(feedbackData.sub_county_id && { sub_county_id: feedbackData.sub_county_id }),
         ...(feedbackData.ward_id && { ward_id: feedbackData.ward_id }),
         ...(feedbackData.village_id && { village_id: feedbackData.village_id })
@@ -932,6 +933,7 @@ class CivicAIApiService {
             location_path: 'Nairobi > Central > CBD',
             can_edit: true,
             can_delete: false,
+            is_anonymous: false,
           },
           {
             id: '2',
@@ -950,6 +952,7 @@ class CivicAIApiService {
             location_path: 'Nairobi > Kibra > Kibera',
             can_edit: true,
             can_delete: true,
+            is_anonymous: true,
           },
           {
             id: '3',
@@ -969,6 +972,7 @@ class CivicAIApiService {
             location_path: 'Nairobi > Westlands > Parklands',
             can_edit: false,
             can_delete: false,
+            is_anonymous: false,
           },
         ],
         communityStats: {

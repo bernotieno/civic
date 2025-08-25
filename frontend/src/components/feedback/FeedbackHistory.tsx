@@ -305,10 +305,17 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
                       <h3 className="text-lg font-medium text-gray-900 truncate mr-3">
                         {item.title}
                       </h3>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig.bgColor} ${statusConfig.color}`}>
-                        <StatusIcon className="h-3 w-3 mr-1" />
-                        {statusConfig.label}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        {item.is_anonymous && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            👤 Anonymous
+                          </span>
+                        )}
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig.bgColor} ${statusConfig.color}`}>
+                          <StatusIcon className="h-3 w-3 mr-1" />
+                          {statusConfig.label}
+                        </span>
+                      </div>
                     </div>
                     
                     <div className="flex items-center text-sm text-gray-500 space-x-4">

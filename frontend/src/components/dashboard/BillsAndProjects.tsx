@@ -164,14 +164,40 @@ const BillsAndProjects: React.FC<BillsAndProjectsProps> = ({ onFeedbackClick }) 
     return matchesSearch && matchesStatus;
   });
 
+  const getProjectTypeCategory = (projectType: string) => {
+    const typeMapping: Record<string, string> = {
+      'infrastructure': 'infrastructure',
+      'healthcare': 'healthcare',
+      'education': 'education',
+      'agriculture': 'agriculture',
+      'environment': 'environment',
+      'security': 'security',
+      'economic': 'economic',
+      'social': 'social',
+      'governance': 'governance',
+      'budget': 'budget'
+    };
+    return typeMapping[projectType] || 'other';
+  };
+
   const toggleFeedbackForm = (id: string) => {
     if (expandedFeedback === id) {
       setExpandedFeedback(null);
     } else {
       setExpandedFeedback(id);
+      
+      let category = 'legislation'; // Default for bills
+      
+      if (activeTab === 'projects') {
+        const project = projects.find(p => p.id === id);
+        if (project) {
+          category = getProjectTypeCategory(project.project_type);
+        }
+      }
+      
       setFeedbackData({
         content: '',
-        category: activeTab === 'bills' ? 'legislation' : 'infrastructure',
+        category,
         priority: 'medium',
         is_anonymous: false
       });
@@ -200,24 +226,72 @@ const BillsAndProjects: React.FC<BillsAndProjectsProps> = ({ onFeedbackClick }) 
         return;
       }
 
-      const response = await fetch('http://127.0.0.1:8000/api/feedback/submit/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          content: feedbackData.content,
-          category: feedbackData.category,
-          priority: feedbackData.priority,
-          county_id: userCounty.id,
-          [type === 'bill' ? 'related_bill_id' : 'related_project_id']: id
-        })
-      });
+      let response;
+      
+      if (feedbackData.is_anonymous) {
+        // Create anonymous session first
+        const sessionResponse = await fetch('http://127.0.0.1:8000/api/auth/anonymous/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            county_id: userCounty.id
+          })
+        });
+        
+        if (!sessionResponse.ok) {
+          throw new Error('Failed to create anonymous session');
+        }
+        
+        const sessionData = await sessionResponse.json();
+        if (!sessionData.success) {
+          throw new Error(sessionData.message || 'Failed to create anonymous session');
+        }
+        
+        // Submit anonymous feedback
+        response = await fetch('http://127.0.0.1:8000/api/feedback/anonymous/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            session_id: sessionData.session_id,
+            title: `Feedback on ${type === 'bill' ? 'Bill' : 'Project'}: ${type === 'bill' ? 
+              bills.find(b => b.id === id)?.title : 
+              projects.find(p => p.id === id)?.title}`,
+            content: feedbackData.content,
+            category: feedbackData.category,
+            priority: feedbackData.priority,
+            county_id: userCounty.id,
+            [type === 'bill' ? 'related_bill_id' : 'related_project_id']: id
+          })
+        });
+      } else {
+        // Submit authenticated feedback
+        response = await fetch('http://127.0.0.1:8000/api/feedback/submit/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: `Feedback on ${type === 'bill' ? 'Bill' : 'Project'}: ${type === 'bill' ? 
+              bills.find(b => b.id === id)?.title : 
+              projects.find(p => p.id === id)?.title}`,
+            content: feedbackData.content,
+            category: feedbackData.category,
+            priority: feedbackData.priority,
+            county_id: userCounty.id,
+            [type === 'bill' ? 'related_bill_id' : 'related_project_id']: id
+          })
+        });
+      }
 
       if (response.ok) {
         const result = await response.json();
-        alert(`Feedback submitted successfully! Tracking ID: ${result.data.tracking_id}`);
+        const trackingId = result.data?.tracking_id || result.tracking_id;
+        alert(`${feedbackData.is_anonymous ? 'Anonymous ' : ''}Feedback submitted successfully! Tracking ID: ${trackingId}`);
         setExpandedFeedback(null);
         setFeedbackData({
           content: '',
@@ -232,7 +306,7 @@ const BillsAndProjects: React.FC<BillsAndProjectsProps> = ({ onFeedbackClick }) 
       }
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      alert('Error submitting feedback');
+      alert('Error submitting feedback: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
@@ -568,23 +642,29 @@ const BillsAndProjects: React.FC<BillsAndProjectsProps> = ({ onFeedbackClick }) 
                         </div>
                         
                         <div className="grid grid-cols-2 gap-2">
-                          <select
-                            value={feedbackData.category}
-                            onChange={(e) => setFeedbackData({...feedbackData, category: e.target.value})}
-                            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                          >
-                            <option value="infrastructure">Infrastructure Development</option>
-                            <option value="budget">Budget & Finance</option>
-                            <option value="healthcare">Healthcare Policy</option>
-                            <option value="education">Education Policy</option>
-                            <option value="agriculture">Agriculture & Food Security</option>
-                            <option value="environment">Environment & Climate</option>
-                            <option value="security">National Security</option>
-                            <option value="governance">Governance & Oversight</option>
-                            <option value="economic">Economic Policy</option>
-                            <option value="social">Social Services</option>
-                            <option value="other">Other National Issues</option>
-                          </select>
+                          <div className="relative">
+                            <select
+                              value={feedbackData.category}
+                              onChange={(e) => setFeedbackData({...feedbackData, category: e.target.value})}
+                              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent bg-green-50"
+                              disabled
+                            >
+                              <option value="infrastructure">Infrastructure Development</option>
+                              <option value="budget">Budget & Finance</option>
+                              <option value="healthcare">Healthcare Policy</option>
+                              <option value="education">Education Policy</option>
+                              <option value="agriculture">Agriculture & Food Security</option>
+                              <option value="environment">Environment & Climate</option>
+                              <option value="security">National Security</option>
+                              <option value="governance">Governance & Oversight</option>
+                              <option value="economic">Economic Policy</option>
+                              <option value="social">Social Services</option>
+                              <option value="other">Other National Issues</option>
+                            </select>
+                            <div className="absolute inset-y-0 right-8 flex items-center pointer-events-none">
+                              <span className="text-xs text-green-600 font-medium">Auto-selected</span>
+                            </div>
+                          </div>
                           
                           <select
                             value={feedbackData.priority}

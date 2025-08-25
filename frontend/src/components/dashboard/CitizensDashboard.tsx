@@ -159,6 +159,7 @@ const CitizensDashboard: React.FC = () => {
             location_path: 'Nairobi > Central > CBD',
             can_edit: true,
             can_delete: false,
+            is_anonymous: false,
           },
           {
             id: '2',
@@ -177,6 +178,7 @@ const CitizensDashboard: React.FC = () => {
             location_path: 'Nairobi > Kibra > Kibera',
             can_edit: true,
             can_delete: true,
+            is_anonymous: true,
           },
           {
             id: '3',
@@ -196,6 +198,7 @@ const CitizensDashboard: React.FC = () => {
             location_path: 'Nairobi > Westlands > Parklands',
             can_edit: false,
             can_delete: false,
+            is_anonymous: false,
           },
         ],
         communityStats: {
