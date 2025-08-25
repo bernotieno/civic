@@ -145,7 +145,7 @@ class RegisterSerializer(serializers.Serializer):
         user = CustomUser.objects.create_user_with_national_id(
             national_id=national_id,
             password=password,
-            tenant=county,
+            user_county=county,
             county=county_location,
             sub_county=sub_county,
             ward=ward,
@@ -248,14 +248,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
     Complete user profile with location details and access permissions.
     """
     county_name = serializers.CharField(
-        source='county.name', 
+        source='user_county.name', 
         read_only=True,
         help_text="User's county name"
-    )
-    tenant_name = serializers.CharField(
-        source='tenant.name', 
-        read_only=True,
-        help_text="Tenant county name (data scope)"
     )
     role_display = serializers.CharField(
         source='get_role_display', 
@@ -263,9 +258,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
         help_text="Human-readable role name"
     )
     level_display = serializers.CharField(
-        source='get_official_level_display', 
+        source='get_admin_level_display', 
         read_only=True,
-        help_text="Human-readable official level (government officials only)"
+        help_text="Human-readable admin level (parliament admins only)"
     )
     accessible_counties = serializers.SerializerMethodField(
         help_text="Counties this user can access data from"
@@ -275,8 +270,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = [
             'id', 'name', 'email', 'role', 'role_display', 
-            'official_level', 'level_display', 'county_name', 
-            'tenant_name', 'accessible_counties', 'date_joined'
+            'admin_level', 'level_display', 'county_name', 
+            'accessible_counties', 'date_joined'
         ]
     
     @extend_schema_field(serializers.ListField(
@@ -285,10 +280,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
     ))
     def get_accessible_counties(self, obj):
         """Get list of counties user can access"""
-        return [
-            {'id': county.id, 'name': county.name, 'code': county.code}
-            for county in obj.get_accessible_counties()
-        ]
+        # For national system, all users can see national data
+        return []
 
 
 class LocationSerializer(serializers.ModelSerializer):

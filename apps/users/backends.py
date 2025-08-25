@@ -22,8 +22,8 @@ class NationalIDBackend(BaseBackend):
         
         # Find user by trying to verify national ID against all hashed versions
         try:
-            # Get all users and check their national_id_hash against the provided username
-            users = User.objects.all()
+            # Get all active users and check their national_id_hash against the provided username
+            users = User.objects.filter(is_active=True, is_deleted=False)
             user = None
             
             for u in users:

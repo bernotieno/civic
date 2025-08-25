@@ -1,21 +1,21 @@
-🇰🇪 CivicAI - Kenya's Civic Feedback Revolution
+🇰🇪 CivicAI - Kenya's National Assembly Engagement Platform
 
-Empowering 47 counties, 47 million voices. One secure, scalable platform.
+Empowering 47 million voices to engage with Parliament. One secure, scalable platform.
 
 🎯 Mission Statement
-Transform civic engagement in Kenya by providing a secure, anonymous, and scalable platform where citizens can submit feedback to their county governments while maintaining complete privacy and ensuring government accountability.
+Transform civic engagement in Kenya by providing a secure, anonymous, and scalable platform where citizens can engage with National Assembly bills and projects while maintaining complete privacy and ensuring parliamentary accountability.
 The Problem We're Solving
 
-🚫 No Direct Channel: Citizens lack direct communication with county governments
-🔒 Fear of Retaliation: People afraid to speak up about local issues
-📊 No Data Insights: Governments lack data-driven decision making tools
-🌍 Scalability Challenge: Need to serve 47 counties with different needs
+🚫 No Direct Channel: Citizens lack direct engagement with National Assembly bills and projects
+🔒 Fear of Retaliation: People afraid to speak up about national legislation
+📊 No Data Insights: Parliament lacks citizen feedback on proposed legislation
+🌍 Engagement Challenge: Need to serve all Kenyan citizens for national issues
 
 Our Solution
 
 ✅ Secure Anonymous Submissions: True anonymity with bcrypt-hashed national IDs
 ✅ Invisible Boundaries: Role-based UI where users only see what they're allowed to
-✅ Tenant-Based Architecture: Per-county data isolation with nationwide analytics
+✅ National Architecture: Unified platform for all citizens with parliamentary focus
 ✅ Progressive Enhancement: Build features incrementally without over-engineering
 
 🏗️ System Architecture - "Invisible Boundaries"
@@ -26,20 +26,16 @@ Each user experiences a completely different application based on their role. Th
 mermaidgraph TD
     A[User Login] --> B{Role Detection}
     B --> C[Citizen View]
-    B --> D[Local Official View]
-    B --> E[Regional Official View]
-    B --> F[National Official View]
-    B --> G[Anonymous Session]
+    B --> D[Parliament Admin View]
+    B --> E[Anonymous Session]
     
-    C --> C1[Submit Feedback<br/>View My Submissions]
-    D --> D1[County Dashboard<br/>Manage Local Feedback]
-    E --> E1[Multi-County Analytics<br/>Regional Reports]
-    F --> F1[National Overview<br/>All Counties Access]
-    G --> G1[Anonymous Submission<br/>Track with ID]
+    C --> C1[View Bills & Projects<br/>Submit Feedback<br/>View My Submissions]
+    D --> D1[National Dashboard<br/>Manage Bills & Projects<br/>View All Feedback]
+    E --> E1[Anonymous Submission<br/>Track with ID]
 
 Security Model
 
-🔐 Tenant Isolation: County-based data partitioning
+🔐 National Scope: Unified data access for all citizens
 🛡️ Role-Based Access: Automatic permission enforcement
 👻 Anonymous Users: Zero-identity feedback submission
 🚫 404 Not 403: Users never know restricted features exist
@@ -82,27 +78,25 @@ python manage.py create_civicai_superuser
 python manage.py runserver
 
 👥 User Roles & Permissions
-RoleLevelAccess ScopeFeaturesCitizen-Own submissions onlySubmit feedback, view own historyAnonymous-Session-basedSubmit feedback, track with IDGovernment OfficialLocalHome county onlyCounty dashboard, respond to feedbackGovernment OfficialRegionalAssigned countiesMulti-county analytics, regional reportsGovernment OfficialNationalAll countiesNational overview, system analyticsSuper AdminSystemFull system accessUser management, system configuration
+RoleLevelAccess ScopeFeaturesCitizen-Own submissions onlyView bills/projects, submit feedback, view own historyAnonymous-Session-basedSubmit feedback, track with IDParliament AdminNationalAll national dataManage bills/projects, view all feedback, respond to citizensSuper AdminSystemFull system accessUser management, system configuration
 Permission Matrix
 pythonPERMISSIONS = {
-    'citizen': ['submit_feedback', 'view_own_submissions'],
+    'citizen': ['view_bills_projects', 'submit_feedback', 'view_own_submissions'],
     'anonymous': ['submit_feedback', 'track_submission'],
-    'local_official': ['view_county_data', 'respond_to_feedback'],
-    'regional_official': ['view_multi_county', 'generate_reports'],
-    'national_official': ['view_all_counties', 'system_analytics'],
+    'parliament_admin': ['manage_bills_projects', 'view_all_feedback', 'respond_to_feedback'],
     'super_admin': ['full_system_access', 'user_management']
 }
 
 🏢 Data Models Overview
 Core Models
 python# Location Hierarchy
-County (47 counties) → Sub-County → Ward → Village
+County (47 counties) - for user location only
 
 # User System
-CustomUser (bcrypt-hashed national ID) → Role → Tenant (County)
+CustomUser (bcrypt-hashed national ID) → Role → National Scope
 
-# Tenant Architecture
-County = Tenant (data isolation boundary)
+# National Architecture
+No tenant isolation - unified national platform
 Key Fields
 
 national_id_hash: bcrypt-hashed Kenyan national ID (for login)

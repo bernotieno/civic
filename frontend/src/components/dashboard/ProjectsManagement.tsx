@@ -370,7 +370,7 @@ const ProjectsManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Projects Management</h2>
+        <h2 className="text-2xl font-bold text-gray-900">National Projects Management</h2>
         <button
           onClick={() => setShowCreateForm(true)}
           className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
@@ -397,7 +397,7 @@ const ProjectsManagement: React.FC = () => {
                   Budget
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  County
+                  Scope
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -437,7 +437,7 @@ const ProjectsManagement: React.FC = () => {
                     {project.budget ? `KSh ${Number(project.budget).toLocaleString()}` : 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {project.county}
+                    National
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
@@ -476,7 +476,7 @@ const ProjectsManagement: React.FC = () => {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <form onSubmit={handleCreateProject}>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Create New Project</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Create New National Project</h3>
               
               <div className="space-y-4">
                 <div>
@@ -517,37 +517,13 @@ const ProjectsManagement: React.FC = () => {
                   </select>
                 </div>
 
-                {userInfo?.official_level !== 'local' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">County</label>
-                    <select
-                      required
-                      value={formData.county_id}
-                      onChange={(e) => setFormData({...formData, county_id: e.target.value})}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                    >
-                      <option value="">Select County ({counties.length} available)</option>
-                      {Array.isArray(counties) && counties.map((county) => (
-                        <option key={county.id} value={county.id}>
-                          {county.name}
-                        </option>
-                      ))}
-                    </select>
-                    {counties.length === 0 && (
-                      <p className="text-sm text-red-600 mt-1">No counties loaded. Check console for errors.</p>
-                    )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Project Scope</label>
+                  <div className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-50">
+                    National Project
                   </div>
-                )}
-                
-                {userInfo?.official_level === 'local' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">County</label>
-                    <div className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-50">
-                      {userInfo?.county_name || 'Your County'}
-                    </div>
-                    <p className="text-sm text-gray-500 mt-1">Project will be created in your county</p>
-                  </div>
-                )}
+                  <p className="text-sm text-gray-500 mt-1">This project will be visible to all citizens nationwide</p>
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Bill/Project Document</label>
@@ -680,8 +656,8 @@ const ProjectsManagement: React.FC = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700">County</label>
-                <p className="text-sm text-gray-900">{selectedProject.county}</p>
+                <label className="block text-sm font-medium text-gray-700">Project Scope</label>
+                <p className="text-sm text-gray-900">National</p>
               </div>
               
               <div>
@@ -737,7 +713,7 @@ const ProjectsManagement: React.FC = () => {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <form onSubmit={handleUpdateProject}>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Project</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Edit National Project</h3>
               
               <div className="space-y-4">
                 <div>

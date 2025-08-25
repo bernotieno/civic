@@ -54,13 +54,13 @@ const WelcomeSection: React.FC<WelcomeSectionProps> = ({ user }) => {
             </div>
 
             <p className="text-blue-100 text-base mb-4">
-              Your voice matters. Help improve your community.
+              Your voice matters. Engage with Parliament and shape national policy.
             </p>
 
             {/* Single Key Stat */}
             <div className="flex items-center bg-white/10 rounded-full px-4 py-2 text-sm w-fit">
               <TrendingUp className="h-4 w-4 mr-2 text-green-300" />
-              <span className="font-semibold">{monthlyResolved} issues resolved this month</span>
+              <span className="font-semibold">{monthlyResolved} bills open for public participation</span>
             </div>
           </div>
 
@@ -72,7 +72,7 @@ const WelcomeSection: React.FC<WelcomeSectionProps> = ({ user }) => {
               className="bg-white text-blue-700 px-8 py-4 rounded-xl font-semibold hover:bg-blue-50 transition-all duration-200 flex items-center justify-center group shadow-lg"
             >
               <MessageSquare className="h-5 w-5 mr-2" />
-              Submit Feedback
+              Engage with Parliament
               <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>

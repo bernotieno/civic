@@ -75,10 +75,10 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       current: currentView === 'track-feedback'
     },
     {
-      name: 'County Projects',
-      view: 'county-projects' as DashboardView,
+      name: 'Bills & Projects',
+      view: 'bills-projects' as DashboardView,
       icon: Construction,
-      current: currentView === 'county-projects'
+      current: currentView === 'bills-projects'
     },
     {
       name: 'Community Impact',
@@ -200,7 +200,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           <div className="px-3 mb-6">
             {!isCollapsed && (
               <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                Main Menu
+                National Assembly
               </h3>
             )}
             <ul className="space-y-1">

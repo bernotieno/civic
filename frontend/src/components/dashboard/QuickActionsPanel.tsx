@@ -35,8 +35,8 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onViewChange }) =
 
   const quickActions = [
     {
-      title: 'Submit New Feedback',
-      description: 'Share your concerns with the government',
+      title: 'Engage with Parliament',
+      description: 'Share your views on bills and national projects',
       icon: MessageSquare,
       color: 'bg-blue-600 hover:bg-blue-700',
       textColor: 'text-white',
@@ -44,8 +44,8 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onViewChange }) =
       isPrimary: true
     },
     {
-      title: 'Anonymous Feedback',
-      description: 'Submit feedback without revealing your identity',
+      title: 'Anonymous Participation',
+      description: 'Participate in public consultation anonymously',
       icon: UserX,
       color: 'bg-gray-100 hover:bg-gray-200 border border-gray-300',
       textColor: 'text-gray-700',
@@ -53,8 +53,8 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onViewChange }) =
       isPrimary: false
     },
     {
-      title: 'Emergency Report',
-      description: 'Report urgent issues requiring immediate attention',
+      title: 'Urgent National Issue',
+      description: 'Report urgent national matters to Parliament',
       icon: AlertTriangle,
       color: 'bg-red-100 hover:bg-red-200 border border-red-300',
       textColor: 'text-red-700',
@@ -96,7 +96,7 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onViewChange }) =
 
       {/* Track Feedback Section */}
       <div className="border-t border-gray-200 pt-6">
-        <h4 className="text-sm font-medium text-gray-900 mb-3">Track Feedback Status</h4>
+        <h4 className="text-sm font-medium text-gray-900 mb-3">Track Participation Status</h4>
         <form onSubmit={handleTrackFeedback} className="space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -118,7 +118,7 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onViewChange }) =
         </form>
         
         <p className="text-xs text-gray-500 mt-2">
-          Enter your tracking ID to check the status of any feedback submission
+          Enter your tracking ID to check the status of your parliamentary engagement
         </p>
       </div>
 
@@ -127,10 +127,10 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onViewChange }) =
         <h4 className="text-sm font-medium text-gray-900 mb-3">Need Help?</h4>
         <div className="space-y-2">
           <button className="w-full text-left text-sm text-gray-600 hover:text-gray-900 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors">
-            📋 How to submit effective feedback
+            📋 How to engage with Parliament
           </button>
           <button className="w-full text-left text-sm text-gray-600 hover:text-gray-900 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors">
-            🔍 Understanding status updates
+            🔍 Understanding bill processes
           </button>
           <button className="w-full text-left text-sm text-gray-600 hover:text-gray-900 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors">
             📞 Contact support

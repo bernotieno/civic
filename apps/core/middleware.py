@@ -60,10 +60,10 @@ class ScopedQuerySet(models.QuerySet):
         import threading
         user_context = getattr(threading.current_thread(), 'user_context', None)
         
-        if user_context and hasattr(self.model, 'tenant'):
+        if user_context:
             # Apply automatic filtering based on user's data scope
             scope_filter = user_context.get_data_scope_filter()
-            if scope_filter:
+            if scope_filter and scope_filter.children:  # Only apply if filter has conditions
                 return super().filter(scope_filter, *args, **kwargs)
         
         return super().filter(*args, **kwargs)

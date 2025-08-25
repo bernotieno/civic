@@ -10,11 +10,14 @@ interface Project {
   project_type: string;
   status: string;
   budget: string | null;
+  implementing_ministry?: string;
+  target_beneficiaries?: string;
   start_date: string | null;
   end_date: string | null;
+  public_participation_open: boolean;
+  participation_deadline?: string;
   image: string | null;
   document: string | null;
-  county: string;
   created_by: string;
   created_at: string;
 }
@@ -36,7 +39,7 @@ const ProjectDetails: React.FC = () => {
 
   const fetchProject = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/public/projects/');
+      const response = await fetch('http://127.0.0.1:8000/api/public/projects/');
       if (response.ok) {
         const data = await response.json();
         const foundProject = data.data.find((p: Project) => p.id === id);
@@ -70,11 +73,11 @@ const ProjectDetails: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'planning': return 'bg-gray-100 text-gray-800';
+      case 'proposed': return 'bg-yellow-100 text-yellow-800';
       case 'approved': return 'bg-blue-100 text-blue-800';
-      case 'in_progress': return 'bg-yellow-100 text-yellow-800';
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'in_progress': return 'bg-green-100 text-green-800';
+      case 'completed': return 'bg-green-100 text-green-900';
+      case 'suspended': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -128,7 +131,7 @@ const ProjectDetails: React.FC = () => {
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">{project.title}</h1>
-                  <p className="text-lg text-gray-600">{project.county} County</p>
+                  <p className="text-lg text-gray-600">National Project</p>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(project.status)}`}>
                   {project.status}
@@ -143,8 +146,8 @@ const ProjectDetails: React.FC = () => {
                   </p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-gray-900 mb-1">Category</h3>
-                  <p className="text-lg text-gray-700">{project.project_type}</p>
+                  <h3 className="font-semibold text-gray-900 mb-1">Ministry</h3>
+                  <p className="text-lg text-gray-700">{project.implementing_ministry || 'Not specified'}</p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h3 className="font-semibold text-gray-900 mb-1">Created</h3>
@@ -155,7 +158,7 @@ const ProjectDetails: React.FC = () => {
               {project.image && (
                 <div className="mb-8">
                   <img 
-                    src={`http://localhost:8000${project.image}`} 
+                    src={`http://127.0.0.1:8000${project.image}`} 
                     alt={project.title}
                     className="w-full h-64 object-cover rounded-lg"
                   />
@@ -171,7 +174,7 @@ const ProjectDetails: React.FC = () => {
                 <div className="mb-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-4">Project Document</h2>
                   <a 
-                    href={`http://localhost:8000${project.document}`}
+                    href={`http://127.0.0.1:8000${project.document}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
@@ -194,25 +197,25 @@ const ProjectDetails: React.FC = () => {
                     />
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-gray-500">
-                        Your feedback helps improve county projects
+                        Your feedback helps improve national projects
                       </p>
                       <button
                         onClick={handleSubmitFeedback}
                         disabled={!feedback.trim() || isSubmitting}
                         className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium"
                       >
-                        {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
+                        {isSubmitting ? 'Submitting...' : 'Engage with Project'}
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div className="bg-gray-50 p-6 rounded-lg text-center">
-                    <p className="text-gray-600 mb-4">Please log in to submit feedback and interact with this project.</p>
+                    <p className="text-gray-600 mb-4">Please log in to engage with this national project and provide your input.</p>
                     <button
                       onClick={() => navigate('/login')}
                       className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 font-medium"
                     >
-                      Log In to Participate
+                      Log In to Engage
                     </button>
                   </div>
                 )}
@@ -222,7 +225,7 @@ const ProjectDetails: React.FC = () => {
 
           {showSuccess && (
             <div className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg">
-              <p className="font-medium">Feedback submitted successfully!</p>
+              <p className="font-medium">Your engagement has been submitted successfully!</p>
             </div>
           )}
         </div>

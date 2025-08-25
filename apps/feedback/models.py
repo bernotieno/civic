@@ -9,17 +9,20 @@ from django.utils import timezone
 from apps.users.models import SoftDeleteModel, CustomUser, County, Location
 from apps.feedback.utils import generate_tracking_id
 
-# Feedback Categories
+# Feedback Categories for National Assembly Bills and Projects
 FEEDBACK_CATEGORIES = [
-    ('infrastructure', 'Infrastructure & Roads'),
-    ('healthcare', 'Healthcare Services'),
-    ('education', 'Education & Schools'),
-    ('water_sanitation', 'Water & Sanitation'),
-    ('security', 'Security & Safety'),
-    ('environment', 'Environment & Waste'),
-    ('governance', 'Governance & Corruption'),
-    ('economic', 'Economic Development'),
-    ('other', 'Other Issues')
+    ('legislation', 'Legislation & Bills'),
+    ('budget', 'Budget & Finance'),
+    ('healthcare', 'Healthcare Policy'),
+    ('education', 'Education Policy'),
+    ('infrastructure', 'Infrastructure Development'),
+    ('agriculture', 'Agriculture & Food Security'),
+    ('environment', 'Environment & Climate'),
+    ('security', 'National Security'),
+    ('governance', 'Governance & Oversight'),
+    ('economic', 'Economic Policy'),
+    ('social', 'Social Services'),
+    ('other', 'Other National Issues')
 ]
 
 PRIORITY_CHOICES = [
@@ -58,40 +61,29 @@ class Feedback(SoftDeleteModel):
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='pending', db_index=True)
     
-    # User and tenant isolation
+    # User and national scope
     user = models.ForeignKey(
         CustomUser, 
         on_delete=models.CASCADE, 
         related_name='feedback_submissions'
     )
-    county = models.ForeignKey(
+    # County kept only for user location reference
+    user_county = models.ForeignKey(
         County, 
         on_delete=models.CASCADE, 
         related_name='feedback_items',
-        help_text="Tenant boundary - determines data access"
+        help_text="User's county for reference only - no data isolation"
     )
     
-    # Location hierarchy
-    sub_county = models.ForeignKey(
-        Location, 
-        on_delete=models.CASCADE, 
-        related_name='feedback_sub_county',
+    # Optional: Related bill or project (for future implementation)
+    related_bill_id = models.CharField(
+        max_length=50, 
         null=True, blank=True,
-        limit_choices_to={'type': 'sub_county'}
+        help_text="ID of related parliamentary bill"
     )
-    ward = models.ForeignKey(
-        Location, 
-        on_delete=models.CASCADE, 
-        related_name='feedback_ward',
+    related_project_id = models.UUIDField(
         null=True, blank=True,
-        limit_choices_to={'type': 'ward'}
-    )
-    village = models.ForeignKey(
-        Location, 
-        on_delete=models.CASCADE, 
-        related_name='feedback_village',
-        null=True, blank=True,
-        limit_choices_to={'type': 'village'}
+        help_text="ID of related national project"
     )
     
     # Tracking and metadata
@@ -116,17 +108,19 @@ class Feedback(SoftDeleteModel):
 
     class Meta:
         indexes = [
-            models.Index(fields=['county', 'status']),
+            models.Index(fields=['user_county', 'status']),
             models.Index(fields=['user', 'created_at']),
             models.Index(fields=['tracking_id']),
             models.Index(fields=['category', 'priority']),
-            models.Index(fields=['is_anonymous', 'county']),
-            models.Index(fields=['created_at', 'county']),
+            models.Index(fields=['is_anonymous', 'user_county']),
+            models.Index(fields=['created_at', 'status']),
+            models.Index(fields=['related_bill_id']),
+            models.Index(fields=['related_project_id']),
         ]
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"{self.title} - {self.county.name} ({self.get_status_display()})"
+        return f"{self.title} - {self.user_county.name} ({self.get_status_display()})"
     
     def save(self, *args, **kwargs):
         # Generate tracking ID if not set
@@ -144,20 +138,11 @@ class Feedback(SoftDeleteModel):
         super().save(*args, **kwargs)
     
     def get_location_path(self):
-        """Get full location path for display"""
-        parts = [self.county.name]
-        
-        if self.sub_county:
-            parts.append(self.sub_county.name)
-        if self.ward:
-            parts.append(self.ward.name)
-        if self.village:
-            parts.append(self.village.name)
-        
-        return ' > '.join(parts)
+        """Get user county for display"""
+        return self.user_county.name
     
     def can_be_viewed_by(self, user):
-        """Check if user can view this feedback (invisible boundaries)"""
+        """Check if user can view this feedback (national scope)"""
         if not user or not user.is_authenticated:
             return False
         
@@ -169,10 +154,9 @@ class Feedback(SoftDeleteModel):
         if user.role == 'citizen':
             return self.user == user
         
-        # Government officials based on their level
-        if user.role == 'government_official':
-            accessible_counties = user.get_accessible_counties()
-            return self.county in accessible_counties
+        # Parliament admins can view all feedback
+        if user.role in ['parliament_admin', 'super_admin']:
+            return True
         
         return False
 

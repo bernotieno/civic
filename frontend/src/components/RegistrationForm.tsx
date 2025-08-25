@@ -37,15 +37,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
 
   // Location data
   const [counties, setCounties] = useState<County[]>([]);
-  const [subCounties, setSubCounties] = useState<LocationHierarchy[]>([]);
-  const [wards, setWards] = useState<LocationHierarchy[]>([]);
-  const [villages, setVillages] = useState<LocationHierarchy[]>([]);
 
   // Loading states for dropdowns
   const [loadingCounties, setLoadingCounties] = useState(true);
-  const [loadingSubCounties, setLoadingSubCounties] = useState(false);
-  const [loadingWards, setLoadingWards] = useState(false);
-  const [loadingVillages, setLoadingVillages] = useState(false);
 
   // Load counties on component mount
   useEffect(() => {
@@ -75,63 +69,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
     }
   };
 
-  // Load sub-counties when county changes
-  const loadSubCounties = async (countyId: number) => {
-    try {
-      setLoadingSubCounties(true);
-      setSubCounties([]);
-      setWards([]);
-      setVillages([]);
 
-      const subCountiesData = await apiService.getLocationHierarchy('sub_county', countyId);
-      setSubCounties(Array.isArray(subCountiesData) ? subCountiesData : []);
-    } catch (error) {
-      console.error('Failed to load sub-counties:', error);
-      setSubCounties([]);
-    } finally {
-      setLoadingSubCounties(false);
-    }
-  };
-
-  // Reset hierarchy selections
-  const resetHierarchy = () => {
-    setSubCounties([]);
-    setWards([]);
-    setVillages([]);
-  };
-
-  // Load wards when sub-county changes
-  const loadWards = async (subCountyId: number) => {
-    try {
-      setLoadingWards(true);
-      setWards([]);
-      setVillages([]);
-
-      const wardsData = await apiService.getLocationHierarchy('ward', undefined, subCountyId);
-      setWards(Array.isArray(wardsData) ? wardsData : []);
-    } catch (error) {
-      console.error('Failed to load wards:', error);
-      setWards([]);
-    } finally {
-      setLoadingWards(false);
-    }
-  };
-
-  // Load villages when ward changes
-  const loadVillages = async (wardId: number) => {
-    try {
-      setLoadingVillages(true);
-      setVillages([]);
-
-      const villagesData = await apiService.getLocationHierarchy('village', undefined, wardId);
-      setVillages(Array.isArray(villagesData) ? villagesData : []);
-    } catch (error) {
-      console.error('Failed to load villages:', error);
-      setVillages([]);
-    } finally {
-      setLoadingVillages(false);
-    }
-  };
 
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -147,33 +85,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
       setErrors(prev => ({ ...prev, [name]: undefined }));
     }
 
-    // Handle location hierarchy changes
-    if (name === 'county_id' && value) {
-      resetHierarchy();
-      loadSubCounties(parseInt(value));
-      setFormData(prev => ({ 
-        ...prev, 
-        sub_county_id: undefined, 
-        ward_id: undefined, 
-        village_id: undefined 
-      }));
-    } else if (name === 'sub_county_id' && value) {
-      setWards([]);
-      setVillages([]);
-      loadWards(parseInt(value));
-      setFormData(prev => ({ 
-        ...prev, 
-        ward_id: undefined, 
-        village_id: undefined 
-      }));
-    } else if (name === 'ward_id' && value) {
-      setVillages([]);
-      loadVillages(parseInt(value));
-      setFormData(prev => ({ 
-        ...prev, 
-        village_id: undefined 
-      }));
-    }
+    // No additional hierarchy handling needed for county-only selection
   };
 
   // Validate form
@@ -275,7 +187,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
     <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Register for CivicAI</h2>
-        <p className="text-gray-600 mt-2">Create your account to engage with your county government</p>
+        <p className="text-gray-600 mt-2">Create your account to engage with the National Assembly</p>
       </div>
 
       {errors.general && (
@@ -420,83 +332,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
           )}
         </div>
 
-        {/* Sub-County Selection */}
-        {formData.county_id > 0 && (
-          <div>
-            <label htmlFor="sub_county_id" className="block text-sm font-medium text-gray-700 mb-1">
-              Sub-County (Optional)
-            </label>
-            <select
-              id="sub_county_id"
-              name="sub_county_id"
-              value={formData.sub_county_id || ''}
-              onChange={handleInputChange}
-              disabled={loadingSubCounties}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">
-                {loadingSubCounties ? 'Loading sub-counties...' : 'Select sub-county (optional)'}
-              </option>
-              {Array.isArray(subCounties) && subCounties.map((subCounty) => (
-                <option key={subCounty.id} value={subCounty.id}>
-                  {subCounty.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
 
-        {/* Ward Selection */}
-        {formData.sub_county_id && (
-          <div>
-            <label htmlFor="ward_id" className="block text-sm font-medium text-gray-700 mb-1">
-              Ward (Optional)
-            </label>
-            <select
-              id="ward_id"
-              name="ward_id"
-              value={formData.ward_id || ''}
-              onChange={handleInputChange}
-              disabled={loadingWards}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">
-                {loadingWards ? 'Loading wards...' : 'Select ward (optional)'}
-              </option>
-              {Array.isArray(wards) && wards.map((ward) => (
-                <option key={ward.id} value={ward.id}>
-                  {ward.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {/* Village Selection */}
-        {formData.ward_id && (
-          <div>
-            <label htmlFor="village_id" className="block text-sm font-medium text-gray-700 mb-1">
-              Village (Optional)
-            </label>
-            <select
-              id="village_id"
-              name="village_id"
-              value={formData.village_id || ''}
-              onChange={handleInputChange}
-              disabled={loadingVillages}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">
-                {loadingVillages ? 'Loading villages...' : 'Select village (optional)'}
-              </option>
-              {Array.isArray(villages) && villages.map((village) => (
-                <option key={village.id} value={village.id}>
-                  {village.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
 
         {/* Submit Button */}
         <button

@@ -1,6 +1,6 @@
 /**
  * Role-based Routing Utilities
- * Handles navigation logic based on user roles and official levels
+ * Handles navigation logic based on user roles and admin levels
  */
 
 import { AuthUser } from '../types';
@@ -9,13 +9,8 @@ import { AuthUser } from '../types';
  * Dashboard route mappings based on user role and level
  */
 export const DASHBOARD_ROUTES = {
-  citizen: '/citizen-dashboard',
-  government_official: {
-    local: '/gov-dashboard',
-    regional: '/gov-dashboard', 
-    national: '/gov-dashboard',
-    super_admin: '/admin-dashboard',
-  },
+  citizen: '/dashboard',
+  parliament_admin: '/admin-dashboard',
 } as const;
 
 /**
@@ -30,21 +25,8 @@ export const getDashboardRoute = (user: AuthUser): string => {
     case 'citizen':
       return DASHBOARD_ROUTES.citizen;
       
-    case 'government_official':
-      // Check official level for government officials
-      switch (user.official_level) {
-        case 'local':
-          return DASHBOARD_ROUTES.government_official.local;
-        case 'regional':
-          return DASHBOARD_ROUTES.government_official.regional;
-        case 'national':
-          return DASHBOARD_ROUTES.government_official.national;
-        case 'super_admin':
-          return DASHBOARD_ROUTES.government_official.super_admin;
-        default:
-          // Default to local level if no specific level is set
-          return DASHBOARD_ROUTES.government_official.local;
-      }
+    case 'parliament_admin':
+      return DASHBOARD_ROUTES.parliament_admin;
       
     default:
       // Default to citizen dashboard for unknown roles
@@ -74,51 +56,31 @@ export const canAccessRoute = (user: AuthUser | null, route: string): boolean =>
       // Citizens can access citizen dashboard and public routes
       return [
         '/',
-        '/citizen-dashboard',
+        '/dashboard',
         '/feedback',
         '/track-feedback',
       ].includes(route);
       
-    case 'government_official':
-      switch (user.official_level) {
-        case 'super_admin':
-          // Super admins can access everything
-          return true;
-          
-        case 'national':
-          // National officials can access national and regional dashboards
-          return [
-            '/',
-            '/gov-dashboard',
-            '/admin-dashboard', // Limited admin access
-            '/reports',
-            '/analytics',
-          ].includes(route);
-          
-        case 'regional':
-          // Regional officials can access regional dashboards
-          return [
-            '/',
-            '/gov-dashboard',
-            '/reports',
-            '/analytics',
-          ].includes(route);
-          
-        case 'local':
-        default:
-          // Local officials can access local dashboards
-          return [
-            '/',
-            '/gov-dashboard',
-            '/reports',
-          ].includes(route);
+    case 'parliament_admin':
+      // Parliament admins can access admin features
+      if (user.admin_level === 'super_admin') {
+        // Super admins can access everything
+        return true;
+      } else {
+        // Regular parliament admins
+        return [
+          '/',
+          '/admin-dashboard',
+          '/reports',
+          '/analytics',
+        ].includes(route);
       }
       
     default:
       // Unknown roles get citizen-level access
       return [
         '/',
-        '/citizen-dashboard',
+        '/dashboard',
       ].includes(route);
   }
 };
@@ -135,18 +97,11 @@ export const getRoleDisplayName = (user: AuthUser): string => {
   switch (user.role) {
     case 'citizen':
       return 'Citizen';
-    case 'government_official':
-      switch (user.official_level) {
-        case 'local':
-          return 'Local Government Official';
-        case 'regional':
-          return 'Regional Government Official';
-        case 'national':
-          return 'National Government Official';
-        case 'super_admin':
-          return 'Super Administrator';
-        default:
-          return 'Government Official';
+    case 'parliament_admin':
+      if (user.admin_level === 'super_admin') {
+        return 'Super Administrator';
+      } else {
+        return 'Parliament Administrator';
       }
     default:
       return 'User';
@@ -180,41 +135,22 @@ export const getNavigationItems = (user: AuthUser | null) => {
         { name: 'Track Status', href: '/track' },
       ];
       
-    case 'government_official':
-      switch (user.official_level) {
-        case 'super_admin':
-          return [
-            ...baseItems,
-            { name: 'System Admin', href: '/admin-dashboard' },
-            { name: 'User Management', href: '/admin/users' },
-            { name: 'System Reports', href: '/admin/reports' },
-            { name: 'Audit Logs', href: '/admin/audit' },
-          ];
-          
-        case 'national':
-          return [
-            ...baseItems,
-            { name: 'National Reports', href: '/reports/national' },
-            { name: 'Analytics', href: '/analytics' },
-            { name: 'Policy Dashboard', href: '/policy' },
-          ];
-          
-        case 'regional':
-          return [
-            ...baseItems,
-            { name: 'Regional Reports', href: '/reports/regional' },
-            { name: 'County Analytics', href: '/analytics/county' },
-            { name: 'Coordination', href: '/coordination' },
-          ];
-          
-        case 'local':
-        default:
-          return [
-            ...baseItems,
-            { name: 'Feedback Management', href: '/feedback-management' },
-            { name: 'County Reports', href: '/reports/county' },
-            { name: 'Response Tools', href: '/response-tools' },
-          ];
+    case 'parliament_admin':
+      if (user.admin_level === 'super_admin') {
+        return [
+          ...baseItems,
+          { name: 'System Admin', href: '/admin-dashboard' },
+          { name: 'User Management', href: '/admin/users' },
+          { name: 'System Reports', href: '/admin/reports' },
+          { name: 'Audit Logs', href: '/admin/audit' },
+        ];
+      } else {
+        return [
+          ...baseItems,
+          { name: 'Bills & Projects', href: '/admin-dashboard/projects' },
+          { name: 'Feedback Management', href: '/admin-dashboard/feedback' },
+          { name: 'Analytics', href: '/admin-dashboard/analytics' },
+        ];
       }
       
     default:
@@ -230,17 +166,11 @@ export const getDashboardTitle = (user: AuthUser): string => {
     case 'citizen':
       return `Welcome, ${user.name}`;
       
-    case 'government_official':
-      switch (user.official_level) {
-        case 'super_admin':
-          return 'System Administration Dashboard';
-        case 'national':
-          return 'National Government Dashboard';
-        case 'regional':
-          return `Regional Dashboard - ${user.county_name}`;
-        case 'local':
-        default:
-          return `${user.county_name} County Dashboard`;
+    case 'parliament_admin':
+      if (user.admin_level === 'super_admin') {
+        return 'System Administration Dashboard';
+      } else {
+        return 'Parliament Administration Dashboard';
       }
       
     default:

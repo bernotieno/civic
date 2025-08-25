@@ -23,9 +23,9 @@ import FeedbackSuccess from '../feedback/FeedbackSuccess';
 import FeedbackError from '../feedback/FeedbackError';
 import FeedbackTracker from '../feedback/FeedbackTracker';
 import FeedbackHistory from '../feedback/FeedbackHistory';
-import CountyProjects from './CountyProjects';
+import BillsAndProjects from './BillsAndProjects';
 import ProjectDetailsModal from './ProjectDetailsModal';
-import { Project } from '../../data/projects';
+import { Project } from '../../types';
 
 
 
@@ -69,7 +69,7 @@ const CitizensDashboard: React.FC = () => {
   // Handle URL parameters for view navigation
   useEffect(() => {
     const viewParam = searchParams.get('view');
-    if (viewParam && ['home', 'submit-feedback', 'my-feedback', 'track-feedback', 'county-projects', 'community-impact'].includes(viewParam)) {
+    if (viewParam && ['home', 'submit-feedback', 'my-feedback', 'track-feedback', 'bills-projects', 'community-impact'].includes(viewParam)) {
       setCurrentView(viewParam as DashboardView);
     }
   }, [searchParams]);
@@ -297,8 +297,12 @@ const CitizensDashboard: React.FC = () => {
               <FeedbackTracker onBack={handleBackToHome} />
             )}
 
-            {currentView === 'county-projects' && (
-              <CountyProjects onProjectSelect={setSelectedProject} />
+            {currentView === 'bills-projects' && (
+              <BillsAndProjects onFeedbackClick={(billId, projectId) => {
+                // Navigate to feedback form with pre-selected bill/project
+                handleViewChange('submit-feedback');
+                // TODO: Pass billId/projectId to feedback form
+              }} />
             )}
 
             {currentView === 'community-impact' && (

@@ -13,8 +13,7 @@ class UserContext:
     def __init__(self, user):
         self.user = user
         self.role = user.role
-        self.level = user.official_level
-        self.accessible_counties = user.get_accessible_counties()
+        self.level = getattr(user, 'admin_level', None)
         self.app_config = self._get_app_config()
     
     def _get_app_config(self):
@@ -45,55 +44,34 @@ class UserContext:
                 'data_scope': 'none',  # Cannot see any existing data
                 'max_submissions_per_session': 3,
             },
-            'government_official_local': {
+            'parliament_admin': {
                 'available_endpoints': [
-                    '/api/county-feedback/',
-                    '/api/county-stats/',
-                    '/api/response-tools/',
-                ],
-                'dashboard_widgets': ['county_overview', 'pending_feedback', 'response_tools'],
-                'navigation_items': ['Dashboard', 'Feedback Management', 'County Reports'],
-                'data_scope': 'home_county_only',
-            },
-            'government_official_regional': {
-                'available_endpoints': [
-                    '/api/multi-county-feedback/',
-                    '/api/regional-analytics/',
-                    '/api/county-comparison/',
-                ],
-                'dashboard_widgets': ['regional_overview', 'multi_county_comparison', 'trends'],
-                'navigation_items': ['Regional Dashboard', 'Multi-County Analytics', 'Reports'],
-                'data_scope': 'assigned_counties_only',
-            },
-            'government_official_national': {
-                'available_endpoints': [
+                    '/api/admin/',
                     '/api/national-analytics/',
-                    '/api/all-counties/',
-                    '/api/system-metrics/',
-                    '/api/user-management/',
+                    '/api/bills/',
+                    '/api/projects/',
+                    '/api/feedback/',
                 ],
-                'dashboard_widgets': ['national_overview', 'county_performance', 'system_analytics'],
-                'navigation_items': ['National Dashboard', 'All Counties', 'System Analytics', 'User Management'],
+                'dashboard_widgets': ['national_overview', 'bills_management', 'projects_management', 'feedback_management'],
+                'navigation_items': ['Dashboard', 'Bills & Projects', 'Feedback Management', 'Analytics'],
                 'data_scope': 'full_system',
             },
-            'government_official_super_admin': {
+            'super_admin': {
                 'available_endpoints': [
                     '/api/admin/',
                     '/api/system-config/',
                     '/api/audit-logs/',
                     '/api/data-export/',
+                    '/api/user-management/',
                 ],
-                'dashboard_widgets': ['system_admin', 'audit_trail', 'data_management'],
-                'navigation_items': ['System Administration', 'Audit Logs', 'Data Management'],
+                'dashboard_widgets': ['system_admin', 'audit_trail', 'data_management', 'user_management'],
+                'navigation_items': ['System Administration', 'User Management', 'Audit Logs', 'Data Management'],
                 'data_scope': 'full_system_admin',
             }
         }
         
-        # Construct key based on role and level
-        if self.role == 'government_official' and self.level:
-            config_key = f"{self.role}_{self.level}"
-        else:
-            config_key = self.role
+        # Use role directly for new simplified structure
+        config_key = self.role
         
         return configs.get(config_key, configs['citizen'])  # Default to citizen config
     
@@ -112,10 +90,6 @@ class UserContext:
         
         if scope == 'own_submissions_only':
             return Q(user=self.user)
-        elif scope == 'home_county_only':
-            return Q(county=self.user.home_county)
-        elif scope == 'assigned_counties_only':
-            return Q(county__in=self.accessible_counties)
         elif scope in ['full_system', 'full_system_admin']:
             return Q()  # No filter - see everything
         else:  # 'none' or unknown

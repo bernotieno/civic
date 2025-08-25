@@ -52,12 +52,12 @@ class CountyAdmin(admin.ModelAdmin):
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
     list_display = [
-        'name', 'email', 'role', 'official_level', 
-        'tenant', 'home_county', 'is_active', 'is_deleted'
+        'name', 'email', 'role', 'admin_level', 
+        'user_county', 'is_active', 'is_deleted'
     ]
     list_filter = [
-        'role', 'official_level', 'is_active', 'is_deleted',
-        'tenant', 'home_county'
+        'role', 'admin_level', 'is_active', 'is_deleted',
+        'user_county'
     ]
     search_fields = ['name', 'email', 'national_id_hash']
     ordering = ['name']
@@ -75,13 +75,8 @@ class CustomUserAdmin(UserAdmin):
             'description': 'User\'s location in Kenya\'s administrative hierarchy'
         }),
         ('Role & Permissions', {
-            'fields': ('role', 'official_level', 'tenant', 'home_county'),
+            'fields': ('role', 'admin_level', 'user_county'),
             'description': 'Role determines what the user can see and do'
-        }),
-        ('Government Official Access', {
-            'fields': ('accessible_counties',),
-            'classes': ('collapse',),
-            'description': 'Additional counties this official can access (regional+ only)'
         }),
         ('Audit Trail', {
             'fields': ('role_assigned_by', 'role_assigned_at'),
@@ -107,15 +102,15 @@ class CustomUserAdmin(UserAdmin):
             'fields': ('national_id_hash', 'password1', 'password2'),
         }),
         ('Basic Info', {
-            'fields': ('name', 'email', 'role', 'tenant'),
+            'fields': ('name', 'email', 'role', 'user_county'),
         }),
         ('Location', {
             'fields': ('county',),
         }),
     )
     
-    filter_horizontal = ('accessible_counties', 'groups', 'user_permissions')
-    raw_id_fields = ['county', 'sub_county', 'ward', 'village', 'tenant', 'home_county', 'role_assigned_by']
+    filter_horizontal = ('groups', 'user_permissions')
+    raw_id_fields = ['county', 'sub_county', 'ward', 'village', 'user_county', 'role_assigned_by']
     
     def get_queryset(self, request):
         return self.model.all_objects.get_queryset()

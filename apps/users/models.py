@@ -262,18 +262,20 @@ class CustomUserManager(UserManager):
         extra_fields.setdefault('is_staff', False)
         extra_fields.setdefault('is_superuser', False)
         
-        # Ensure tenant is set (required field)
-        if 'tenant' not in extra_fields:
-            # Default to Nairobi if no tenant specified
+        # Ensure user_county is set (required field)
+        if 'user_county' not in extra_fields:
+            # Default to first available county if no county specified
             try:
-                default_county = County.objects.get(code='NBI')
-                extra_fields['tenant'] = default_county
-            except County.DoesNotExist:
-                raise ValueError('Default county (Nairobi) not found. Please create counties first.')
+                default_county = County.objects.first()
+                if not default_county:
+                    raise ValueError('No counties found. Please create counties first.')
+                extra_fields['user_county'] = default_county
+            except Exception:
+                raise ValueError('Default county not found. Please create counties first.')
         
         # Ensure county location is set (required field)
-        if 'county' not in extra_fields and 'tenant' in extra_fields:
-            extra_fields['county'] = extra_fields['tenant'].location
+        if 'county' not in extra_fields and 'user_county' in extra_fields:
+            extra_fields['county'] = extra_fields['user_county'].location
         
         user = self.model(
             national_id_hash=national_id_hash,
@@ -289,8 +291,8 @@ class CustomUserManager(UserManager):
         """Create superuser with national ID hash"""
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('role', 'government_official')
-        extra_fields.setdefault('official_level', 'super_admin')
+        extra_fields.setdefault('role', 'parliament_admin')
+        extra_fields.setdefault('admin_level', 'super_admin')
         
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')
@@ -317,14 +319,12 @@ class CustomUserManager(UserManager):
 # Role definitions
 ROLE_CHOICES = [
     ('citizen', 'Citizen'),
-    ('government_official', 'Government Official'),
+    ('parliament_admin', 'Parliament Administrator'),
     ('anonymous', 'Anonymous'),
 ]
 
-GOVERNMENT_OFFICIAL_LEVELS = [
-    ('local', 'Local Official'),      # Home county only
-    ('regional', 'Regional Official'), # Multiple counties
-    ('national', 'National Official'), # All counties
+PARLIAMENT_ADMIN_LEVELS = [
+    ('parliament_admin', 'Parliament Administrator'), # National Assembly admin
     ('super_admin', 'Super Administrator'), # System-wide access
 ]
 
@@ -379,34 +379,20 @@ class CustomUser(AbstractUser, SoftDeleteModel):
     
     # Role and permission system
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='citizen', db_index=True)
-    official_level = models.CharField(
+    admin_level = models.CharField(
         max_length=20, 
-        choices=GOVERNMENT_OFFICIAL_LEVELS,
+        choices=PARLIAMENT_ADMIN_LEVELS,
         null=True, blank=True,
-        help_text="Only applicable for government_official role"
+        help_text="Only applicable for parliament_admin role"
     )
     
-    # Tenant system (CRITICAL for data isolation)
-    tenant = models.ForeignKey(
+    # National system - no tenant isolation needed
+    # County is kept only for user location reference
+    user_county = models.ForeignKey(
         'County', 
         on_delete=models.CASCADE, 
         related_name='users',
-        help_text="County this user belongs to - determines data access scope"
-    )
-    
-    # Government official specific fields
-    home_county = models.ForeignKey(
-        'County', 
-        on_delete=models.CASCADE, 
-        related_name='home_officials',
-        null=True, blank=True,
-        help_text="Home county for government officials"
-    )
-    accessible_counties = models.ManyToManyField(
-        'County',
-        blank=True,
-        related_name='accessible_by_officials',
-        help_text="Counties this official can access (for regional+ levels)"
+        help_text="User's county for location reference only"
     )
     
     # Audit trail for role assignments
@@ -428,11 +414,10 @@ class CustomUser(AbstractUser, SoftDeleteModel):
     
     class Meta:
         indexes = [
-            models.Index(fields=['tenant', 'role']),
-            models.Index(fields=['home_county', 'official_level']),
+            models.Index(fields=['user_county', 'role']),
             models.Index(fields=['email'], name='idx_email'),
             models.Index(fields=['is_deleted', 'role']),
-            models.Index(fields=['role', 'official_level']),
+            models.Index(fields=['role', 'admin_level']),
             models.Index(fields=['national_id_hash']),
         ]
     
@@ -451,54 +436,51 @@ class CustomUser(AbstractUser, SoftDeleteModel):
     
     def clean(self):
         """Validate user data consistency"""
-        # Government officials must have official_level
-        if self.role == 'government_official' and not self.official_level:
-            raise ValidationError("Government officials must have an official level")
+        # Parliament admins must have admin_level
+        if self.role == 'parliament_admin' and not self.admin_level:
+            raise ValidationError("Parliament administrators must have an admin level")
         
-        # Non-government roles should not have official_level
-        if self.role != 'government_official' and self.official_level:
-            raise ValidationError("Only government officials can have an official level")
-        
-        # Government officials must have home_county
-        if self.role == 'government_official' and not self.home_county:
-            raise ValidationError("Government officials must have a home county")
+        # Skip admin_level validation for existing users during migration
+        # This allows users with old 'government_official' role to login
+        if hasattr(self, '_state') and self._state.adding:
+            # Only validate for new users
+            if self.role != 'parliament_admin' and self.admin_level:
+                raise ValidationError("Only parliament administrators can have an admin level")
     
     def save(self, *args, **kwargs):
         # Set username to national_id_hash for Django compatibility
         if not self.username:
             self.username = self.national_id_hash
         
-        self.clean()
+        # Skip validation during login to allow existing users
+        if not kwargs.pop('skip_validation', False):
+            self.clean()
         super().save(*args, **kwargs)
     
-    def get_accessible_counties(self):
+    def has_national_access(self):
         """
-        CRITICAL: This method determines what data the user can see.
-        Used by middleware to filter ALL queries automatically.
+        CRITICAL: This method determines if user has national access.
+        All users now have national scope for bills and projects.
         
-        DO NOT modify this logic without updating middleware.
+        Citizens can view all national content but only manage their own submissions.
+        Parliament admins can manage all national content.
         """
-        if self.role != 'government_official':
-            # Citizens and anonymous users only see their tenant county
-            return County.objects.filter(id=self.tenant.id)
-        
-        if self.official_level == 'local':
-            return County.objects.filter(id=self.home_county.id)
-        elif self.official_level == 'regional':
-            return self.accessible_counties.all()
-        elif self.official_level in ['national', 'super_admin']:
-            return County.objects.all()
-        else:
-            # Fallback to home county for safety
-            return County.objects.filter(id=self.home_county.id)
+        return True  # All users have national access in this system
     
     def is_anonymous_user(self):
         """Returns True if this is an anonymous submission user"""
         return self.role == 'anonymous'
     
-    def can_access_county(self, county):
-        """Check if user can access specific county data"""
-        return county in self.get_accessible_counties()
+    def can_manage_national_content(self):
+        """Check if user can manage national bills and projects"""
+        return self.role in ['parliament_admin', 'super_admin']
+    
+    def get_admin_level_display(self):
+        """Get display name for admin level"""
+        if not self.admin_level:
+            return None
+        level_dict = dict(PARLIAMENT_ADMIN_LEVELS)
+        return level_dict.get(self.admin_level, self.admin_level)
     
     def get_location_hierarchy(self):
         """Return user's complete location hierarchy"""

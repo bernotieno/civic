@@ -55,7 +55,7 @@ const DashboardPage: React.FC = () => {
   }
 
   // Redirect admin users to admin dashboard
-  if (user.role === 'super_admin' || user.role === 'national_official' || user.role === 'regional_official' || user.role === 'local_official') {
+  if (user.role === 'parliament_admin') {
     navigate('/admin-dashboard', { replace: true });
     return null;
   }

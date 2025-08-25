@@ -11,9 +11,14 @@ interface Project {
   project_type: string;
   status: string;
   budget: string | null;
+  implementing_ministry?: string;
+  target_beneficiaries?: string;
+  start_date?: string;
+  end_date?: string;
+  public_participation_open: boolean;
+  participation_deadline?: string;
   image: string | null;
   document: string | null;
-  county: string;
   created_by: string;
   created_at: string;
 }
@@ -46,7 +51,7 @@ const ProjectList: React.FC = () => {
     setLoading(true);
     try {
       // Fetch public projects - no auth needed for public view
-      const response = await fetch('http://localhost:8000/api/public/projects/');
+      const response = await fetch('http://127.0.0.1:8000/api/public/projects/');
       
       if (response.ok) {
         const data = await response.json();
@@ -62,9 +67,14 @@ const ProjectList: React.FC = () => {
           category: p.project_type,
           status: p.status,
           budget: p.budget ? `KSh ${Number(p.budget).toLocaleString()}` : 'Budget not specified',
-          image: p.image ? `http://localhost:8000${p.image}` : '/api/placeholder/400/300',
-          document: p.document ? `http://localhost:8000${p.document}` : null,
-          county: p.county,
+          implementing_ministry: p.implementing_ministry,
+          target_beneficiaries: p.target_beneficiaries,
+          start_date: p.start_date,
+          end_date: p.end_date,
+          public_participation_open: p.public_participation_open,
+          participation_deadline: p.participation_deadline,
+          image: p.image ? `http://127.0.0.1:8000${p.image}` : '/api/placeholder/400/300',
+          document: p.document ? `http://127.0.0.1:8000${p.document}` : null,
           created_by: p.created_by,
           created_at: p.created_at
         }));
@@ -94,10 +104,10 @@ const ProjectList: React.FC = () => {
       const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            project.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = !statusFilter || project.status === statusFilter;
-      const matchesCounty = !countyFilter || project.county === countyFilter;
+      const matchesMinistry = !countyFilter || (project.implementing_ministry && project.implementing_ministry.includes(countyFilter));
       const matchesCategory = !categoryFilter || project.project_type === categoryFilter;
       
-      return matchesSearch && matchesStatus && matchesCounty && matchesCategory;
+      return matchesSearch && matchesStatus && matchesMinistry && matchesCategory;
     });
     
     setFilteredProjects(filtered);
@@ -107,9 +117,11 @@ const ProjectList: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'ongoing': return 'bg-green-100 text-green-700';
-      case 'completed': return 'bg-blue-100 text-blue-700';
-      case 'planned': return 'bg-yellow-100 text-yellow-700';
+      case 'proposed': return 'bg-yellow-100 text-yellow-700';
+      case 'approved': return 'bg-blue-100 text-blue-700';
+      case 'in_progress': return 'bg-green-100 text-green-700';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'suspended': return 'bg-red-100 text-red-700';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -127,7 +139,7 @@ const ProjectList: React.FC = () => {
   const hasMoreProjects = displayedProjects.length < filteredProjects.length;
 
   // Get unique values for filters
-  const uniqueCounties = [...new Set(allProjects.map(p => p.county))];
+  const uniqueMinistries = [...new Set(allProjects.map(p => p.implementing_ministry).filter(Boolean))];
   const uniqueCategories = [...new Set(allProjects.map(p => p.project_type))];
   const uniqueStatuses = [...new Set(allProjects.map(p => p.status))];
 
@@ -152,8 +164,8 @@ const ProjectList: React.FC = () => {
       <div className="py-8 pt-24">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">County Projects</h1>
-          <p className="text-xl text-gray-600">Discover ongoing development projects across Kenya's counties</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">National Projects</h1>
+          <p className="text-xl text-gray-600">Discover ongoing national development projects and parliamentary initiatives</p>
         </div>
 
         {/* Search and Filter Section */}
@@ -190,9 +202,9 @@ const ProjectList: React.FC = () => {
               onChange={(e) => setCountyFilter(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
-              <option value="">All Counties</option>
-              {uniqueCounties.map(county => (
-                <option key={county} value={county}>{county}</option>
+              <option value="">All Ministries</option>
+              {uniqueMinistries.map(ministry => (
+                <option key={ministry} value={ministry}>{ministry}</option>
               ))}
             </select>
 
@@ -247,17 +259,22 @@ const ProjectList: React.FC = () => {
               {/* Description */}
               <p className="text-gray-600 text-sm px-4 mt-2">{project.description}</p>
 
-              {/* Budget + Analysis */}
-              <div className="flex justify-between items-center px-4 mt-3 text-sm text-gray-700">
-                <div className="flex items-center gap-1">
+              {/* Budget + Ministry */}
+              <div className="px-4 mt-3 text-sm text-gray-700">
+                <div className="flex items-center gap-1 mb-1">
                   <Users size={16} />
                   <span>{project.budget}</span>
                 </div>
+                {project.implementing_ministry && (
+                  <div className="text-xs text-gray-500">
+                    Ministry: {project.implementing_ministry}
+                  </div>
+                )}
                 <button
                   onClick={() => navigate(`/project/${project.id}`)}
-                  className="text-blue-600 hover:underline font-medium flex items-center gap-1"
+                  className="text-blue-600 hover:underline font-medium flex items-center gap-1 mt-2"
                 >
-                  View Full Analysis →
+                  View Full Details →
                 </button>
               </div>
 
@@ -277,7 +294,7 @@ const ProjectList: React.FC = () => {
                       onClick={() => navigate(`/project/${project.id}`)}
                       className="bg-green-800 hover:bg-green-900 text-white text-sm px-4 py-2 rounded-md font-medium"
                     >
-                      Submit Feedback
+                      {project.public_participation_open ? 'Participate Now' : 'View Project'}
                     </button>
                   </>
                 ) : (
@@ -300,7 +317,7 @@ const ProjectList: React.FC = () => {
                       onClick={() => navigate('/login')}
                       className="bg-gray-400 text-white text-sm px-4 py-2 rounded-md font-medium"
                     >
-                      Login to Participate
+                      Login to Engage
                     </button>
                   </>
                 )}

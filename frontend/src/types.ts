@@ -3,7 +3,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'citizen' | 'government_official';
+  role: 'citizen' | 'parliament_admin';
   location?: Location;
 }
 
@@ -88,10 +88,8 @@ export interface AnonymousFeedbackData {
   content: string;
   category: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
-  county_id: number;
-  sub_county_id?: number;
-  ward_id?: number;
-  village_id?: number;
+  related_bill_id?: string;
+  related_project_id?: string;
 }
 
 // Dashboard Types
@@ -119,7 +117,48 @@ export interface NavItem {
 }
 
 // Dashboard View Types
-export type DashboardView = 'home' | 'submit-feedback' | 'my-feedback' | 'track-feedback' | 'county-projects' | 'community-impact' | 'feedback-success' | 'feedback-error';
+export type DashboardView = 'home' | 'submit-feedback' | 'my-feedback' | 'track-feedback' | 'bills-projects' | 'community-impact' | 'feedback-success' | 'feedback-error';
+
+// Bill Types
+export interface Bill {
+  id: string;
+  bill_number: string;
+  title: string;
+  description: string;
+  summary: string;
+  sponsor: string;
+  committee?: string;
+  status: 'draft' | 'first_reading' | 'committee_stage' | 'second_reading' | 'third_reading' | 'presidential_assent' | 'enacted' | 'withdrawn';
+  introduced_date?: string;
+  first_reading_date?: string;
+  committee_deadline?: string;
+  public_participation_open: boolean;
+  participation_deadline?: string;
+  document?: string;
+  image?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Project Types
+export interface Project {
+  id: string;
+  title: string;
+  description: string;
+  project_type: string;
+  status: 'proposed' | 'approved' | 'in_progress' | 'completed' | 'suspended';
+  budget?: number;
+  implementing_ministry?: string;
+  target_beneficiaries?: string;
+  start_date?: string;
+  end_date?: string;
+  public_participation_open: boolean;
+  participation_deadline?: string;
+  image?: string;
+  document?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 // API Response Types
 export interface ApiResponse<T> {
@@ -169,9 +208,6 @@ export interface RegistrationData {
   email: string;
   password: string;
   county_id: number;
-  sub_county_id?: number;
-  ward_id?: number;
-  village_id?: number;
 }
 
 export interface AuthUser {
@@ -180,15 +216,9 @@ export interface AuthUser {
   email: string;
   role: string;
   role_display: string;
-  official_level?: string;
+  admin_level?: string;
   level_display?: string;
   county_name: string;
-  tenant_name: string;
-  accessible_counties: Array<{
-    id: number;
-    name: string;
-    code: string;
-  }>;
   date_joined: string;
 }
 
@@ -325,10 +355,8 @@ export interface FeedbackSubmissionData {
   content: string;
   category: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
-  county_id: number;
-  sub_county_id?: number;
-  ward_id?: number;
-  village_id?: number;
+  related_bill_id?: string;
+  related_project_id?: string;
 }
 
 // Feedback Form Validation Errors
@@ -337,10 +365,8 @@ export interface FeedbackFormErrors {
   content?: string;
   category?: string;
   priority?: string;
-  county_id?: string;
-  sub_county_id?: string;
-  ward_id?: string;
-  village_id?: string;
+  related_bill_id?: string;
+  related_project_id?: string;
   general?: string;
 }
 

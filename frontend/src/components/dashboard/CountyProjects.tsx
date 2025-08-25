@@ -23,43 +23,18 @@ interface CountyProjectsProps {
 const CountyProjects: React.FC<CountyProjectsProps> = ({ onProjectSelect }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userCounty, setUserCounty] = useState<string>('');
 
   useEffect(() => {
-    fetchUserInfo();
+    fetchProjects();
   }, []);
 
-  const fetchUserInfo = async () => {
-    try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch('http://localhost:8000/api/auth/profile/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setUserCounty(data.user.county_name);
-        fetchProjects(data.user.county_name);
-      }
-    } catch (error) {
-      console.error('Error fetching user info:', error);
-      setLoading(false);
-    }
-  };
-
-  const fetchProjects = async (countyName: string) => {
+  const fetchProjects = async () => {
     try {
       const response = await fetch('http://localhost:8000/api/public/projects/');
       if (response.ok) {
         const data = await response.json();
-        // Filter projects by user's county
-        const countyProjects = data.data.filter((project: Project) => 
-          project.county === countyName
-        );
-        setProjects(countyProjects);
+        // Show all national projects
+        setProjects(data.data || []);
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -91,8 +66,8 @@ const CountyProjects: React.FC<CountyProjectsProps> = ({ onProjectSelect }) => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{userCounty} County Projects</h2>
-          <p className="text-gray-600">Explore ongoing and planned projects in your county</p>
+          <h2 className="text-2xl font-bold text-gray-900">National Projects</h2>
+          <p className="text-gray-600">Explore ongoing and planned national development projects</p>
         </div>
         <div className="text-right">
           <p className="text-2xl font-bold text-blue-600">{projects.length}</p>

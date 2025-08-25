@@ -136,6 +136,51 @@ const AdminOverview: React.FC = () => {
         </div>
       </div>
 
+      {/* Bills Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Bills</p>
+              <p className="text-2xl font-bold text-gray-900">{stats?.total_bills || 0}</p>
+            </div>
+            <div className="text-3xl">📜</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Active Bills</p>
+              <p className="text-2xl font-bold text-gray-900">{stats?.active_bills || 0}</p>
+            </div>
+            <div className="text-3xl">⚖️</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Counties</p>
+              <p className="text-2xl font-bold text-gray-900">{stats?.total_counties || 47}</p>
+            </div>
+            <div className="text-3xl">🏛️</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Response Rate</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats?.total_feedback > 0 ? Math.round((stats?.responded_feedback / stats?.total_feedback) * 100) : 0}%
+              </p>
+            </div>
+            <div className="text-3xl">📊</div>
+          </div>
+        </div>
+      </div>
+
       {/* Recent Feedback */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
@@ -149,7 +194,7 @@ const AdminOverview: React.FC = () => {
                   <div className="flex-1">
                     <h4 className="font-medium text-gray-900">{feedback.title}</h4>
                     <p className="text-sm text-gray-600">
-                      {feedback.category_display || feedback.category} • {feedback.county} • {feedback.user_name}
+                      {feedback.category_display || feedback.category} • {feedback.user_name} • {feedback.county}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
                       ID: {feedback.tracking_id} • {new Date(feedback.created_at).toLocaleDateString()}
@@ -189,12 +234,17 @@ const AdminOverview: React.FC = () => {
             <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
               <div className="text-2xl mb-2">🏗️</div>
               <h4 className="font-medium text-gray-900">Manage Projects</h4>
-              <p className="text-sm text-gray-600">Create and update project status</p>
+              <p className="text-sm text-gray-600">Create and update national projects</p>
             </button>
             <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <div className="text-2xl mb-2">👥</div>
-              <h4 className="font-medium text-gray-900">Manage Users</h4>
-              <p className="text-sm text-gray-600">View and manage user accounts</p>
+              <div className="text-2xl mb-2">📜</div>
+              <h4 className="font-medium text-gray-900">Manage Bills</h4>
+              <p className="text-sm text-gray-600">Create and track parliamentary bills</p>
+            </button>
+            <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <div className="text-2xl mb-2">📊</div>
+              <h4 className="font-medium text-gray-900">View Analytics</h4>
+              <p className="text-sm text-gray-600">National engagement analytics</p>
             </button>
           </div>
         </div>
