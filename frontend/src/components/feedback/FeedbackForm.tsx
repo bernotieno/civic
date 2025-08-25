@@ -15,16 +15,35 @@ import { apiService } from '../../services/api';
 import { useLocationHierarchy } from '../../hooks/useLocationHierarchy';
 
 interface FeedbackFormProps {
-  user: AuthUser;
-  onSubmissionSuccess: (trackingId: string, data: any) => void;
-  onSubmissionError: (error: string) => void;
+  user: AuthUser | null;
+  onSuccess: (trackingId: string, data: any) => void;
+  onError: (error: string) => void;
+  onCancel?: () => void;
+  allowAnonymous?: boolean;
 }
 
 export const FeedbackForm: React.FC<FeedbackFormProps> = ({
   user,
-  onSubmissionSuccess,
-  onSubmissionError
+  onSuccess,
+  onError,
+  onCancel,
+  allowAnonymous = false
 }) => {
+  
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [anonymousSession, setAnonymousSession] = useState<any>(null);
+  const [creatingSession, setCreatingSession] = useState(false);
+
+  if (!user && !allowAnonymous) {
+    return (
+      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h2>
+          <p className="text-gray-600">Please log in to submit feedback.</p>
+        </div>
+      </div>
+    );
+  }
   // Form state
   const [formData, setFormData] = useState<FeedbackSubmissionData>({
     title: '',
@@ -77,6 +96,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
       try {
         // Load feedback categories
         const categoriesResponse = await apiService.getFeedbackCategories();
+        console.log('📂 Categories response:', categoriesResponse);
         if (categoriesResponse.success) {
           setCategories(categoriesResponse.data.categories);
         }
@@ -85,22 +105,32 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
         const rateLimitStatus = await apiService.checkRateLimit();
         setRateLimitInfo(rateLimitStatus);
 
-        // Set user's county as default if available
-        if (user.accessible_counties && user.accessible_counties.length > 0 && counties.length > 0) {
-          const userCountyData = user.accessible_counties[0];
-          const userCounty = counties.find(c => c.id === userCountyData.id);
-          if (userCounty) {
-            const locationCounty = {
-              id: userCounty.id,
-              name: userCounty.name,
-              type: 'county' as const,
-              level: 0,
-              code: userCounty.code || '',
-              full_path: userCounty.name,
-              children: []
-            };
-            await selectCounty(locationCounty);
-            setFormData(prev => ({ ...prev, county_id: userCounty.id }));
+        // Set user's county as default if available (skip for anonymous)
+        if (user?.accessible_counties && !isAnonymous) {
+          console.log('🏛️ Setting default county:', {
+            userAccessibleCounties: user.accessible_counties,
+            availableCounties: counties
+          });
+          
+          if (user.accessible_counties.length > 0 && counties.length > 0) {
+            const userCountyData = user.accessible_counties[0];
+            const userCounty = counties.find(c => c.id === userCountyData.id);
+            console.log('🎯 Found user county:', userCounty);
+            
+            if (userCounty) {
+              const locationCounty = {
+                id: userCounty.id,
+                name: userCounty.name,
+                type: 'county' as const,
+                level: 0,
+                code: userCounty.code || '',
+                full_path: userCounty.name,
+                children: []
+              };
+              await selectCounty(locationCounty);
+              setFormData(prev => ({ ...prev, county_id: userCounty.id }));
+              console.log('✅ Default county set:', userCounty.id);
+            }
           }
         }
       } catch (error) {
@@ -118,6 +148,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
    */
   useEffect(() => {
     const locationData = getSelectionData();
+    console.log('📍 Location data updated:', locationData);
     setFormData(prev => ({
       ...prev,
       county_id: locationData.county_id || 0,
@@ -126,6 +157,62 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
       village_id: locationData.village_id || undefined,
     }));
   }, [getSelectionData]);
+
+  /**
+   * Handle anonymous mode toggle
+   */
+  const handleAnonymousToggle = async () => {
+    if (!isAnonymous) {
+      // Switching to anonymous mode - create session if county is selected
+      if (formData.county_id) {
+        await createAnonymousSession(formData.county_id);
+      }
+      setIsAnonymous(true);
+    } else {
+      // Switching back to authenticated mode
+      setIsAnonymous(false);
+      setAnonymousSession(null);
+      apiService.clearAnonymousSession();
+    }
+  };
+
+  /**
+   * Create anonymous session for selected county
+   */
+  const createAnonymousSession = async (countyId: number) => {
+    if (creatingSession) return;
+    
+    setCreatingSession(true);
+    try {
+      const sessionResponse = await apiService.createAnonymousSession(countyId);
+      if (sessionResponse.success) {
+        setAnonymousSession({
+          session_id: sessionResponse.session_id,
+          county_id: countyId,
+          max_submissions: sessionResponse.max_submissions,
+          expires_in: sessionResponse.expires_in
+        });
+        console.log('✅ Anonymous session created:', sessionResponse.session_id);
+      } else {
+        throw new Error(sessionResponse.message || 'Failed to create anonymous session');
+      }
+    } catch (error) {
+      console.error('❌ Error creating anonymous session:', error);
+      onError(error instanceof Error ? error.message : 'Failed to create anonymous session');
+      setIsAnonymous(false);
+    } finally {
+      setCreatingSession(false);
+    }
+  };
+
+  /**
+   * Handle county selection change for anonymous sessions
+   */
+  useEffect(() => {
+    if (isAnonymous && formData.county_id && !anonymousSession) {
+      createAnonymousSession(formData.county_id);
+    }
+  }, [isAnonymous, formData.county_id]);
 
   /**
    * Handle form field changes
@@ -144,6 +231,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
    */
   const validateForm = (): boolean => {
     const newErrors: FeedbackFormErrors = {};
+
+    console.log('🔍 Validating form data:', formData);
 
     // Title validation
     if (!formData.title.trim()) {
@@ -171,14 +260,20 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
       newErrors.county_id = 'County selection is required';
     }
 
-    // Check if user has access to selected county
-    if (formData.county_id && user.accessible_counties) {
+    // Check if user has access to selected county (skip for anonymous)
+    if (formData.county_id && user?.accessible_counties && !isAnonymous) {
       const hasAccess = user.accessible_counties.some(c => c.id === formData.county_id);
+      console.log('🏛️ County access check:', {
+        selectedCounty: formData.county_id,
+        accessibleCounties: user.accessible_counties,
+        hasAccess
+      });
       if (!hasAccess) {
         newErrors.county_id = 'You do not have access to submit feedback for this county';
       }
     }
 
+    console.log('🔍 Validation errors:', newErrors);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -189,14 +284,26 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check rate limit
-    if (!rateLimitInfo.canSubmit) {
-      onSubmissionError(`Rate limit exceeded. You have ${rateLimitInfo.remaining} submissions remaining.`);
+    console.log('🚀 Form submission started');
+    console.log('👤 User object:', user);
+    console.log('📝 Form data:', formData);
+    console.log('🏛️ User accessible counties:', user.accessible_counties);
+
+    // Check rate limit for authenticated users
+    if (!isAnonymous && !rateLimitInfo.canSubmit) {
+      onError(`Rate limit exceeded. You have ${rateLimitInfo.remaining} submissions remaining.`);
+      return;
+    }
+
+    // Check anonymous session for anonymous users
+    if (isAnonymous && !anonymousSession?.session_id) {
+      onError('Anonymous session required. Please select a county first.');
       return;
     }
 
     // Validate form
     if (!validateForm()) {
+      console.log('❌ Form validation failed:', errors);
       return;
     }
 
@@ -204,10 +311,24 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
     setErrors({});
 
     try {
-      const response = await apiService.submitFeedback(formData);
+      const response = isAnonymous 
+        ? await apiService.submitAnonymousFeedback({
+            session_id: anonymousSession.session_id,
+            title: formData.title,
+            content: formData.content,
+            category: formData.category,
+            priority: formData.priority,
+            county_id: formData.county_id,
+            sub_county_id: formData.sub_county_id,
+            ward_id: formData.ward_id,
+            village_id: formData.village_id
+          })
+        : await apiService.submitFeedback(formData);
+      
+      console.log('📡 API Response:', response);
       
       if (response.success && response.data) {
-        onSubmissionSuccess(response.data.tracking_id, response.data);
+        onSuccess(response.data.tracking_id, response.data);
         
         // Reset form
         setFormData({
@@ -225,14 +346,16 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
         const newRateLimitStatus = await apiService.checkRateLimit();
         setRateLimitInfo(newRateLimitStatus);
       } else {
+        console.log('❌ Submission failed:', response);
         if (response.errors) {
           setErrors(response.errors);
         }
-        onSubmissionError(response.message || 'Failed to submit feedback');
+        onError(response.message || 'Failed to submit feedback');
       }
     } catch (error) {
+      console.error('❌ Submission error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-      onSubmissionError(errorMessage);
+      onError(errorMessage);
       
       // Handle rate limit errors specifically
       if (errorMessage.includes('Rate limit exceeded')) {
@@ -274,17 +397,70 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Submit Feedback</h2>
         <p className="text-gray-600">
-          Share your concerns with {user.county_name} County Government. 
-          Your feedback will be routed to the appropriate department for review.
+          {isAnonymous 
+            ? 'Submit anonymous feedback to your county government. Your identity will remain completely private.'
+            : `Share your concerns with ${user?.county_name || 'your'} County Government. Your feedback will be routed to the appropriate department for review.`
+          }
         </p>
         
+        {/* Anonymous Mode Toggle */}
+        {allowAnonymous && (
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-blue-900">Submission Mode</h3>
+                <p className="text-xs text-blue-700 mt-1">
+                  {isAnonymous ? 'Anonymous - Your identity is completely protected' : 'Authenticated - Linked to your account'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleAnonymousToggle}
+                disabled={creatingSession}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  isAnonymous ? 'bg-blue-600' : 'bg-gray-200'
+                } ${creatingSession ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    isAnonymous ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+            {creatingSession && (
+              <div className="mt-2 text-xs text-blue-600 flex items-center">
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-2"></div>
+                Creating anonymous session...
+              </div>
+            )}
+            {isAnonymous && anonymousSession && (
+              <div className="mt-2 text-xs text-green-700">
+                ✅ Anonymous session active - {anonymousSession.max_submissions} submissions allowed
+              </div>
+            )}
+          </div>
+        )}
+        
         {/* Rate limit indicator */}
-        <div className="mt-3 flex items-center text-sm">
-          <div className={`w-2 h-2 rounded-full mr-2 ${rateLimitInfo.canSubmit ? 'bg-green-500' : 'bg-red-500'}`}></div>
-          <span className={rateLimitInfo.canSubmit ? 'text-green-700' : 'text-red-700'}>
-            {rateLimitInfo.remaining} submissions remaining today
-          </span>
-        </div>
+        {!isAnonymous && (
+          <div className="mt-3 flex items-center text-sm">
+            <div className={`w-2 h-2 rounded-full mr-2 ${rateLimitInfo.canSubmit ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className={rateLimitInfo.canSubmit ? 'text-green-700' : 'text-red-700'}>
+              {rateLimitInfo.remaining} submissions remaining today
+            </span>
+          </div>
+        )}
+        
+        {/* Anonymous session info */}
+        {isAnonymous && anonymousSession && (
+          <div className="mt-3 flex items-center text-sm">
+            <div className="w-2 h-2 rounded-full mr-2 bg-blue-500"></div>
+            <span className="text-blue-700">
+              Anonymous session - {anonymousSession.max_submissions} submissions allowed
+            </span>
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -544,6 +720,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           </div>
         )}
 
+
+
         {/* Submit Button */}
         <div className="flex justify-end space-x-4">
           <button
@@ -569,9 +747,9 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           
           <button
             type="submit"
-            disabled={isSubmitting || !rateLimitInfo.canSubmit}
+            disabled={isSubmitting || (!isAnonymous && !rateLimitInfo.canSubmit) || (isAnonymous && !anonymousSession?.session_id)}
             className={`px-6 py-2 rounded-md text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              isSubmitting || !rateLimitInfo.canSubmit
+              isSubmitting || (!isAnonymous && !rateLimitInfo.canSubmit) || (isAnonymous && !anonymousSession?.session_id)
                 ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-blue-600 hover:bg-blue-700'
             }`}
@@ -582,7 +760,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
                 Submitting...
               </span>
             ) : (
-              'Submit Feedback'
+              isAnonymous ? 'Submit Anonymous Feedback' : 'Submit Feedback'
             )}
           </button>
         </div>

@@ -14,14 +14,22 @@ import {
   Zap
 } from 'lucide-react';
 
-const QuickActionsPanel: React.FC = () => {
+interface QuickActionsPanelProps {
+  onViewChange?: (view: string) => void;
+}
+
+const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onViewChange }) => {
   const navigate = useNavigate();
   const [trackingId, setTrackingId] = useState('');
 
   const handleTrackFeedback = (e: React.FormEvent) => {
     e.preventDefault();
     if (trackingId.trim()) {
-      navigate(`/track/${trackingId.trim().toUpperCase()}`);
+      if (onViewChange) {
+        onViewChange('track-feedback');
+      } else {
+        navigate(`/track/${trackingId.trim().toUpperCase()}`);
+      }
     }
   };
 
@@ -32,7 +40,7 @@ const QuickActionsPanel: React.FC = () => {
       icon: MessageSquare,
       color: 'bg-blue-600 hover:bg-blue-700',
       textColor: 'text-white',
-      action: () => navigate('/submit-feedback'),
+      action: () => onViewChange ? onViewChange('submit-feedback') : navigate('/submit-feedback'),
       isPrimary: true
     },
     {

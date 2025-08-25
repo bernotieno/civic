@@ -3,14 +3,31 @@ import React, { useState, useEffect } from 'react';
 interface Feedback {
   id: string;
   title: string;
-  description: string;
+  content: string;  // Fixed: use 'content' instead of 'description'
   category: string;
+  category_display: string;
+  priority: string;
+  priority_display: string;
   status: string;
+  status_display: string;
+  tracking_id: string;
   county: string;
+  county_code: string;
+  location_path: string;
   created_at: string;
-  has_response: boolean;
+  updated_at: string;
+  is_anonymous: boolean;
+  response_count: number;
+  last_response_at?: string;
+  view_count: number;
+  sentiment_score?: number;
   user_name: string;
-  urgency_score?: number;
+  user_email?: string;
+  submitted_via: string;
+  can_edit: boolean;
+  can_delete: boolean;
+  edit_count: number;
+  edited_at?: string;
 }
 
 const AdminFeedbackManagement: React.FC = () => {
@@ -27,19 +44,28 @@ const AdminFeedbackManagement: React.FC = () => {
   const fetchFeedback = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('/api/admin/feedback/', {
+      console.log('🔍 Fetching admin feedback...');
+      
+      const response = await fetch('http://127.0.0.1:8000/api/admin/feedback/', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
       
+      console.log('📡 Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
-        setFeedback(data.data);
+        console.log('📈 Feedback data received:', data);
+        setFeedback(data.data || []);
+      } else {
+        console.error('❌ Failed to fetch feedback:', response.status, response.statusText);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Error details:', errorData);
       }
     } catch (error) {
-      console.error('Error fetching feedback:', error);
+      console.error('❌ Error fetching feedback:', error);
     } finally {
       setLoading(false);
     }
@@ -51,7 +77,9 @@ const AdminFeedbackManagement: React.FC = () => {
     setResponding(true);
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`/api/admin/feedback/${feedbackId}/respond/`, {
+      console.log('💬 Sending response to feedback:', feedbackId);
+      
+      const response = await fetch(`http://127.0.0.1:8000/api/admin/feedback/${feedbackId}/respond/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -60,16 +88,22 @@ const AdminFeedbackManagement: React.FC = () => {
         body: JSON.stringify({ response_text: responseText }),
       });
 
+      console.log('📡 Response status:', response.status);
+
       if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Response sent successfully:', data);
         setResponseText('');
         setSelectedFeedback(null);
         fetchFeedback(); // Refresh the list
         alert('Response sent successfully!');
       } else {
-        alert('Failed to send response');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Failed to send response:', errorData);
+        alert(`Failed to send response: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error sending response:', error);
+      console.error('❌ Error sending response:', error);
       alert('Error sending response');
     } finally {
       setResponding(false);
@@ -104,7 +138,43 @@ const AdminFeedbackManagement: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading feedback data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (feedback.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-900">Feedback Management</h2>
+          <button
+            onClick={fetchFeedback}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Refresh
+          </button>
+        </div>
+        <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-8 text-center">
+          <div className="text-gray-500">
+            <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Feedback Found</h3>
+            <p className="text-gray-600 mb-4">
+              There are currently no feedback submissions to display.
+            </p>
+            <button
+              onClick={fetchFeedback}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Refresh Data
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -113,8 +183,18 @@ const AdminFeedbackManagement: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">Feedback Management</h2>
-        <div className="text-sm text-gray-600">
-          Total: {feedback.length} | Pending: {feedback.filter(f => f.status === 'pending').length}
+        <div className="flex items-center space-x-4">
+          <div className="text-sm text-gray-600">
+            Total: {feedback.length} | 
+            Pending: {feedback.filter(f => f.status === 'pending').length} | 
+            Responded: {feedback.filter(f => f.response_count > 0).length}
+          </div>
+          <button
+            onClick={fetchFeedback}
+            className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+          >
+            Refresh
+          </button>
         </div>
       </div>
 
@@ -153,18 +233,21 @@ const AdminFeedbackManagement: React.FC = () => {
                     <div>
                       <div className="text-sm font-medium text-gray-900">{item.title}</div>
                       <div className="text-sm text-gray-500 truncate max-w-xs">
-                        {item.description}
+                        {item.content}
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">
+                        ID: {item.tracking_id}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(item.category)}`}>
-                      {item.category.replace('_', ' ')}
+                      {item.category_display || item.category.replace('_', ' ')}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
-                      {item.status.replace('_', ' ')}
+                      {item.status_display || item.status.replace('_', ' ')}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -177,7 +260,7 @@ const AdminFeedbackManagement: React.FC = () => {
                     {new Date(item.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    {!item.has_response && item.status === 'pending' && (
+                    {item.response_count === 0 && item.status === 'pending' && (
                       <button
                         onClick={() => setSelectedFeedback(item)}
                         className="text-blue-600 hover:text-blue-900"
@@ -185,8 +268,13 @@ const AdminFeedbackManagement: React.FC = () => {
                         Respond
                       </button>
                     )}
-                    {item.has_response && (
-                      <span className="text-green-600">Responded</span>
+                    {item.response_count > 0 && (
+                      <span className="text-green-600">
+                        Responded ({item.response_count})
+                      </span>
+                    )}
+                    {item.status === 'resolved' && (
+                      <span className="text-green-700 font-medium">Resolved</span>
                     )}
                   </td>
                 </tr>
@@ -206,7 +294,12 @@ const AdminFeedbackManagement: React.FC = () => {
               </h3>
               <div className="mb-4">
                 <h4 className="font-medium text-gray-900">{selectedFeedback.title}</h4>
-                <p className="text-sm text-gray-600 mt-1">{selectedFeedback.description}</p>
+                <p className="text-sm text-gray-600 mt-1">{selectedFeedback.content}</p>
+                <div className="text-xs text-gray-500 mt-2">
+                  <span>Tracking ID: {selectedFeedback.tracking_id}</span> | 
+                  <span> County: {selectedFeedback.county}</span> | 
+                  <span> User: {selectedFeedback.user_name}</span>
+                </div>
               </div>
               <textarea
                 value={responseText}

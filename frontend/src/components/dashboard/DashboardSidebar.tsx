@@ -11,17 +11,18 @@ import {
   FileText,
   Search,
   Construction,
+  Users,
   Settings,
   HelpCircle,
   ChevronLeft,
   ChevronRight,
-  Bell
+  Bell,
+  UserX
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRealTimeUpdates } from '../../hooks/useRealTimeUpdates';
+import { DashboardView } from '../../types';
 
-
-type DashboardView = 'home' | 'submit-feedback' | 'my-feedback' | 'track-feedback' | 'county-projects';
 
 interface DashboardSidebarProps {
   isMobileMenuOpen?: boolean;
@@ -78,10 +79,25 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       view: 'county-projects' as DashboardView,
       icon: Construction,
       current: currentView === 'county-projects'
+    },
+    {
+      name: 'Community Impact',
+      view: 'community-impact' as DashboardView,
+      icon: Users,
+      current: currentView === 'community-impact'
     }
   ];
 
 
+
+  const anonymousNavItems = [
+    {
+      name: 'Anonymous Feedback',
+      href: '/anonymous-feedback',
+      icon: UserX,
+      description: 'Submit without revealing identity'
+    }
+  ];
 
   const bottomNavItems = [
     {
@@ -221,7 +237,35 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             </ul>
           </div>
 
-
+          {/* Anonymous Section */}
+          <div className="px-3 mb-6">
+            {!isCollapsed && (
+              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                Privacy Options
+              </h3>
+            )}
+            <ul className="space-y-1">
+              {anonymousNavItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <li key={item.name}>
+                    <button
+                      onClick={() => handleNavigation(item)}
+                      className="group flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                    >
+                      <Icon className="flex-shrink-0 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                      {!isCollapsed && (
+                        <div className="ml-3 min-w-0 flex-1">
+                          <span className="truncate">{item.name}</span>
+                          <p className="text-xs text-gray-500 truncate">{item.description}</p>
+                        </div>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         </nav>
 
         {/* Bottom Navigation */}

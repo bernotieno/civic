@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/api';
-import { CitizenDashboardData } from '../../types';
+import { CitizenDashboardData, DashboardView } from '../../types';
 import { useRealTimeUpdates } from '../../hooks/useRealTimeUpdates';
 import DashboardHeader from './DashboardHeader';
 import DashboardSidebar from './DashboardSidebar';
@@ -27,7 +27,7 @@ import CountyProjects from './CountyProjects';
 import ProjectDetailsModal from './ProjectDetailsModal';
 import { Project } from '../../data/projects';
 
-type DashboardView = 'home' | 'submit-feedback' | 'my-feedback' | 'track-feedback' | 'feedback-success' | 'feedback-error' | 'county-projects';
+
 
 interface SubmissionData {
   feedback_id: string;
@@ -69,7 +69,7 @@ const CitizensDashboard: React.FC = () => {
   // Handle URL parameters for view navigation
   useEffect(() => {
     const viewParam = searchParams.get('view');
-    if (viewParam && ['home', 'submit-feedback', 'my-feedback', 'track-feedback', 'county-projects'].includes(viewParam)) {
+    if (viewParam && ['home', 'submit-feedback', 'my-feedback', 'track-feedback', 'county-projects', 'community-impact'].includes(viewParam)) {
       setCurrentView(viewParam as DashboardView);
     }
   }, [searchParams]);
@@ -274,7 +274,6 @@ const CitizensDashboard: React.FC = () => {
                   <QuickActionsPanel onViewChange={handleViewChange} />
                 </div>
                 <div className="grid lg:grid-cols-2 gap-6">
-                  <CommunityImpactSection communityStats={dashboardData.communityStats} />
                   <TransparencySection />
                 </div>
               </div>
@@ -282,9 +281,11 @@ const CitizensDashboard: React.FC = () => {
 
             {currentView === 'submit-feedback' && (
               <FeedbackForm
+                user={user}
                 onSuccess={handleSubmissionSuccess}
                 onError={handleSubmissionError}
                 onCancel={handleBackToHome}
+                allowAnonymous={true}
               />
             )}
 
@@ -298,6 +299,16 @@ const CitizensDashboard: React.FC = () => {
 
             {currentView === 'county-projects' && (
               <CountyProjects onProjectSelect={setSelectedProject} />
+            )}
+
+            {currentView === 'community-impact' && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h1 className="text-2xl font-bold text-gray-900 mb-2">Community Impact</h1>
+                  <p className="text-gray-600 mb-6">See how citizen feedback is creating real change in your community</p>
+                </div>
+                <CommunityImpactSection communityStats={dashboardData.communityStats} />
+              </div>
             )}
 
             {currentView === 'feedback-success' && submissionData && (

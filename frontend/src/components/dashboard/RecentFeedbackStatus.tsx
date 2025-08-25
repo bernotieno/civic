@@ -16,7 +16,7 @@ import {
 import { FeedbackItem } from '../../types';
 
 interface RecentFeedbackStatusProps {
-  feedback: FeedbackItem[];
+  recentFeedback: FeedbackItem[];
 }
 
 const StatusBadge: React.FC<{ status: FeedbackItem['status'] }> = ({ status }) => {
@@ -35,6 +35,20 @@ const StatusBadge: React.FC<{ status: FeedbackItem['status'] }> = ({ status }) =
       textColor: 'text-yellow-800',
       iconColor: 'text-yellow-600'
     },
+    in_review: {
+      label: 'In Review',
+      icon: Clock,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-800',
+      iconColor: 'text-yellow-600'
+    },
+    pending: {
+      label: 'Pending',
+      icon: Clock,
+      bgColor: 'bg-gray-100',
+      textColor: 'text-gray-700',
+      iconColor: 'text-gray-500'
+    },
     in_progress: {
       label: 'In Progress',
       icon: AlertCircle,
@@ -51,7 +65,7 @@ const StatusBadge: React.FC<{ status: FeedbackItem['status'] }> = ({ status }) =
     }
   };
 
-  const config = statusConfig[status];
+  const config = statusConfig[status] || statusConfig.submitted;
   const Icon = config.icon;
 
   return (
@@ -103,13 +117,13 @@ const FeedbackCard: React.FC<{ feedback: FeedbackItem }> = ({ feedback }) => {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow duration-200">
+    <div className="bg-gray-50 border border-gray-100 rounded-lg p-4 hover:bg-white hover:shadow-sm transition-all duration-200">
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-medium text-gray-900 truncate mb-2">
+          <h3 className="text-sm font-medium text-gray-900 truncate mb-2">
             {feedback.title}
           </h3>
-          <div className="flex items-center space-x-3 mb-3">
+          <div className="flex items-center space-x-2 mb-2">
             <StatusBadge status={feedback.status} />
             <CategoryBadge category={feedback.category} />
           </div>
@@ -137,8 +151,11 @@ const FeedbackCard: React.FC<{ feedback: FeedbackItem }> = ({ feedback }) => {
   );
 };
 
-const RecentFeedbackStatus: React.FC<RecentFeedbackStatusProps> = ({ feedback }) => {
-  if (feedback.length === 0) {
+const RecentFeedbackStatus: React.FC<RecentFeedbackStatusProps> = ({ recentFeedback }) => {
+  // Add safety check for recentFeedback
+  const safeFeedback = recentFeedback || [];
+  
+  if (safeFeedback.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
         <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -154,41 +171,18 @@ const RecentFeedbackStatus: React.FC<RecentFeedbackStatusProps> = ({ feedback })
   }
 
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Recent Feedback</h2>
+    <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-gray-900">Recent Feedback</h2>
         <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-          View all feedback →
+          View all →
         </button>
       </div>
 
-      <div className="space-y-4">
-        {feedback.map((item) => (
+      <div className="space-y-3">
+        {safeFeedback.slice(0, 3).map((item) => (
           <FeedbackCard key={item.id} feedback={item} />
         ))}
-      </div>
-
-      {/* Status Legend */}
-      <div className="mt-6 bg-gray-50 rounded-lg p-4">
-        <h4 className="text-sm font-medium text-gray-900 mb-3">Status Guide</h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-gray-400 rounded-full mr-2"></div>
-            <span className="text-gray-600">Submitted - Received by government</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-yellow-400 rounded-full mr-2"></div>
-            <span className="text-gray-600">Under Review - Being evaluated</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-blue-400 rounded-full mr-2"></div>
-            <span className="text-gray-600">In Progress - Action being taken</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
-            <span className="text-gray-600">Resolved - Issue addressed</span>
-          </div>
-        </div>
       </div>
     </div>
   );

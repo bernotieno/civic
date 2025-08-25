@@ -118,6 +118,9 @@ export interface NavItem {
   href: string;
 }
 
+// Dashboard View Types
+export type DashboardView = 'home' | 'submit-feedback' | 'my-feedback' | 'track-feedback' | 'county-projects' | 'community-impact' | 'feedback-success' | 'feedback-error';
+
 // API Response Types
 export interface ApiResponse<T> {
   success: boolean;

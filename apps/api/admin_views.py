@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Count, Q
+from django.utils import timezone
 from apps.users.models import CustomUser, County
 from apps.feedback.models import Feedback
 from apps.projects.models import Project, AdminFeedbackResponse
@@ -20,18 +21,61 @@ def admin_dashboard_stats(request):
     
     accessible_counties = user.get_accessible_counties()
     
+    # Debug logging
+    print(f"📊 Dashboard stats for {user.name} (Level: {user.official_level})")
+    print(f"🏛️ Accessible counties: {[c.name for c in accessible_counties]}")
+    
+    # Get stats with proper filtering
+    total_feedback = Feedback.objects.filter(
+        county__in=accessible_counties,
+        is_deleted=False
+    ).count()
+    
+    pending_feedback = Feedback.objects.filter(
+        county__in=accessible_counties,
+        status='pending',
+        is_deleted=False
+    ).count()
+    
+    in_review_feedback = Feedback.objects.filter(
+        county__in=accessible_counties,
+        status='in_review',
+        is_deleted=False
+    ).count()
+    
+    responded_feedback = Feedback.objects.filter(
+        county__in=accessible_counties,
+        status='responded',
+        is_deleted=False
+    ).count()
+    
+    resolved_feedback = Feedback.objects.filter(
+        county__in=accessible_counties,
+        status='resolved',
+        is_deleted=False
+    ).count()
+    
+    print(f"📈 Feedback stats: Total={total_feedback}, Pending={pending_feedback}, In Review={in_review_feedback}, Responded={responded_feedback}, Resolved={resolved_feedback}")
+    
     stats = {
-        'total_users': CustomUser.objects.filter(tenant__in=accessible_counties).count(),
-        'total_counties': accessible_counties.count(),
-        'total_feedback': Feedback.objects.filter(county__in=accessible_counties).count(),
-        'pending_feedback': Feedback.objects.filter(
-            county__in=accessible_counties, 
-            status='pending'
+        'total_users': CustomUser.objects.filter(
+            tenant__in=accessible_counties,
+            is_deleted=False
         ).count(),
-        'total_projects': Project.objects.filter(county__in=accessible_counties).count(),
+        'total_counties': accessible_counties.count(),
+        'total_feedback': total_feedback,
+        'pending_feedback': pending_feedback,
+        'in_review_feedback': in_review_feedback,
+        'responded_feedback': responded_feedback,
+        'resolved_feedback': resolved_feedback,
+        'total_projects': Project.objects.filter(
+            county__in=accessible_counties,
+            is_deleted=False
+        ).count(),
         'active_projects': Project.objects.filter(
             county__in=accessible_counties,
-            status__in=['approved', 'in_progress']
+            status__in=['approved', 'in_progress'],
+            is_deleted=False
         ).count(),
     }
     
@@ -79,24 +123,64 @@ def admin_feedback_list(request):
         return Response({'error': 'Access denied'}, status=403)
     
     accessible_counties = user.get_accessible_counties()
-    feedback = Feedback.objects.filter(county__in=accessible_counties).select_related('county', 'user')
     
-    feedback_data = [{
-        'id': str(f.id),
-        'title': f.title,
-        'description': f.description,
-        'category': f.category,
-        'status': f.status,
-        'county': f.county.name,
-        'created_at': f.created_at,
-        'urgency_score': getattr(f, 'urgency_score', None),
-        'has_response': hasattr(f, 'admin_response'),
-        'user_name': f.user.name if f.user else 'Anonymous'
-    } for f in feedback]
+    # Debug logging
+    print(f"🔍 Admin {user.name} (Level: {user.official_level}) accessing feedback")
+    print(f"🏛️ Accessible counties: {[c.name for c in accessible_counties]}")
+    
+    # Get feedback with proper filtering
+    feedback_queryset = Feedback.objects.filter(
+        county__in=accessible_counties,
+        is_deleted=False  # Only show non-deleted feedback
+    ).select_related('county', 'user').order_by('-created_at')
+    
+    print(f"📊 Total feedback found: {feedback_queryset.count()}")
+    
+    feedback_data = []
+    for f in feedback_queryset:
+        try:
+            feedback_item = {
+                'id': str(f.id),
+                'title': f.title,
+                'content': f.content,  # Fixed: use 'content' instead of 'description'
+                'category': f.category,
+                'category_display': f.get_category_display(),
+                'priority': f.priority,
+                'priority_display': f.get_priority_display(),
+                'status': f.status,
+                'status_display': f.get_status_display(),
+                'tracking_id': f.tracking_id,
+                'county': f.county.name,
+                'county_code': f.county.code,
+                'location_path': f.get_location_path(),
+                'created_at': f.created_at,
+                'updated_at': f.updated_at,
+                'is_anonymous': f.is_anonymous,
+                'response_count': f.response_count,
+                'last_response_at': f.last_response_at,
+                'view_count': f.view_count,
+                'sentiment_score': f.sentiment_score,
+                'user_name': f.user.name if f.user and not f.is_anonymous else 'Anonymous',
+                'user_email': f.user.email if f.user and not f.is_anonymous else None,
+                'submitted_via': f.submitted_via,
+                'can_edit': f.can_edit,
+                'can_delete': f.can_delete,
+                'edit_count': f.edit_count,
+                'edited_at': f.edited_at
+            }
+            feedback_data.append(feedback_item)
+        except Exception as e:
+            print(f"❌ Error processing feedback {f.id}: {e}")
+            continue
+    
+    print(f"✅ Successfully processed {len(feedback_data)} feedback items")
     
     return Response({
         'success': True,
-        'data': feedback_data
+        'data': feedback_data,
+        'total_count': len(feedback_data),
+        'user_level': user.official_level,
+        'accessible_counties': [{'id': c.id, 'name': c.name, 'code': c.code} for c in accessible_counties]
     })
 
 @api_view(['POST'])
@@ -109,7 +193,7 @@ def respond_to_feedback(request, feedback_id):
         return Response({'error': 'Access denied'}, status=403)
     
     try:
-        feedback = Feedback.objects.get(id=feedback_id)
+        feedback = Feedback.objects.get(id=feedback_id, is_deleted=False)
         
         if feedback.county not in user.get_accessible_counties():
             return Response({'error': 'Access denied'}, status=403)
@@ -118,31 +202,38 @@ def respond_to_feedback(request, feedback_id):
         if not response_text:
             return Response({'error': 'Response text required'}, status=400)
         
-        # Create or update response
-        response_obj, created = AdminFeedbackResponse.objects.get_or_create(
+        print(f"💬 {user.name} responding to feedback {feedback.tracking_id}")
+        
+        # Create feedback response using the correct model
+        from apps.feedback.models import FeedbackResponse
+        
+        response_obj = FeedbackResponse.objects.create(
             feedback=feedback,
-            defaults={
-                'response_text': response_text,
-                'responded_by': user
-            }
+            responder=user,
+            content=response_text,
+            is_public=True
         )
         
-        if not created:
-            response_obj.response_text = response_text
-            response_obj.responded_by = user
-            response_obj.save()
-        
-        # Update feedback status
+        # Update feedback status and response tracking
         feedback.status = 'responded'
-        feedback.save()
+        feedback.response_count += 1
+        feedback.last_response_at = timezone.now()
+        feedback.save(update_fields=['status', 'response_count', 'last_response_at'])
+        
+        print(f"✅ Response created successfully for feedback {feedback.tracking_id}")
         
         return Response({
             'success': True,
-            'message': 'Response sent successfully'
+            'message': 'Response sent successfully',
+            'response_id': str(response_obj.id),
+            'feedback_status': feedback.status
         })
         
     except Feedback.DoesNotExist:
         return Response({'error': 'Feedback not found'}, status=404)
+    except Exception as e:
+        print(f"❌ Error responding to feedback: {e}")
+        return Response({'error': f'Failed to send response: {str(e)}'}, status=500)
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])

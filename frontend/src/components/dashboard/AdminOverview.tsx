@@ -12,12 +12,17 @@ interface DashboardStats {
 interface Feedback {
   id: string;
   title: string;
+  content: string;
   category: string;
+  category_display: string;
   status: string;
+  status_display: string;
+  tracking_id: string;
   county: string;
   created_at: string;
-  has_response: boolean;
+  response_count: number;
   user_name: string;
+  is_anonymous: boolean;
 }
 
 const AdminOverview: React.FC = () => {
@@ -37,21 +42,29 @@ const AdminOverview: React.FC = () => {
         'Content-Type': 'application/json',
       };
 
+      console.log('📈 Fetching admin dashboard data...');
+
       // Fetch dashboard stats
-      const statsResponse = await fetch('/api/admin/dashboard/', { headers });
+      const statsResponse = await fetch('http://127.0.0.1:8000/api/admin/dashboard/', { headers });
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
+        console.log('📈 Stats data:', statsData);
         setStats(statsData.data);
+      } else {
+        console.error('❌ Failed to fetch stats:', statsResponse.status);
       }
 
       // Fetch recent feedback
-      const feedbackResponse = await fetch('/api/admin/feedback/', { headers });
+      const feedbackResponse = await fetch('http://127.0.0.1:8000/api/admin/feedback/', { headers });
       if (feedbackResponse.ok) {
         const feedbackData = await feedbackResponse.json();
-        setRecentFeedback(feedbackData.data.slice(0, 4)); // Show only 4 recent items
+        console.log('📝 Feedback data:', feedbackData);
+        setRecentFeedback(feedbackData.data?.slice(0, 4) || []); // Show only 4 recent items
+      } else {
+        console.error('❌ Failed to fetch feedback:', feedbackResponse.status);
       }
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('❌ Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -70,7 +83,10 @@ const AdminOverview: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
       </div>
     );
   }
@@ -132,12 +148,22 @@ const AdminOverview: React.FC = () => {
                 <div key={feedback.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                   <div className="flex-1">
                     <h4 className="font-medium text-gray-900">{feedback.title}</h4>
-                    <p className="text-sm text-gray-600">{feedback.category} • {feedback.county} • {feedback.user_name}</p>
+                    <p className="text-sm text-gray-600">
+                      {feedback.category_display || feedback.category} • {feedback.county} • {feedback.user_name}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      ID: {feedback.tracking_id} • {new Date(feedback.created_at).toLocaleDateString()}
+                    </p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(feedback.status)}`}>
-                      {feedback.status.replace('_', ' ')}
+                      {feedback.status_display || feedback.status.replace('_', ' ')}
                     </span>
+                    {feedback.response_count > 0 && (
+                      <span className="text-xs text-green-600">
+                        {feedback.response_count} response{feedback.response_count > 1 ? 's' : ''}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))

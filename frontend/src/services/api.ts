@@ -583,11 +583,29 @@ class CivicAIApiService {
       // Validate required fields before submission
       this.validateFeedbackData(feedbackData);
 
+      // Clean the data - remove undefined values and ensure proper types
+      const cleanedData = {
+        title: feedbackData.title.trim(),
+        content: feedbackData.content.trim(),
+        category: feedbackData.category,
+        priority: feedbackData.priority,
+        county_id: feedbackData.county_id,
+        ...(feedbackData.sub_county_id && { sub_county_id: feedbackData.sub_county_id }),
+        ...(feedbackData.ward_id && { ward_id: feedbackData.ward_id }),
+        ...(feedbackData.village_id && { village_id: feedbackData.village_id })
+      };
+
+      console.log('🚀 Submitting feedback data:', cleanedData);
+      console.log('🔑 Auth token present:', !!this.getAccessToken());
+
       const response = await fetch(`${this.baseURL}/api/feedback/submit/`, {
         method: 'POST',
         headers: this.getHeaders(true),
-        body: JSON.stringify(feedbackData),
+        body: JSON.stringify(cleanedData),
       });
+
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
 
       // Handle rate limiting specifically
       if (response.status === 429) {
@@ -595,9 +613,22 @@ class CivicAIApiService {
         throw new Error(`Rate limit exceeded: ${rateLimitData.message}`);
       }
 
+      // Handle 400 errors with detailed logging
+      if (response.status === 400) {
+        const errorData = await response.json();
+        console.error('❌ 400 Bad Request details:', errorData);
+        
+        // Return the error in the expected format
+        return {
+          success: false,
+          message: errorData.message || 'Validation failed',
+          errors: errorData.errors || { general: [errorData.message || 'Bad request'] }
+        };
+      }
+
       return this.handleResponse<FeedbackSubmissionResponse>(response);
     } catch (error) {
-      console.error('Error submitting feedback:', error);
+      console.error('❌ Error submitting feedback:', error);
       throw error;
     }
   }
@@ -630,17 +661,44 @@ class CivicAIApiService {
   }
 
   /**
-   * Submit anonymous feedback
+   * Submit anonymous feedback with session management
    */
-  async submitAnonymousFeedback(feedbackData: any): Promise<any> {
+  async submitAnonymousFeedback(feedbackData: AnonymousFeedbackData): Promise<FeedbackSubmissionResponse> {
     try {
+      // Validate required fields
+      if (!feedbackData.session_id) {
+        throw new Error('Anonymous session required');
+      }
+
+      // Clean the data
+      const cleanedData = {
+        session_id: feedbackData.session_id,
+        title: feedbackData.title.trim(),
+        content: feedbackData.content.trim(),
+        category: feedbackData.category,
+        priority: feedbackData.priority,
+        county_id: feedbackData.county_id,
+        ...(feedbackData.sub_county_id && { sub_county_id: feedbackData.sub_county_id }),
+        ...(feedbackData.ward_id && { ward_id: feedbackData.ward_id }),
+        ...(feedbackData.village_id && { village_id: feedbackData.village_id })
+      };
+
+      console.log('🚀 Submitting anonymous feedback:', cleanedData);
+
       const response = await fetch(`${this.baseURL}/api/feedback/anonymous/`, {
         method: 'POST',
         headers: this.getHeaders(false),
-        body: JSON.stringify(feedbackData),
+        body: JSON.stringify(cleanedData),
       });
 
-      return this.handleResponse(response);
+      const result = await this.handleResponse<FeedbackSubmissionResponse>(response);
+      
+      // Update session usage count on successful submission
+      if (result.success) {
+        this.updateAnonymousSessionUsage();
+      }
+
+      return result;
     } catch (error) {
       console.error('Error submitting anonymous feedback:', error);
       throw error;
@@ -773,21 +831,62 @@ class CivicAIApiService {
     };
   }> {
     try {
-      // For now, we'll make multiple API calls to get the data
-      // In a real implementation, this might be a single endpoint
-      const [stats, recentFeedback] = await Promise.all([
-        this.getUserFeedbackStats(),
-        this.getUserFeedbackList(5)
+      // Make API calls to get real data
+      const [statsResponse, feedbackResponse] = await Promise.all([
+        fetch(`${this.baseURL}/api/feedback/my-stats/`, {
+          method: 'GET',
+          headers: this.getHeaders(true),
+        }),
+        fetch(`${this.baseURL}/api/feedback/my-submissions/?limit=5`, {
+          method: 'GET',
+          headers: this.getHeaders(true),
+        })
       ]);
 
+      let stats = { totalFeedback: 0, pendingResponses: 0, resolvedIssues: 0, averageResponseTime: 0 };
+      let recentFeedback = [];
+
+      // Handle stats response
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        if (statsData.success && statsData.data) {
+          stats = {
+            totalFeedback: statsData.data.total_submissions || 0,
+            pendingResponses: (statsData.data.pending_count || 0) + (statsData.data.in_review_count || 0),
+            resolvedIssues: statsData.data.resolved_count || 0,
+            averageResponseTime: statsData.data.average_response_days || 0,
+          };
+        }
+      }
+
+      // Handle feedback response
+      if (feedbackResponse.ok) {
+        const feedbackData = await feedbackResponse.json();
+        if (feedbackData.success && feedbackData.data?.results) {
+          recentFeedback = feedbackData.data.results.map((item: any) => ({
+            id: item.id,
+            title: item.title,
+            status: item.status,
+            tracking_id: item.tracking_id,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+            category: item.category,
+            category_display: item.category_display,
+            priority: item.priority,
+            priority_display: item.priority_display,
+            status_display: item.status_display,
+            response_count: item.response_count || 0,
+            view_count: item.view_count || 0,
+            location_path: item.location_path,
+            can_edit: item.can_edit,
+            can_delete: item.can_delete,
+          }));
+        }
+      }
+
       return {
-        stats: stats.data || {
-          totalFeedback: 0,
-          pendingResponses: 0,
-          resolvedIssues: 0,
-          averageResponseTime: 0,
-        },
-        recentFeedback: recentFeedback.data?.results || [],
+        stats,
+        recentFeedback,
         communityStats: {
           resolvedInArea: 47, // Mock data - would come from API
           monthlyTrend: 15,
@@ -819,26 +918,57 @@ class CivicAIApiService {
           {
             id: '1',
             title: 'Road maintenance needed on Uhuru Highway',
-            status: 'in_progress',
+            status: 'in_review',
             tracking_id: 'FB-2024-001',
-            submitted_at: '2024-01-15T10:30:00Z',
+            created_at: '2024-01-15T10:30:00Z',
+            updated_at: '2024-01-15T10:30:00Z',
             category: 'infrastructure',
+            category_display: 'Infrastructure',
+            priority: 'high',
+            priority_display: 'High',
+            status_display: 'In Review',
+            response_count: 0,
+            view_count: 5,
+            location_path: 'Nairobi > Central > CBD',
+            can_edit: true,
+            can_delete: false,
           },
           {
             id: '2',
             title: 'Water shortage in Kibera area',
-            status: 'under_review',
+            status: 'pending',
             tracking_id: 'FB-2024-002',
-            submitted_at: '2024-01-14T14:20:00Z',
-            category: 'utilities',
+            created_at: '2024-01-14T14:20:00Z',
+            updated_at: '2024-01-14T14:20:00Z',
+            category: 'water_sanitation',
+            category_display: 'Water & Sanitation',
+            priority: 'urgent',
+            priority_display: 'Urgent',
+            status_display: 'Pending',
+            response_count: 0,
+            view_count: 3,
+            location_path: 'Nairobi > Kibra > Kibera',
+            can_edit: true,
+            can_delete: true,
           },
           {
             id: '3',
             title: 'Healthcare facility needs equipment',
             status: 'resolved',
             tracking_id: 'FB-2024-003',
-            submitted_at: '2024-01-10T09:15:00Z',
+            created_at: '2024-01-10T09:15:00Z',
+            updated_at: '2024-01-12T16:45:00Z',
             category: 'healthcare',
+            category_display: 'Healthcare',
+            priority: 'medium',
+            priority_display: 'Medium',
+            status_display: 'Resolved',
+            response_count: 2,
+            last_response_at: '2024-01-12T16:45:00Z',
+            view_count: 12,
+            location_path: 'Nairobi > Westlands > Parklands',
+            can_edit: false,
+            can_delete: false,
           },
         ],
         communityStats: {

@@ -15,14 +15,15 @@ import {
 } from 'lucide-react';
 
 interface WelcomeSectionProps {
-  userName: string;
-  monthlyResolved: number;
+  user: {
+    name?: string;
+    county_name?: string;
+  } | null;
 }
 
-const WelcomeSection: React.FC<WelcomeSectionProps> = ({ 
-  userName, 
-  monthlyResolved 
-}) => {
+const WelcomeSection: React.FC<WelcomeSectionProps> = ({ user }) => {
+  const userName = user?.name || 'Citizen';
+  const monthlyResolved = 47; // This could come from dashboard data
   const navigate = useNavigate();
 
   const getGreeting = () => {
