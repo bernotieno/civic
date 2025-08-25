@@ -9,17 +9,8 @@ import {
   Home,
   MessageSquare,
   FileText,
-  BarChart3,
   Search,
-  UserX,
-  AlertTriangle,
   Construction,
-  Heart,
-  GraduationCap,
-  Shield,
-  Leaf,
-  Zap,
-  Eye,
   Settings,
   HelpCircle,
   ChevronLeft,
@@ -28,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRealTimeUpdates } from '../../hooks/useRealTimeUpdates';
-import FeedbackCategoriesGrid from './FeedbackCategoriesGrid';
+
 
 type DashboardView = 'home' | 'submit-feedback' | 'my-feedback' | 'track-feedback' | 'county-projects';
 
@@ -74,8 +65,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       name: 'My Feedback',
       view: 'my-feedback' as DashboardView,
       icon: FileText,
-      current: currentView === 'my-feedback',
-      badge: '3' // Example pending count
+      current: currentView === 'my-feedback'
     },
     {
       name: 'Track Feedback',
@@ -88,45 +78,12 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       view: 'county-projects' as DashboardView,
       icon: Construction,
       current: currentView === 'county-projects'
-    },
-    {
-      name: 'Public Updates',
-      href: '/public-updates',
-      icon: BarChart3,
-      current: location.pathname === '/public-updates'
     }
   ];
 
-  const quickActions = [
-    {
-      name: 'Anonymous Feedback',
-      href: '/anonymous-feedback',
-      icon: UserX,
-      color: 'text-gray-600'
-    },
-    {
-      name: 'Emergency Report',
-      href: '/emergency-report',
-      icon: AlertTriangle,
-      color: 'text-red-600'
-    }
-  ];
 
-  const categories = [
-    { name: 'Infrastructure', icon: Construction, href: '/submit-feedback?category=infrastructure' },
-    { name: 'Healthcare', icon: Heart, href: '/submit-feedback?category=healthcare' },
-    { name: 'Education', icon: GraduationCap, href: '/submit-feedback?category=education' },
-    { name: 'Public Safety', icon: Shield, href: '/submit-feedback?category=safety' },
-    { name: 'Environment', icon: Leaf, href: '/submit-feedback?category=environment' },
-    { name: 'Utilities', icon: Zap, href: '/submit-feedback?category=utilities' }
-  ];
 
   const bottomNavItems = [
-    {
-      name: 'Transparency Portal',
-      href: '/transparency',
-      icon: Eye
-    },
     {
       name: 'Settings',
       href: '/settings',
@@ -264,61 +221,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             </ul>
           </div>
 
-          {/* Quick Actions */}
-          <div className="px-3 mb-6">
-            {!isCollapsed && (
-              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                Quick Actions
-              </h3>
-            )}
-            <ul className="space-y-1">
-              {quickActions.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <li key={item.name}>
-                    <button
-                      onClick={() => navigate(item.href)}
-                      className="group flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:text-gray-900 hover:bg-gray-50 transition-colors"
-                    >
-                      <Icon className={`flex-shrink-0 h-5 w-5 ${item.color} group-hover:text-gray-500`} />
-                      {!isCollapsed && <span className="ml-3 truncate">{item.name}</span>}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
 
-          {/* Top Categories - Only show when expanded */}
-          {!isCollapsed && (
-            <div className="px-3 mb-6">
-              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                Popular Categories
-              </h3>
-              <div className="space-y-1">
-                {categories.slice(0, 4).map((category) => {
-                  const Icon = category.icon;
-                  return (
-                    <button
-                      key={category.name}
-                      onClick={() => onViewChange && onViewChange('submit-feedback')}
-                      className="group flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-50 hover:text-gray-900 transition-colors"
-                      title={`Submit feedback about ${category.name.toLowerCase()}`}
-                    >
-                      <Icon className={`flex-shrink-0 h-4 w-4 ${category.color} group-hover:text-gray-500 mr-3`} />
-                      <span className="truncate">{category.name}</span>
-                    </button>
-                  );
-                })}
-                <button
-                  onClick={() => onViewChange && onViewChange('submit-feedback')}
-                  className="group flex items-center w-full px-3 py-2 text-sm font-medium text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
-                >
-                  <span className="text-xs">View all categories →</span>
-                </button>
-              </div>
-            </div>
-          )}
         </nav>
 
         {/* Bottom Navigation */}

@@ -8,7 +8,8 @@ from apps.feedback import views as feedback_views
 from apps.ai import views as ai_views
 from .admin_views import (
     admin_dashboard_stats, admin_users_list, admin_feedback_list,
-    respond_to_feedback, admin_projects_list, update_project_status, admin_project_detail
+    respond_to_feedback, admin_projects_list, update_project_status, admin_project_detail,
+    public_projects_list
 )
 
 app_name = 'api'
@@ -58,4 +59,7 @@ urlpatterns = [
     path('admin/projects/', admin_projects_list, name='admin-projects'),
     path('admin/projects/<uuid:project_id>/status/', update_project_status, name='admin-project-status'),
     path('admin/projects/<uuid:project_id>/', admin_project_detail, name='admin-project-detail'),
+    
+    # Public endpoints
+    path('public/projects/', public_projects_list, name='public-projects'),
 ]

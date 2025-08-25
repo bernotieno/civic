@@ -249,255 +249,75 @@ const CitizensDashboard: React.FC = () => {
         <DashboardHeader onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
       </div>
 
-      <div className="flex pt-16"> {/* Add padding-top for fixed header */}
+      <div className="flex pt-16">
         {/* Fixed Left Sidebar */}
         <DashboardSidebar
           isMobileMenuOpen={isMobileMenuOpen}
           onMobileMenuClose={() => setIsMobileMenuOpen(false)}
           currentView={currentView}
           onViewChange={handleViewChange}
+          onCollapseChange={setIsSidebarCollapsed}
         />
 
-        {/* Main Content Area */}
-        <main
-          id="main-content"
-          className="flex-1 min-h-screen dashboard-main"
-          role="main"
-          aria-label="Citizens Dashboard"
-        >
-          <div className="dashboard-content py-6 px-4 sm:px-6 lg:px-8">
+        {/* Main Content */}
+        <div className={`flex-1 transition-all duration-300 ${
+          isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
+        }`}>
+          <div className="p-6">
             {/* Render different views based on currentView */}
             {currentView === 'home' && (
-              <>
-                {/* Welcome Section */}
-                <WelcomeSection
-                  userName={user?.name || 'Citizen'}
-                  monthlyResolved={dashboardData.communityStats.monthlyTrend}
-                />
-
-                {/* Simplified Dashboard Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                  {/* Main Content - 2/3 width */}
-                  <div className="lg:col-span-2 space-y-6">
-                    {/* Key Stats - Simplified */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        <div className="text-2xl font-bold text-blue-600">{dashboardData.stats.totalFeedback}</div>
-                        <div className="text-sm text-gray-600">Total Feedback</div>
-                      </div>
-                      <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        <div className="text-2xl font-bold text-yellow-600">{dashboardData.stats.pendingResponses}</div>
-                        <div className="text-sm text-gray-600">Pending</div>
-                      </div>
-                      <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        <div className="text-2xl font-bold text-green-600">{dashboardData.stats.resolvedIssues}</div>
-                        <div className="text-sm text-gray-600">Resolved</div>
-                      </div>
-                      <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        <div className="text-2xl font-bold text-purple-600">{dashboardData.stats.averageResponseTime}d</div>
-                        <div className="text-sm text-gray-600">Avg Response</div>
-                      </div>
-                    </div>
-
-                    {/* Recent Feedback - Simplified */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Feedback</h3>
-                      {dashboardData.recentFeedback.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
-                          <p>No feedback submitted yet</p>
-                          <button
-                            onClick={() => handleViewChange('submit-feedback')}
-                            className="mt-2 text-blue-600 hover:text-blue-700"
-                          >
-                            Submit your first feedback →
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {dashboardData.recentFeedback.slice(0, 3).map((feedback) => (
-                            <div key={feedback.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                              <div className="flex-1">
-                                <p className="font-medium text-gray-900 truncate">{feedback.title}</p>
-                                <p className="text-sm text-gray-500">{feedback.tracking_id}</p>
-                              </div>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                feedback.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                                feedback.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                                feedback.status === 'under_review' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {feedback.status.replace('_', ' ')}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Sidebar - 1/3 width */}
-                  <div className="lg:col-span-1 space-y-6">
-                    {/* Quick Actions - Simplified */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-                      <div className="space-y-3">
-                        <button
-                          onClick={() => handleViewChange('submit-feedback')}
-                          className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                        >
-                          Submit New Feedback
-                        </button>
-                        <button
-                          onClick={() => handleViewChange('my-feedback')}
-                          className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                        >
-                          View My Feedback
-                        </button>
-                        <button
-                          onClick={() => handleViewChange('county-projects')}
-                          className="w-full bg-green-100 text-green-700 py-3 px-4 rounded-lg hover:bg-green-200 transition-colors font-medium"
-                        >
-                          County Projects
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Community Impact - Simplified */}
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 p-6">
-                      <h3 className="text-lg font-semibold text-green-800 mb-2">Community Impact</h3>
-                      <div className="text-3xl font-bold text-green-700 mb-1">{dashboardData.communityStats.resolvedInArea}</div>
-                      <p className="text-sm text-green-600">Issues resolved in your area this month</p>
-                    </div>
-                  </div>
+              <div className="space-y-6">
+                <WelcomeSection user={user} />
+                <FeedbackOverviewCards stats={dashboardData.stats} />
+                <div className="grid lg:grid-cols-2 gap-6">
+                  <RecentFeedbackStatus recentFeedback={dashboardData.recentFeedback} />
+                  <QuickActionsPanel onViewChange={handleViewChange} />
                 </div>
-              </>
-            )}
-
-            {/* Feedback Form View */}
-            {currentView === 'submit-feedback' && user && (
-              <div className="max-w-4xl mx-auto">
-                <div className="mb-6">
-                  <button
-                    onClick={handleBackToHome}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium mb-4"
-                  >
-                    ← Back to Dashboard
-                  </button>
+                <div className="grid lg:grid-cols-2 gap-6">
+                  <CommunityImpactSection communityStats={dashboardData.communityStats} />
+                  <TransparencySection />
                 </div>
-                <FeedbackForm
-                  user={user}
-                  onSubmissionSuccess={handleSubmissionSuccess}
-                  onSubmissionError={handleSubmissionError}
-                />
               </div>
             )}
 
-            {/* Feedback Success View */}
-            {currentView === 'feedback-success' && submissionData && (
-              <div className="max-w-4xl mx-auto">
-                <div className="mb-6">
-                  <button
-                    onClick={handleBackToHome}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium mb-4"
-                  >
-                    ← Back to Dashboard
-                  </button>
-                </div>
-                <FeedbackSuccess
-                  trackingId={submissionData.tracking_id}
-                  submissionData={submissionData}
-                  onTrackFeedback={(trackingId) => {
-                    handleViewChange('track-feedback');
-                  }}
-                  onViewSubmissions={() => {
-                    handleViewChange('my-feedback');
-                  }}
-                  onSubmitAnother={() => {
-                    handleViewChange('submit-feedback');
-                  }}
-                />
-              </div>
+            {currentView === 'submit-feedback' && (
+              <FeedbackForm
+                onSuccess={handleSubmissionSuccess}
+                onError={handleSubmissionError}
+                onCancel={handleBackToHome}
+              />
             )}
 
-            {/* Feedback Error View */}
-            {currentView === 'feedback-error' && (
-              <div className="max-w-4xl mx-auto">
-                <div className="mb-6">
-                  <button
-                    onClick={handleBackToHome}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium mb-4"
-                  >
-                    ← Back to Dashboard
-                  </button>
-                </div>
-                <FeedbackError
-                  error={errorMessage}
-                  errorType={errorType}
-                  onRetry={() => handleViewChange('submit-feedback')}
-                  onGoBack={() => handleViewChange('submit-feedback')}
-                  onLogin={() => navigate('/login')}
-                />
-              </div>
-            )}
-
-            {/* Feedback Tracker View */}
-            {currentView === 'track-feedback' && (
-              <div className="max-w-4xl mx-auto">
-                <div className="mb-6">
-                  <button
-                    onClick={handleBackToHome}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium mb-4"
-                  >
-                    ← Back to Dashboard
-                  </button>
-                </div>
-                <FeedbackTracker
-                  initialTrackingId={submissionData?.tracking_id || ''}
-                  onTrackingResult={(result) => {
-                    console.log('Tracking result:', result);
-                  }}
-                />
-              </div>
-            )}
-
-            {/* Feedback History View */}
             {currentView === 'my-feedback' && (
-              <div className="max-w-6xl mx-auto">
-                <div className="mb-6">
-                  <button
-                    onClick={handleBackToHome}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium mb-4"
-                  >
-                    ← Back to Dashboard
-                  </button>
-                </div>
-                <FeedbackHistory
-                  onViewDetails={(feedbackId) => {
-                    console.log('View details for:', feedbackId);
-                  }}
-                  onTrackFeedback={(trackingId) => {
-                    handleViewChange('track-feedback');
-                  }}
-                />
-              </div>
+              <FeedbackHistory onBack={handleBackToHome} />
             )}
 
-            {/* County Projects View */}
+            {currentView === 'track-feedback' && (
+              <FeedbackTracker onBack={handleBackToHome} />
+            )}
+
             {currentView === 'county-projects' && (
-              <div className="max-w-6xl mx-auto">
-                <div className="mb-6">
-                  <button
-                    onClick={handleBackToHome}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium mb-4"
-                  >
-                    ← Back to Dashboard
-                  </button>
-                </div>
-                <CountyProjects onProjectSelect={setSelectedProject} />
-              </div>
+              <CountyProjects onProjectSelect={setSelectedProject} />
+            )}
+
+            {currentView === 'feedback-success' && submissionData && (
+              <FeedbackSuccess
+                submissionData={submissionData}
+                onBackToDashboard={handleBackToHome}
+                onSubmitAnother={() => handleViewChange('submit-feedback')}
+              />
+            )}
+
+            {currentView === 'feedback-error' && (
+              <FeedbackError
+                error={errorMessage}
+                errorType={errorType}
+                onRetry={() => handleViewChange('submit-feedback')}
+                onBackToDashboard={handleBackToHome}
+              />
             )}
           </div>
-        </main>
+        </div>
       </div>
 
       {/* Project Details Modal */}

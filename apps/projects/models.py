@@ -30,6 +30,7 @@ class Project(SoftDeleteModel):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     image = models.ImageField(upload_to='projects/', null=True, blank=True)
+    document = models.FileField(upload_to='projects/documents/', null=True, blank=True)
     created_by = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE)
     
     objects = ActiveManager()

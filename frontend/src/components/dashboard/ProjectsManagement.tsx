@@ -10,6 +10,7 @@ interface Project {
   start_date: string | null;
   end_date: string | null;
   image: string | null;
+  document: string | null;
   county: string;
   created_by: string;
   created_at: string;
@@ -39,6 +40,7 @@ const ProjectsManagement: React.FC = () => {
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<File | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -171,6 +173,10 @@ const ProjectsManagement: React.FC = () => {
       if (selectedImage) {
         formDataToSend.append('image', selectedImage);
       }
+      
+      if (selectedDocument) {
+        formDataToSend.append('document', selectedDocument);
+      }
 
       const response = await fetch('http://localhost:8000/api/admin/projects/', {
         method: 'POST',
@@ -193,6 +199,7 @@ const ProjectsManagement: React.FC = () => {
         });
         setSelectedImage(null);
         setImagePreview(null);
+        setSelectedDocument(null);
         fetchProjects();
         alert('Project created successfully!');
       } else {
@@ -543,6 +550,27 @@ const ProjectsManagement: React.FC = () => {
                 )}
 
                 <div>
+                  <label className="block text-sm font-medium text-gray-700">Bill/Project Document</label>
+                  <div className="mt-1">
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.txt"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setSelectedDocument(file);
+                        }
+                      }}
+                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Upload PDF, DOC, DOCX, or TXT files</p>
+                    {selectedDocument && (
+                      <p className="text-sm text-green-600 mt-1">Selected: {selectedDocument.name}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
                   <label className="block text-sm font-medium text-gray-700">Budget (KSh)</label>
                   <input
                     type="number"
@@ -669,6 +697,20 @@ const ProjectsManagement: React.FC = () => {
                     alt={selectedProject.title}
                     className="mt-2 max-w-full h-48 object-cover rounded-md"
                   />
+                </div>
+              )}
+              
+              {selectedProject.document && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Project Document</label>
+                  <a 
+                    href={`http://localhost:8000${selectedProject.document}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    📄 View Document
+                  </a>
                 </div>
               )}
               

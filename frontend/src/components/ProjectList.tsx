@@ -1,9 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockProjects, Project } from '../data/projects';
 import { Users, Search, Filter, ThumbsUp, ThumbsDown } from 'lucide-react';
 import Header from './Header';
 import Footer from './Footer';
+
+interface Project {
+  id: string;
+  title: string;
+  description: string;
+  project_type: string;
+  status: string;
+  budget: string | null;
+  image: string | null;
+  document: string | null;
+  county: string;
+  created_by: string;
+  created_at: string;
+}
 
 const ProjectList: React.FC = () => {
   const [allProjects, setAllProjects] = useState<Project[]>([]);
@@ -17,32 +30,72 @@ const ProjectList: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState('');
   const projectsPerPage = 6;
   const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Simulate API call to /public-updates
-    const fetchProjects = async () => {
-      setLoading(true);
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      // Duplicate projects to have more than 6 for demonstration
-      const extendedProjects = [...mockProjects, ...mockProjects.map(p => ({...p, id: p.id + '_2'})), ...mockProjects.map(p => ({...p, id: p.id + '_3'}))];
-      setAllProjects(extendedProjects);
-      setFilteredProjects(extendedProjects);
-      setDisplayedProjects(extendedProjects.slice(0, projectsPerPage));
-      setLoading(false);
-    };
-
     fetchProjects();
+    checkAuthentication();
   }, []);
+
+  const checkAuthentication = () => {
+    const token = localStorage.getItem('access_token');
+    setIsAuthenticated(!!token);
+  };
+
+  const fetchProjects = async () => {
+    setLoading(true);
+    try {
+      // Fetch public projects - no auth needed for public view
+      const response = await fetch('http://localhost:8000/api/public/projects/');
+      
+      if (response.ok) {
+        const data = await response.json();
+        const projects = data.data || [];
+        
+        // Transform backend data to match frontend interface
+        const transformedProjects = projects.map((p: any) => ({
+          id: p.id,
+          name: p.title,
+          title: p.title,
+          description: p.description,
+          project_type: p.project_type,
+          category: p.project_type,
+          status: p.status,
+          budget: p.budget ? `KSh ${Number(p.budget).toLocaleString()}` : 'Budget not specified',
+          image: p.image ? `http://localhost:8000${p.image}` : '/api/placeholder/400/300',
+          document: p.document ? `http://localhost:8000${p.document}` : null,
+          county: p.county,
+          created_by: p.created_by,
+          created_at: p.created_at
+        }));
+        
+        setAllProjects(transformedProjects);
+        setFilteredProjects(transformedProjects);
+        setDisplayedProjects(transformedProjects.slice(0, projectsPerPage));
+      } else {
+        console.error('Failed to fetch projects');
+        setAllProjects([]);
+        setFilteredProjects([]);
+        setDisplayedProjects([]);
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      setAllProjects([]);
+      setFilteredProjects([]);
+      setDisplayedProjects([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter and search effect
   useEffect(() => {
     let filtered = allProjects.filter(project => {
-      const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            project.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = !statusFilter || project.status === statusFilter;
       const matchesCounty = !countyFilter || project.county === countyFilter;
-      const matchesCategory = !categoryFilter || project.category === categoryFilter;
+      const matchesCategory = !categoryFilter || project.project_type === categoryFilter;
       
       return matchesSearch && matchesStatus && matchesCounty && matchesCategory;
     });
@@ -75,7 +128,7 @@ const ProjectList: React.FC = () => {
 
   // Get unique values for filters
   const uniqueCounties = [...new Set(allProjects.map(p => p.county))];
-  const uniqueCategories = [...new Set(allProjects.map(p => p.category))];
+  const uniqueCategories = [...new Set(allProjects.map(p => p.project_type))];
   const uniqueStatuses = [...new Set(allProjects.map(p => p.status))];
 
   const clearFilters = () => {
@@ -210,20 +263,47 @@ const ProjectList: React.FC = () => {
 
               {/* Actions */}
               <div className="px-4 py-4 flex justify-between items-center gap-2">
-                <div className="flex gap-2">
-                  <button className="flex items-center gap-1 border border-gray-300 rounded-md px-3 py-1 text-sm hover:bg-gray-100">
-                    <ThumbsUp size={14} /> Support
-                  </button>
-                  <button className="flex items-center gap-1 border border-gray-300 rounded-md px-3 py-1 text-sm hover:bg-gray-100">
-                    <ThumbsDown size={14} /> Oppose
-                  </button>
-                </div>
-                <button 
-                  onClick={() => navigate(`/project/${project.id}`)}
-                  className="bg-green-800 hover:bg-green-900 text-white text-sm px-4 py-2 rounded-md font-medium"
-                >
-                  Submit Feedback
-                </button>
+                {isAuthenticated ? (
+                  <>
+                    <div className="flex gap-2">
+                      <button className="flex items-center gap-1 border border-gray-300 rounded-md px-3 py-1 text-sm hover:bg-gray-100">
+                        <ThumbsUp size={14} /> Support
+                      </button>
+                      <button className="flex items-center gap-1 border border-gray-300 rounded-md px-3 py-1 text-sm hover:bg-gray-100">
+                        <ThumbsDown size={14} /> Oppose
+                      </button>
+                    </div>
+                    <button 
+                      onClick={() => navigate(`/project/${project.id}`)}
+                      className="bg-green-800 hover:bg-green-900 text-white text-sm px-4 py-2 rounded-md font-medium"
+                    >
+                      Submit Feedback
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => navigate('/login')}
+                        className="flex items-center gap-1 border border-gray-300 rounded-md px-3 py-1 text-sm hover:bg-gray-100 text-gray-500"
+                      >
+                        <ThumbsUp size={14} /> Login to Support
+                      </button>
+                      <button 
+                        onClick={() => navigate('/login')}
+                        className="flex items-center gap-1 border border-gray-300 rounded-md px-3 py-1 text-sm hover:bg-gray-100 text-gray-500"
+                      >
+                        <ThumbsDown size={14} /> Login to Oppose
+                      </button>
+                    </div>
+                    <button 
+                      onClick={() => navigate('/login')}
+                      className="bg-gray-400 text-white text-sm px-4 py-2 rounded-md font-medium"
+                    >
+                      Login to Participate
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ))}
