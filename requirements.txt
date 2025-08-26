@@ -51,6 +51,11 @@ python-dotenv==1.0.1
 # Image processing
 Pillow==10.0.0
 
+# Production Dependencies
+dj-database-url==3.0.1
+whitenoise==6.9.0
+psycopg2-binary==2.9.10
+
 # Development & Monitoring (Optional)
 flower==2.0.1  # Celery monitoring dashboard
 django-silk==5.3.0  # Performance profiling (development only)

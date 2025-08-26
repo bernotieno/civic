@@ -6,6 +6,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
 from apps.feedback import views as feedback_views
 from apps.ai import views as ai_views
+from .health import health_check
 from .admin_views import (
     admin_dashboard_stats, admin_users_list, admin_feedback_list,
     respond_to_feedback, admin_projects_list, update_project_status, admin_project_detail,
@@ -16,7 +17,8 @@ app_name = 'api'
 
 urlpatterns = [
     # Health check
-    path('health/', views.system_health, name='health'),
+    path('health/', health_check, name='health'),
+    path('health/system/', views.system_health, name='system_health'),
     
     # Authentication endpoints
     path('auth/register/', views.RegisterView.as_view(), name='register'),

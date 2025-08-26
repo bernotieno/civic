@@ -1,10 +1,7 @@
-from decouple import config
+import os
 
-environment = config('ENVIRONMENT', default='development')
-
-if environment == 'production':
+# Determine which settings to use based on environment
+if os.environ.get('ENVIRONMENT') == 'production':
     from .production import *
-elif environment == 'development':
-    from .development import *
 else:
-    from .base import *
+    from .development import *
