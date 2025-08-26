@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FileText, Calendar, Users, ExternalLink, Filter, Search, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
 import { Bill, Project } from '../../types';
 
@@ -7,6 +8,7 @@ interface BillsAndProjectsProps {
 }
 
 const BillsAndProjects: React.FC<BillsAndProjectsProps> = ({ onFeedbackClick }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'bills' | 'projects'>('bills');
   const [bills, setBills] = useState<Bill[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -21,6 +23,9 @@ const BillsAndProjects: React.FC<BillsAndProjectsProps> = ({ onFeedbackClick }) 
     is_anonymous: false
   });
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   const fetchUserProfile = async () => {
     try {
@@ -40,79 +45,35 @@ const BillsAndProjects: React.FC<BillsAndProjectsProps> = ({ onFeedbackClick }) 
     }
   };
 
-  // Mock data - replace with actual API calls
   useEffect(() => {
     fetchUserProfile();
-    const mockBills: Bill[] = [
-      {
-        id: '1',
-        bill_number: 'HB-2024-001',
-        title: 'Digital Economy Enhancement Bill',
-        description: 'A comprehensive bill to enhance Kenya\'s digital economy infrastructure and regulatory framework.',
-        summary: 'This bill aims to establish a robust digital economy by improving internet connectivity, digital literacy, and e-commerce regulations.',
-        sponsor: 'Hon. Jane Wanjiku (Nairobi County)',
-        committee: 'ICT Committee',
-        status: 'committee_stage',
-        introduced_date: '2024-01-15',
-        committee_deadline: '2024-03-15',
-        public_participation_open: true,
-        participation_deadline: '2024-02-28',
-        created_at: '2024-01-15T10:00:00Z',
-        updated_at: '2024-01-20T14:30:00Z'
-      },
-      {
-        id: '2',
-        bill_number: 'SB-2024-002',
-        title: 'Climate Change Adaptation Bill',
-        description: 'Legislation to strengthen Kenya\'s climate change adaptation and mitigation strategies.',
-        summary: 'Establishes frameworks for climate resilience, carbon trading, and environmental protection measures.',
-        sponsor: 'Senate Committee on Environment',
-        status: 'second_reading',
-        introduced_date: '2024-01-10',
-        public_participation_open: true,
-        created_at: '2024-01-10T09:00:00Z',
-        updated_at: '2024-01-25T11:15:00Z'
-      }
-    ];
-
-    const mockProjects: Project[] = [
-      {
-        id: '1',
-        title: 'National Broadband Infrastructure Project',
-        description: 'Expanding high-speed internet connectivity to all 47 counties through fiber optic networks.',
-        project_type: 'infrastructure',
-        status: 'in_progress',
-        budget: 50000000000,
-        implementing_ministry: 'Ministry of ICT',
-        target_beneficiaries: 'All Kenyan citizens, particularly in rural areas',
-        start_date: '2024-01-01',
-        end_date: '2026-12-31',
-        public_participation_open: true,
-        participation_deadline: '2024-03-01',
-        created_at: '2023-12-01T10:00:00Z',
-        updated_at: '2024-01-15T16:20:00Z'
-      },
-      {
-        id: '2',
-        title: 'Universal Healthcare Coverage Initiative',
-        description: 'Implementing comprehensive healthcare coverage for all Kenyan citizens.',
-        project_type: 'healthcare',
-        status: 'approved',
-        budget: 75000000000,
-        implementing_ministry: 'Ministry of Health',
-        target_beneficiaries: 'All Kenyan citizens',
-        start_date: '2024-07-01',
-        end_date: '2027-06-30',
-        public_participation_open: true,
-        created_at: '2023-11-15T14:00:00Z',
-        updated_at: '2024-01-10T09:45:00Z'
-      }
-    ];
-
-    setBills(mockBills);
-    setProjects(mockProjects);
-    setLoading(false);
+    fetchBillsAndProjects();
   }, []);
+
+  const fetchBillsAndProjects = async () => {
+    setLoading(true);
+    try {
+      // Fetch bills and projects from public API
+      const [billsResponse, projectsResponse] = await Promise.all([
+        fetch('http://127.0.0.1:8000/api/public/bills/'),
+        fetch('http://127.0.0.1:8000/api/public/projects/')
+      ]);
+      
+      if (billsResponse.ok) {
+        const billsData = await billsResponse.json();
+        setBills(billsData.data || []);
+      }
+      
+      if (projectsResponse.ok) {
+        const projectsData = await projectsResponse.json();
+        setProjects(projectsData.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching bills and projects:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -462,7 +423,14 @@ const BillsAndProjects: React.FC<BillsAndProjectsProps> = ({ onFeedbackClick }) 
                         Submit Feedback
                         {expandedFeedback === bill.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       </button>
-                      <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm">
+                      <button 
+                        onClick={() => {
+                          setSelectedProject(null);
+                          setSelectedBill(bill);
+                          setShowDetailsModal(true);
+                        }}
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm"
+                      >
                         <ExternalLink className="inline-block w-4 h-4 mr-1" />
                         View Details
                       </button>
@@ -620,7 +588,14 @@ const BillsAndProjects: React.FC<BillsAndProjectsProps> = ({ onFeedbackClick }) 
                         Submit Feedback
                         {expandedFeedback === project.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       </button>
-                      <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm">
+                      <button 
+                        onClick={() => {
+                          setSelectedBill(null);
+                          setSelectedProject(project);
+                          setShowDetailsModal(true);
+                        }}
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm"
+                      >
                         <ExternalLink className="inline-block w-4 h-4 mr-1" />
                         View Details
                       </button>
@@ -715,6 +690,148 @@ const BillsAndProjects: React.FC<BillsAndProjectsProps> = ({ onFeedbackClick }) 
           </div>
         )}
       </div>
+
+      {/* Details Modal */}
+      {showDetailsModal && (selectedBill || selectedProject) && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                {selectedBill ? 'Bill Details' : 'Project Details'}
+              </h3>
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {selectedBill && (
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-semibold text-gray-900">{selectedBill.title}</h4>
+                  <p className="text-sm text-gray-600">Bill Number: {selectedBill.bill_number}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Summary</label>
+                  <p className="text-sm text-gray-900">{selectedBill.summary}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Description</label>
+                  <p className="text-sm text-gray-900">{selectedBill.description}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Sponsor</label>
+                    <p className="text-sm text-gray-900">{selectedBill.sponsor}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Committee</label>
+                    <p className="text-sm text-gray-900">{selectedBill.committee || 'Not assigned'}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Status</label>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedBill.status)}`}>
+                      {selectedBill.status.replace('_', ' ').toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Introduced Date</label>
+                    <p className="text-sm text-gray-900">{selectedBill.introduced_date ? formatDate(selectedBill.introduced_date) : 'Not specified'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {selectedProject && (
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-semibold text-gray-900">{selectedProject.title}</h4>
+                  <p className="text-sm text-gray-600">National Project</p>
+                </div>
+                
+                {selectedProject.image && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Project Image</label>
+                    <img 
+                      src={`http://localhost:8000${selectedProject.image}`} 
+                      alt={selectedProject.title}
+                      className="w-full max-w-md h-48 object-cover rounded-md"
+                    />
+                  </div>
+                )}
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Description</label>
+                  <p className="text-sm text-gray-900">{selectedProject.description}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Implementing Ministry</label>
+                    <p className="text-sm text-gray-900">{selectedProject.implementing_ministry || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Budget</label>
+                    <p className="text-sm text-gray-900">{selectedProject.budget ? formatCurrency(selectedProject.budget) : 'Not specified'}</p>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Target Beneficiaries</label>
+                  <p className="text-sm text-gray-900">{selectedProject.target_beneficiaries || 'Not specified'}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Status</label>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedProject.status)}`}>
+                      {selectedProject.status.replace('_', ' ').toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Project Type</label>
+                    <p className="text-sm text-gray-900">{selectedProject.project_type}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Start Date</label>
+                    <p className="text-sm text-gray-900">{selectedProject.start_date ? formatDate(selectedProject.start_date) : 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">End Date</label>
+                    <p className="text-sm text-gray-900">{selectedProject.end_date ? formatDate(selectedProject.end_date) : 'Not specified'}</p>
+                  </div>
+                </div>
+                
+                {selectedProject.document && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Project Document</label>
+                    <a 
+                      href={`http://localhost:8000${selectedProject.document}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                      📄 View Document
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -179,7 +179,7 @@ const ProjectsManagement: React.FC = () => {
       Object.entries(dataToSend).forEach(([key, value]) => {
         if (value !== '' || !['start_date', 'end_date'].includes(key)) {
           if (key === 'public_participation_open') {
-            formDataToSend.append(key, value ? 'true' : 'false');
+            formDataToSend.append(key, value ? 'True' : 'False');
           } else {
             formDataToSend.append(key, value);
           }
@@ -192,6 +192,12 @@ const ProjectsManagement: React.FC = () => {
       
       if (selectedDocument) {
         formDataToSend.append('document', selectedDocument);
+      }
+
+      // Debug: Log what's being sent
+      console.log('Sending form data:');
+      for (let [key, value] of formDataToSend.entries()) {
+        console.log(key, value);
       }
 
       const response = await fetch('http://localhost:8000/api/admin/projects/', {
@@ -223,9 +229,14 @@ const ProjectsManagement: React.FC = () => {
         fetchProjects();
         alert('Project created successfully!');
       } else {
-        const errorData = await response.json();
-        console.error('Project creation failed:', errorData);
-        alert(`Failed to create project: ${errorData.error || 'Unknown error'}`);
+        const errorText = await response.text();
+        console.error('Project creation failed:', response.status, errorText);
+        try {
+          const errorData = JSON.parse(errorText);
+          alert(`Failed to create project: ${errorData.error || JSON.stringify(errorData)}`);
+        } catch {
+          alert(`Failed to create project: ${errorText || 'Unknown error'}`);
+        }
       }
     } catch (error) {
       console.error('Error creating project:', error);
@@ -286,7 +297,7 @@ const ProjectsManagement: React.FC = () => {
       Object.entries(editFormData).forEach(([key, value]) => {
         if (value !== '' || !['start_date', 'end_date'].includes(key)) {
           if (key === 'public_participation_open') {
-            formDataToSend.append(key, value ? 'true' : 'false');
+            formDataToSend.append(key, value ? 'True' : 'False');
           } else {
             formDataToSend.append(key, value);
           }
