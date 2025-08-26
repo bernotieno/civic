@@ -17,8 +17,8 @@ python manage.py migrate --noinput
 echo "🏛️ Setting up counties data..."
 python manage.py setup_counties
 
-# Create superuser if it doesn't exist
-echo "👤 Creating superuser..."
+# Create superuser (preserves existing admin)
+echo "👤 Setting up admin user..."
 python manage.py create_civicai_superuser
 
 # Collect static files
