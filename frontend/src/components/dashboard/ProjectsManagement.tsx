@@ -7,10 +7,14 @@ interface Project {
   project_type: string;
   status: string;
   budget: string | null;
+  implementing_ministry: string;
+  target_beneficiaries: string;
   start_date: string | null;
   end_date: string | null;
   image: string | null;
   document: string | null;
+  public_participation_open: boolean;
+  participation_deadline: string | null;
   county: string;
   created_by: string;
   created_at: string;
@@ -35,8 +39,12 @@ const ProjectsManagement: React.FC = () => {
     project_type: 'infrastructure',
     county_id: '',
     budget: '',
+    implementing_ministry: '',
+    target_beneficiaries: '',
     start_date: '',
     end_date: '',
+    public_participation_open: true,
+    participation_deadline: '',
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -49,8 +57,12 @@ const ProjectsManagement: React.FC = () => {
     description: '',
     project_type: 'infrastructure',
     budget: '',
+    implementing_ministry: '',
+    target_beneficiaries: '',
     start_date: '',
     end_date: '',
+    public_participation_open: true,
+    participation_deadline: '',
   });
   const [editSelectedImage, setEditSelectedImage] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
@@ -163,10 +175,14 @@ const ProjectsManagement: React.FC = () => {
         delete dataToSend.county_id;
       }
       
-      // Filter out empty date fields
+      // Filter out empty date fields and handle boolean conversion
       Object.entries(dataToSend).forEach(([key, value]) => {
         if (value !== '' || !['start_date', 'end_date'].includes(key)) {
-          formDataToSend.append(key, value);
+          if (key === 'public_participation_open') {
+            formDataToSend.append(key, value ? 'true' : 'false');
+          } else {
+            formDataToSend.append(key, value);
+          }
         }
       });
       
@@ -194,8 +210,12 @@ const ProjectsManagement: React.FC = () => {
           project_type: 'infrastructure',
           county_id: '',
           budget: '',
+          implementing_ministry: '',
+          target_beneficiaries: '',
           start_date: '',
           end_date: '',
+          public_participation_open: true,
+          participation_deadline: '',
         });
         setSelectedImage(null);
         setImagePreview(null);
@@ -244,8 +264,12 @@ const ProjectsManagement: React.FC = () => {
       description: project.description,
       project_type: project.project_type,
       budget: project.budget || '',
+      implementing_ministry: project.implementing_ministry || '',
+      target_beneficiaries: project.target_beneficiaries || '',
       start_date: project.start_date || '',
       end_date: project.end_date || '',
+      public_participation_open: project.public_participation_open ?? true,
+      participation_deadline: project.participation_deadline || '',
     });
     setEditImagePreview(project.image ? `http://localhost:8000${project.image}` : null);
     setShowEditModal(true);
@@ -261,7 +285,11 @@ const ProjectsManagement: React.FC = () => {
       
       Object.entries(editFormData).forEach(([key, value]) => {
         if (value !== '' || !['start_date', 'end_date'].includes(key)) {
-          formDataToSend.append(key, value);
+          if (key === 'public_participation_open') {
+            formDataToSend.append(key, value ? 'true' : 'false');
+          } else {
+            formDataToSend.append(key, value);
+          }
         }
       });
       
@@ -317,11 +345,11 @@ const ProjectsManagement: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'planning': return 'bg-gray-100 text-gray-800';
+      case 'proposed': return 'bg-gray-100 text-gray-800';
       case 'approved': return 'bg-blue-100 text-blue-800';
       case 'in_progress': return 'bg-yellow-100 text-yellow-800';
       case 'completed': return 'bg-green-100 text-green-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'suspended': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -333,7 +361,9 @@ const ProjectsManagement: React.FC = () => {
       education: 'bg-purple-100 text-purple-800',
       agriculture: 'bg-green-100 text-green-800',
       environment: 'bg-teal-100 text-teal-800',
+      economic: 'bg-yellow-100 text-yellow-800',
       social: 'bg-pink-100 text-pink-800',
+      governance: 'bg-indigo-100 text-indigo-800',
     };
     return colors[type] || 'bg-gray-100 text-gray-800';
   };
@@ -426,11 +456,11 @@ const ProjectsManagement: React.FC = () => {
                       onChange={(e) => updateProjectStatus(project.id, e.target.value)}
                       className={`text-xs font-semibold rounded-full px-2 py-1 border-0 ${getStatusColor(project.status)}`}
                     >
-                      <option value="planning">Planning</option>
+                      <option value="proposed">Proposed</option>
                       <option value="approved">Approved</option>
                       <option value="in_progress">In Progress</option>
                       <option value="completed">Completed</option>
-                      <option value="cancelled">Cancelled</option>
+                      <option value="suspended">Suspended</option>
                     </select>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -474,7 +504,7 @@ const ProjectsManagement: React.FC = () => {
       {/* Create Project Modal */}
       {showCreateForm && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
             <form onSubmit={handleCreateProject}>
               <h3 className="text-lg font-medium text-gray-900 mb-4">Create New National Project</h3>
               
@@ -508,12 +538,14 @@ const ProjectsManagement: React.FC = () => {
                     onChange={(e) => setFormData({...formData, project_type: e.target.value})}
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                   >
-                    <option value="infrastructure">Infrastructure</option>
-                    <option value="healthcare">Healthcare</option>
-                    <option value="education">Education</option>
-                    <option value="agriculture">Agriculture</option>
-                    <option value="environment">Environment</option>
+                    <option value="infrastructure">Infrastructure Development</option>
+                    <option value="healthcare">Healthcare Initiative</option>
+                    <option value="education">Education Program</option>
+                    <option value="agriculture">Agriculture & Food Security</option>
+                    <option value="environment">Environment & Climate</option>
+                    <option value="economic">Economic Development</option>
                     <option value="social">Social Services</option>
+                    <option value="governance">Governance & Reform</option>
                   </select>
                 </div>
 
@@ -547,6 +579,28 @@ const ProjectsManagement: React.FC = () => {
                 </div>
 
                 <div>
+                  <label className="block text-sm font-medium text-gray-700">Implementing Ministry</label>
+                  <input
+                    type="text"
+                    value={formData.implementing_ministry}
+                    onChange={(e) => setFormData({...formData, implementing_ministry: e.target.value})}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="e.g., Ministry of Health"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Target Beneficiaries</label>
+                  <textarea
+                    value={formData.target_beneficiaries}
+                    onChange={(e) => setFormData({...formData, target_beneficiaries: e.target.value})}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    rows={2}
+                    placeholder="Describe who will benefit from this project"
+                  />
+                </div>
+
+                <div>
                   <label className="block text-sm font-medium text-gray-700">Budget (KSh)</label>
                   <input
                     type="number"
@@ -555,6 +609,51 @@ const ProjectsManagement: React.FC = () => {
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                   />
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Start Date</label>
+                    <input
+                      type="date"
+                      value={formData.start_date}
+                      onChange={(e) => setFormData({...formData, start_date: e.target.value})}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">End Date</label>
+                    <input
+                      type="date"
+                      value={formData.end_date}
+                      onChange={(e) => setFormData({...formData, end_date: e.target.value})}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.public_participation_open}
+                      onChange={(e) => setFormData({...formData, public_participation_open: e.target.checked})}
+                      className="mr-2"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Open for Public Participation</span>
+                  </label>
+                </div>
+
+                {formData.public_participation_open && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Participation Deadline</label>
+                    <input
+                      type="date"
+                      value={formData.participation_deadline}
+                      onChange={(e) => setFormData({...formData, participation_deadline: e.target.value})}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Project Image</label>
@@ -656,6 +755,37 @@ const ProjectsManagement: React.FC = () => {
               </div>
               
               <div>
+                <label className="block text-sm font-medium text-gray-700">Implementing Ministry</label>
+                <p className="text-sm text-gray-900">{selectedProject.implementing_ministry || 'Not specified'}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Target Beneficiaries</label>
+                <p className="text-sm text-gray-900">{selectedProject.target_beneficiaries || 'Not specified'}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Start Date</label>
+                  <p className="text-sm text-gray-900">{selectedProject.start_date ? new Date(selectedProject.start_date).toLocaleDateString() : 'Not specified'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">End Date</label>
+                  <p className="text-sm text-gray-900">{selectedProject.end_date ? new Date(selectedProject.end_date).toLocaleDateString() : 'Not specified'}</p>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Public Participation</label>
+                <p className="text-sm text-gray-900">
+                  {selectedProject.public_participation_open ? 'Open' : 'Closed'}
+                  {selectedProject.participation_deadline && selectedProject.public_participation_open && (
+                    <span className="text-gray-500"> (Deadline: {new Date(selectedProject.participation_deadline).toLocaleDateString()})</span>
+                  )}
+                </p>
+              </div>
+              
+              <div>
                 <label className="block text-sm font-medium text-gray-700">Project Scope</label>
                 <p className="text-sm text-gray-900">National</p>
               </div>
@@ -711,7 +841,7 @@ const ProjectsManagement: React.FC = () => {
       {/* Edit Project Modal */}
       {showEditModal && selectedProject && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
             <form onSubmit={handleUpdateProject}>
               <h3 className="text-lg font-medium text-gray-900 mb-4">Edit National Project</h3>
               
@@ -745,13 +875,37 @@ const ProjectsManagement: React.FC = () => {
                     onChange={(e) => setEditFormData({...editFormData, project_type: e.target.value})}
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                   >
-                    <option value="infrastructure">Infrastructure</option>
-                    <option value="healthcare">Healthcare</option>
-                    <option value="education">Education</option>
-                    <option value="agriculture">Agriculture</option>
-                    <option value="environment">Environment</option>
+                    <option value="infrastructure">Infrastructure Development</option>
+                    <option value="healthcare">Healthcare Initiative</option>
+                    <option value="education">Education Program</option>
+                    <option value="agriculture">Agriculture & Food Security</option>
+                    <option value="environment">Environment & Climate</option>
+                    <option value="economic">Economic Development</option>
                     <option value="social">Social Services</option>
+                    <option value="governance">Governance & Reform</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Implementing Ministry</label>
+                  <input
+                    type="text"
+                    value={editFormData.implementing_ministry}
+                    onChange={(e) => setEditFormData({...editFormData, implementing_ministry: e.target.value})}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="e.g., Ministry of Health"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Target Beneficiaries</label>
+                  <textarea
+                    value={editFormData.target_beneficiaries}
+                    onChange={(e) => setEditFormData({...editFormData, target_beneficiaries: e.target.value})}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    rows={2}
+                    placeholder="Describe who will benefit from this project"
+                  />
                 </div>
 
                 <div>
@@ -763,6 +917,51 @@ const ProjectsManagement: React.FC = () => {
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                   />
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Start Date</label>
+                    <input
+                      type="date"
+                      value={editFormData.start_date}
+                      onChange={(e) => setEditFormData({...editFormData, start_date: e.target.value})}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">End Date</label>
+                    <input
+                      type="date"
+                      value={editFormData.end_date}
+                      onChange={(e) => setEditFormData({...editFormData, end_date: e.target.value})}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={editFormData.public_participation_open}
+                      onChange={(e) => setEditFormData({...editFormData, public_participation_open: e.target.checked})}
+                      className="mr-2"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Open for Public Participation</span>
+                  </label>
+                </div>
+
+                {editFormData.public_participation_open && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Participation Deadline</label>
+                    <input
+                      type="date"
+                      value={editFormData.participation_deadline}
+                      onChange={(e) => setEditFormData({...editFormData, participation_deadline: e.target.value})}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Project Image</label>
