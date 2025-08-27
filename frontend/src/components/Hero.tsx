@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 export default function Hero() {
   return (
-    <section className="max-w-7xl mx-auto px-6 py-16 mt-16">
+    <section className="w-full px-4 sm:px-6 lg:px-8 py-16 mt-16">
       <div className="flex flex-col lg:flex-row items-center gap-12">
         {/* Left Content */}
         <div className="flex-1 space-y-8">
@@ -12,7 +12,7 @@ export default function Hero() {
               <br />
               Civic Decisions
             </h1>
-            <p className="text-lg text-gray-600 max-w-md">
+            <p className="text-lg text-gray-600 max-w-lg">
               Engage with the legislative process. Read bills, vote on issues, and submit feedback to make the voice of
               our nation heard.
             </p>
@@ -50,7 +50,7 @@ export default function Hero() {
           <img 
             src="/hero-big.jpeg" 
             alt="Civic Engagement" 
-            className="w-full max-w-md h-64 object-cover rounded-2xl shadow-lg"
+            className="w-full max-w-lg h-64 sm:h-80 lg:h-96 object-cover rounded-2xl shadow-lg"
           />
         </div>
       </div>

@@ -28,17 +28,17 @@ const WhyChooseUs = () => {
   ]
 
   return (
-    <section className="py-20 bg-white">
-      <div className="container mx-auto px-4">
+    <section className="py-12 sm:py-16 lg:py-20 bg-white">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-gray-900">Why Choose Us?</h2>
         </div>
 
-        <div className="relative max-w-6xl mx-auto">
+        <div className="relative max-w-7xl mx-auto">
           {/* Top Row */}
-          <div className="flex justify-between items-start mb-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12 justify-items-center">
             {/* Card 01 */}
-            <div className="w-80 p-6 bg-teal-600 rounded-3xl text-white shadow-lg">
+            <div className="w-full max-w-80 p-6 rounded-3xl text-white shadow-lg" style={{backgroundColor: '#5C8985'}}>
               <div className="flex items-center mb-3">
                 <span className="text-2xl font-bold mr-3">{features[0].number}</span>
                 <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
@@ -52,7 +52,7 @@ const WhyChooseUs = () => {
             </div>
 
             {/* Card 03 */}
-            <div className="w-80 p-6 bg-teal-600 rounded-3xl text-white shadow-lg">
+            <div className="w-full max-w-80 p-6 rounded-3xl text-gray-900 shadow-lg" style={{backgroundColor: '#E2FCF7'}}>
               <div className="flex items-center mb-3">
                 <span className="text-2xl font-bold mr-3">{features[2].number}</span>
                 <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
@@ -69,7 +69,7 @@ const WhyChooseUs = () => {
           {/* Middle Row */}
           <div className="flex justify-center mb-12">
             {/* Card 05 */}
-            <div className="w-80 p-6 bg-teal-600 rounded-3xl text-white shadow-lg">
+            <div className="w-full max-w-80 p-6 rounded-3xl text-gray-900 shadow-lg" style={{background: 'linear-gradient(to bottom left, #5C8985, #E2FCF7)'}}>
               <div className="flex items-center mb-3">
                 <span className="text-2xl font-bold mr-3">{features[4].number}</span>
                 <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
@@ -84,9 +84,9 @@ const WhyChooseUs = () => {
           </div>
 
           {/* Bottom Row */}
-          <div className="flex justify-between items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 justify-items-center">
             {/* Card 02 */}
-            <div className="w-80 p-6 bg-teal-600 rounded-3xl text-white shadow-lg">
+            <div className="w-full max-w-80 p-6 rounded-3xl text-gray-900 shadow-lg" style={{backgroundColor: '#E2FCF7'}}>
               <div className="flex items-center mb-3">
                 <span className="text-2xl font-bold mr-3">{features[1].number}</span>
                 <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
@@ -100,7 +100,7 @@ const WhyChooseUs = () => {
             </div>
 
             {/* Card 04 */}
-            <div className="w-80 p-6 bg-teal-600 rounded-3xl text-white shadow-lg">
+            <div className="w-full max-w-80 p-6 rounded-3xl text-white shadow-lg" style={{backgroundColor: '#5C8985'}}>
               <div className="flex items-center mb-3">
                 <span className="text-2xl font-bold mr-3">{features[3].number}</span>
                 <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
