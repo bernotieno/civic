@@ -23,7 +23,7 @@ import AdminAnalytics from './components/dashboard/AdminAnalytics';
 import AdminOverview from './components/dashboard/AdminOverview';
 import AdminUserManagement from './components/dashboard/AdminUserManagement';
 import AdminSettings from './components/dashboard/AdminSettings';
-import BillsManagement from './components/dashboard/Bills';
+import BillsManagement from './components/dashboard/BillsManagement';
 import AdminGuard from './components/guards/AdminGuard';
 
 // Home Page Component

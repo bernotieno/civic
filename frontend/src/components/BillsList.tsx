@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Search, Filter, ThumbsUp, ThumbsDown, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
+import { Users, Search, Filter, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
 import Header from './Header';
 import Footer from './Footer';
 import LoadingSkeleton from './LoadingSkeleton';
@@ -384,47 +384,21 @@ const BillsList: React.FC = () => {
 
               {/* Actions */}
               <div className="px-4 py-4">
-                <div className="flex justify-between items-center gap-2 mb-2">
+                <div className="text-center mb-2">
                   {isAuthenticated ? (
-                    <>
-                      <div className="flex gap-2">
-                        <button className="flex items-center gap-1 border border-gray-300 rounded-md px-3 py-1 text-sm hover:bg-gray-100">
-                          <ThumbsUp size={14} /> Support
-                        </button>
-                        <button className="flex items-center gap-1 border border-gray-300 rounded-md px-3 py-1 text-sm hover:bg-gray-100">
-                          <ThumbsDown size={14} /> Oppose
-                        </button>
-                      </div>
-                      <button 
-                        onClick={() => navigate(`/bill/${bill.id}`)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-md font-medium"
-                      >
-                        View Details
-                      </button>
-                    </>
+                    <button 
+                      onClick={() => navigate(`/bill/${bill.id}`)}
+                      className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 ease-in-out"
+                    >
+                      View Details
+                    </button>
                   ) : (
-                    <>
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => navigate('/login')}
-                          className="flex items-center gap-1 border border-gray-300 rounded-md px-3 py-1 text-sm hover:bg-gray-100 text-gray-500"
-                        >
-                          <ThumbsUp size={14} /> Login to Support
-                        </button>
-                        <button 
-                          onClick={() => navigate('/login')}
-                          className="flex items-center gap-1 border border-gray-300 rounded-md px-3 py-1 text-sm hover:bg-gray-100 text-gray-500"
-                        >
-                          <ThumbsDown size={14} /> Login to Oppose
-                        </button>
-                      </div>
-                      <button 
-                        onClick={() => navigate('/login')}
-                        className="bg-gray-400 text-white text-sm px-4 py-2 rounded-md font-medium"
-                      >
-                        Login to Engage
-                      </button>
-                    </>
+                    <button 
+                      onClick={() => navigate('/login')}
+                      className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white text-sm px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 ease-in-out"
+                    >
+                      Login to Engage
+                    </button>
                   )}
                 </div>
                 
@@ -432,7 +406,7 @@ const BillsList: React.FC = () => {
                 {isAuthenticated && (
                   <button
                     onClick={() => toggleFeedbackForm(bill.id)}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-md font-medium flex items-center justify-center gap-2"
+                    className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-sm px-4 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 ease-in-out flex items-center justify-center gap-2"
                   >
                     <MessageSquare size={16} />
                     Submit Feedback

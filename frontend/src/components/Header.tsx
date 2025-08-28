@@ -7,7 +7,7 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   const isActive = (path: string) => {
-    return location.pathname === path ? 'text-emerald-600' : 'text-gray-700 hover:text-emerald-600';
+    return location.pathname === path ? 'text-[#0D3C43]' : 'text-gray-700 hover:text-[#0D3C43]';
   };
 
   return (
@@ -53,10 +53,10 @@ const Header: React.FC = () => {
 
           {/* Auth Buttons - Hidden on mobile */}
           <div className="hidden md:flex items-center space-x-3">
-            <Link to="/login" className="px-4 py-2 text-gray-700 hover:text-emerald-600 font-medium transition-colors">
+            <Link to="/login" className="px-4 py-2 text-gray-700 hover:text-[#0D3C43] font-medium transition-colors">
               Login
             </Link>
-            <Link to="/register" className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium transition-colors shadow-sm">
+            <Link to="/register" className="px-4 py-2 bg-[#0D3C43] text-white rounded-lg hover:bg-[#0D3C43]/90 font-medium transition-colors shadow-sm">
               Register
             </Link>
           </div>
@@ -64,7 +64,7 @@ const Header: React.FC = () => {
           {/* Mobile menu button */}
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden p-2 rounded-md text-gray-700 hover:text-emerald-600 hover:bg-gray-100"
+            className="md:hidden p-2 rounded-md text-gray-700 hover:text-[#0D3C43] hover:bg-gray-100"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
@@ -86,10 +86,10 @@ const Header: React.FC = () => {
                 About
               </Link>
               <div className="pt-2 border-t border-gray-200">
-                <Link to="/login" className="block px-3 py-2 text-gray-700 hover:text-emerald-600 font-medium transition-colors" onClick={() => setIsMenuOpen(false)}>
+                <Link to="/login" className="block px-3 py-2 text-gray-700 hover:text-[#0D3C43] font-medium transition-colors" onClick={() => setIsMenuOpen(false)}>
                   Login
                 </Link>
-                <Link to="/register" className="block px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium transition-colors text-center" onClick={() => setIsMenuOpen(false)}>
+                <Link to="/register" className="block px-3 py-2 bg-[#0D3C43] text-white rounded-lg hover:bg-[#0D3C43]/90 font-medium transition-colors text-center" onClick={() => setIsMenuOpen(false)}>
                   Register
                 </Link>
               </div>

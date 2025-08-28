@@ -7,6 +7,7 @@ type BillCardProps = {
   votes: string;
   description: string;
   link: string;
+  status?: string;
 };
 
 const BillCard: React.FC<BillCardProps> = React.memo(({
@@ -15,14 +16,15 @@ const BillCard: React.FC<BillCardProps> = React.memo(({
   votes,
   description,
   link,
+  status,
 }) => {
   return (
     <div className="bg-white shadow-md rounded-2xl overflow-hidden border border-gray-200 w-full max-w-sm">
       {/* Header */}
       <div className="flex justify-between items-center px-4 pt-4">
         <h3 className="font-bold text-lg text-gray-800">{title}</h3>
-        <span className="bg-green-100 text-green-700 text-xs font-medium px-3 py-1 rounded-full">
-          Active
+        <span className="bg-blue-100 text-blue-700 text-xs font-medium px-3 py-1 rounded-full">
+          {status || 'Active'}
         </span>
       </div>
 
@@ -38,17 +40,17 @@ const BillCard: React.FC<BillCardProps> = React.memo(({
       {/* Description */}
       <p className="text-gray-600 text-sm px-4 mt-2">{description}</p>
 
-      {/* Votes + Analysis */}
+      {/* Status + Analysis */}
       <div className="flex justify-between items-center px-4 mt-3 text-sm text-gray-700">
         <div className="flex items-center gap-1">
           <Users size={16} />
-          <span>{votes} Votes</span>
+          <span>{votes}</span>
         </div>
         <a
           href={link}
           className="text-blue-600 hover:underline font-medium flex items-center gap-1"
         >
-          View Full Analysis →
+          View Full Details →
         </a>
       </div>
 

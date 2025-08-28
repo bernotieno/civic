@@ -20,11 +20,11 @@ export default function Hero() {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4">
-            <Link to="/projects" className="bg-teal-700 hover:bg-teal-800 text-white px-6 py-3 rounded-lg font-medium transition-colors text-center">
-              Explore Bills
-            </Link>
-            <Link to="/login" className="border border-teal-700 text-teal-700 hover:bg-teal-50 px-6 py-3 rounded-lg font-medium transition-colors text-center">
+            <Link to="/login" className="bg-[#0D3C43] hover:bg-[#0D3C43]/90 text-white px-6 py-3 rounded-lg font-medium transition-colors text-center">
               Create an Account
+            </Link>
+            <Link to="/bills" className="border border-teal-700 text-teal-700 hover:bg-teal-50 px-6 py-3 rounded-lg font-medium transition-colors text-center">
+              Explore Bills
             </Link>
           </div>
 

@@ -59,7 +59,7 @@ const WhyChooseUs = () => {
                     <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
                   </svg>
                 </div>
-                <span className="text-3xl font-light text-gray-600">03</span>
+                <span className="text-3xl font-light text-gray-600">02</span>
               </div>
               <h4 className="text-sm font-bold mb-1">Full Transparency</h4>
               <p className="text-xs text-gray-700 leading-tight">Access public statistics and see how your community feedback is being addressed.</p>
@@ -76,7 +76,7 @@ const WhyChooseUs = () => {
                     <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 9.5V11.5L21 9ZM3 9L9 11.5V9.5L3 7V9ZM15 12C15.6 12 16 12.4 16 13V16C16 16.6 15.6 17 15 17H9C8.4 17 8 16.6 8 16V13C8 12.4 8.4 12 9 12H15ZM5 13.5L8.5 15.2L8 16L3 14V13.5ZM16 16L19 13.5V14L16 16Z"/>
                   </svg>
                 </div>
-                <span className="text-3xl font-light text-white opacity-80">05</span>
+                <span className="text-3xl font-light text-white opacity-80">03</span>
               </div>
               <h4 className="text-sm font-bold mb-1 text-white">Direct Government Access</h4>
               <p className="text-xs text-white opacity-90 leading-tight">Your feedback reaches the right government departments and officials directly.</p>
@@ -93,7 +93,7 @@ const WhyChooseUs = () => {
                     <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
                   </svg>
                 </div>
-                <span className="text-3xl font-light text-gray-600">02</span>
+                <span className="text-3xl font-light text-gray-600">04</span>
               </div>
               <h4 className="text-sm font-bold mb-1">Fast Response Times</h4>
               <p className="text-xs text-gray-700 leading-tight">Government officials respond to feedback within 3-5 business days with regular status updates.</p>
@@ -107,7 +107,7 @@ const WhyChooseUs = () => {
                     <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 9.5V11.5L21 9ZM3 9L9 11.5V9.5L3 7V9ZM15 12C15.6 12 16 12.4 16 13V16C16 16.6 15.6 17 15 17H9C8.4 17 8 16.6 8 16V13C8 12.4 8.4 12 9 12H15Z"/>
                   </svg>
                 </div>
-                <span className="text-3xl font-light text-white opacity-80">04</span>
+                <span className="text-3xl font-light text-white opacity-80">05</span>
               </div>
               <h4 className="text-sm font-bold mb-1">Direct Government Access</h4>
               <p className="text-xs text-white opacity-90 leading-tight">Your feedback reaches the right government departments and officials directly.</p>
