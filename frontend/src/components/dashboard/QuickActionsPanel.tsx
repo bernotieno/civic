@@ -36,7 +36,7 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onViewChange }) =
   const quickActions = [
     {
       title: 'Engage with Parliament',
-      description: 'Share your views on bills and national projects',
+      description: 'Share your views on parliamentary bills',
       icon: MessageSquare,
       color: 'bg-blue-600 hover:bg-blue-700',
       textColor: 'text-white',

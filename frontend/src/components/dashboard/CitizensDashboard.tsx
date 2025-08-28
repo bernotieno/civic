@@ -23,9 +23,7 @@ import FeedbackSuccess from '../feedback/FeedbackSuccess';
 import FeedbackError from '../feedback/FeedbackError';
 import FeedbackTracker from '../feedback/FeedbackTracker';
 import FeedbackHistory from '../feedback/FeedbackHistory';
-import BillsAndProjects from './BillsAndProjects';
-import ProjectDetailsModal from './ProjectDetailsModal';
-import { Project } from '../../types';
+import Bills from './Bills';
 
 
 
@@ -49,7 +47,7 @@ const CitizensDashboard: React.FC = () => {
   const [submissionData, setSubmissionData] = useState<SubmissionData | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [errorType, setErrorType] = useState<'validation' | 'rate_limit' | 'auth' | 'network' | 'server' | 'permission'>('server');
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
   const [dashboardData, setDashboardData] = useState<CitizenDashboardData>({
     stats: {
       totalFeedback: 0,
@@ -301,10 +299,10 @@ const CitizensDashboard: React.FC = () => {
             )}
 
             {currentView === 'bills-projects' && (
-              <BillsAndProjects onFeedbackClick={(billId, projectId) => {
-                // Navigate to feedback form with pre-selected bill/project
+              <Bills onFeedbackClick={(billId) => {
+                // Navigate to feedback form with pre-selected bill
                 handleViewChange('submit-feedback');
-                // TODO: Pass billId/projectId to feedback form
+                // TODO: Pass billId to feedback form
               }} />
             )}
 
@@ -338,13 +336,7 @@ const CitizensDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Project Details Modal */}
-      {selectedProject && (
-        <ProjectDetailsModal
-          project={selectedProject}
-          onClose={() => setSelectedProject(null)}
-        />
-      )}
+
     </div>
   );
 };

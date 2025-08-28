@@ -2,31 +2,31 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import BillCard from "./BillCard";
 
-const projects = [
+const bills = [
   {
-    title: "Education",
+    title: "Education Reform Bill",
     image: "/education.jpeg",
     votes: "2000+",
-    description: "Shape the future of learning at our schools",
+    description: "Comprehensive reforms to improve Kenya's education system",
     link: "#",
   },
   {
-    title: "Healthcare",
+    title: "Healthcare Access Bill",
     image: "/Healthcare.jpeg",
     votes: "3000+",
-    description: "Improve access to affordable and quality healthcare",
+    description: "Legislation to improve healthcare access and affordability",
     link: "#",
   },
   {
-    title: "Infrastructure",
+    title: "Infrastructure Development Bill",
     image: "/infrastructure.jpeg",
     votes: "2000+",
-    description: "Better roads and infrastructure for economic growth",
+    description: "Framework for sustainable infrastructure development",
     link: "#",
   },
 ];
 
-const BillsProjects: React.FC = () => {
+const Bills: React.FC = () => {
   const navigate = useNavigate();
 
   return (
@@ -35,7 +35,7 @@ const BillsProjects: React.FC = () => {
         {/* Section Title */}
         <div className="text-center mb-10">
           <h2 className="text-2xl font-bold text-gray-800">
-            Current Bills/Projects
+            Parliamentary Bills
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto mt-2">
             Explore active bills in Kenya's Parliament. Read, understand, and
@@ -45,18 +45,18 @@ const BillsProjects: React.FC = () => {
 
         {/* Cards */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 justify-center max-w-7xl mx-auto">
-          {projects.map((p, idx) => (
-            <BillCard key={idx} {...p} />
+          {bills.map((bill, idx) => (
+            <BillCard key={idx} {...bill} />
           ))}
         </div>
 
-        {/* View More Projects Button */}
+        {/* View More Bills Button */}
         <div className="text-center mt-8">
           <button
-            onClick={() => navigate('/projects')}
+            onClick={() => navigate('/bills')}
             className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
           >
-            View More Projects
+            View All Bills
           </button>
         </div>
       </div>
@@ -64,4 +64,4 @@ const BillsProjects: React.FC = () => {
   );
 };
 
-export default BillsProjects;
+export default Bills;

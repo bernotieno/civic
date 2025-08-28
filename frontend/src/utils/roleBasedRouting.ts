@@ -147,7 +147,7 @@ export const getNavigationItems = (user: AuthUser | null) => {
       } else {
         return [
           ...baseItems,
-          { name: 'Bills & Projects', href: '/admin-dashboard/projects' },
+          { name: 'Bills Management', href: '/admin-dashboard/bills' },
           { name: 'Feedback Management', href: '/admin-dashboard/feedback' },
           { name: 'Analytics', href: '/admin-dashboard/analytics' },
         ];

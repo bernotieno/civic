@@ -9,7 +9,7 @@ type BillCardProps = {
   link: string;
 };
 
-const BillCard: React.FC<BillCardProps> = ({
+const BillCard: React.FC<BillCardProps> = React.memo(({
   title,
   image,
   votes,
@@ -68,6 +68,6 @@ const BillCard: React.FC<BillCardProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default BillCard;

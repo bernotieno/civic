@@ -89,7 +89,6 @@ export interface AnonymousFeedbackData {
   category: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   related_bill_id?: string;
-  related_project_id?: string;
 }
 
 // Dashboard Types
@@ -136,26 +135,6 @@ export interface Bill {
   participation_deadline?: string;
   document?: string;
   image?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-// Project Types
-export interface Project {
-  id: string;
-  title: string;
-  description: string;
-  project_type: string;
-  status: 'proposed' | 'approved' | 'in_progress' | 'completed' | 'suspended';
-  budget?: number;
-  implementing_ministry?: string;
-  target_beneficiaries?: string;
-  start_date?: string;
-  end_date?: string;
-  public_participation_open: boolean;
-  participation_deadline?: string;
-  image?: string;
-  document?: string;
   created_at: string;
   updated_at: string;
 }
@@ -361,7 +340,6 @@ export interface FeedbackSubmissionData {
   ward_id?: number;
   village_id?: number;
   related_bill_id?: string;
-  related_project_id?: string;
   is_anonymous?: boolean;
 }
 
@@ -372,7 +350,6 @@ export interface FeedbackFormErrors {
   category?: string;
   priority?: string;
   related_bill_id?: string;
-  related_project_id?: string;
   general?: string;
 }
 

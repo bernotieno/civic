@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Users, Search, Filter, ThumbsUp, ThumbsDown, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
 import Header from './Header';
 import Footer from './Footer';
+import LoadingSkeleton from './LoadingSkeleton';
 
 interface Bill {
   id: string;
@@ -46,15 +47,17 @@ const BillsList: React.FC = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
 
   useEffect(() => {
+    // Load bills immediately but defer other operations
     fetchBills();
     checkAuthentication();
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    // Only fetch user profile when needed (when user tries to interact)
+    if (isAuthenticated && expandedFeedback) {
       fetchUserProfile();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, expandedFeedback]);
 
   const checkAuthentication = () => {
     const token = localStorage.getItem('access_token');
@@ -82,7 +85,15 @@ const BillsList: React.FC = () => {
   const fetchBills = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/public/bills/');
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const response = await fetch('http://127.0.0.1:8000/api/public/bills/', {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
       
       if (response.ok) {
         const data = await response.json();
@@ -98,7 +109,11 @@ const BillsList: React.FC = () => {
         setDisplayedBills([]);
       }
     } catch (error) {
-      console.error('Error fetching bills:', error);
+      if (error.name === 'AbortError') {
+        console.error('Request timed out');
+      } else {
+        console.error('Error fetching bills:', error);
+      }
       setAllBills([]);
       setFilteredBills([]);
       setDisplayedBills([]);
@@ -171,6 +186,10 @@ const BillsList: React.FC = () => {
         priority: 'medium',
         is_anonymous: false
       });
+      // Fetch user profile only when feedback form is opened
+      if (isAuthenticated && !userProfile) {
+        fetchUserProfile();
+      }
     }
   };
 
@@ -231,8 +250,18 @@ const BillsList: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="py-8 pt-24">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold text-gray-900 mb-4">Parliamentary Bills</h1>
+              <p className="text-xl text-gray-600">Loading bills...</p>
+            </div>
+            <LoadingSkeleton />
+          </div>
+        </div>
+        <Footer />
       </div>
     );
   }

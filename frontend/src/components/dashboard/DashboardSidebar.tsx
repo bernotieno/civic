@@ -75,9 +75,9 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       current: currentView === 'track-feedback'
     },
     {
-      name: 'Bills & Projects',
+      name: 'Parliamentary Bills',
       view: 'bills-projects' as DashboardView,
-      icon: Construction,
+      icon: FileText,
       current: currentView === 'bills-projects'
     },
     {

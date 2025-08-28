@@ -76,7 +76,7 @@ const FeedbackCategoriesGrid: React.FC = () => {
       icon: Construction,
       color: 'text-orange-600',
       bgColor: 'hover:bg-orange-50',
-      description: 'National infrastructure projects',
+      description: 'National infrastructure development',
       count: 19
     },
     {

@@ -18,11 +18,11 @@ const Header: React.FC = () => {
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0">
               <img 
-                src="/logo.png" 
+                src="/logo.jpg" 
                 alt="CivicAI Logo" 
                 className="h-10 w-auto"
                 onError={(e) => {
-                  // Fallback if logo.png doesn't exist
+                  // Fallback if logo.jpg doesn't exist
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
                   target.nextElementSibling?.classList.remove('hidden');
@@ -43,8 +43,8 @@ const Header: React.FC = () => {
             <Link to="/" className={`${isActive('/')} font-medium transition-colors`}>
               Home
             </Link>
-            <Link to="/projects" className={`${isActive('/projects')} font-medium transition-colors`}>
-              Projects
+            <Link to="/bills" className={`${isActive('/bills')} font-medium transition-colors`}>
+              Bills
             </Link>
             <Link to="/about" className={`${isActive('/about')} font-medium transition-colors`}>
               About
@@ -79,8 +79,8 @@ const Header: React.FC = () => {
               <Link to="/" className={`block px-3 py-2 rounded-md ${isActive('/')} font-medium transition-colors`} onClick={() => setIsMenuOpen(false)}>
                 Home
               </Link>
-              <Link to="/projects" className={`block px-3 py-2 rounded-md ${isActive('/projects')} font-medium transition-colors`} onClick={() => setIsMenuOpen(false)}>
-                Projects
+              <Link to="/bills" className={`block px-3 py-2 rounded-md ${isActive('/bills')} font-medium transition-colors`} onClick={() => setIsMenuOpen(false)}>
+                Bills
               </Link>
               <Link to="/about" className={`block px-3 py-2 rounded-md ${isActive('/about')} font-medium transition-colors`} onClick={() => setIsMenuOpen(false)}>
                 About

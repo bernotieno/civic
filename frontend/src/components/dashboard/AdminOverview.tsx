@@ -5,8 +5,9 @@ interface DashboardStats {
   total_counties: number;
   total_feedback: number;
   pending_feedback: number;
-  total_projects: number;
-  active_projects: number;
+  total_bills: number;
+  active_bills: number;
+  responded_feedback: number;
 }
 
 interface Feedback {
@@ -128,10 +129,10 @@ const AdminOverview: React.FC = () => {
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Active Projects</p>
-              <p className="text-2xl font-bold text-gray-900">{stats?.active_projects || 0}</p>
+              <p className="text-sm font-medium text-gray-600">Active Bills</p>
+              <p className="text-2xl font-bold text-gray-900">{stats?.active_bills || 0}</p>
             </div>
-            <div className="text-3xl">🏗️</div>
+            <div className="text-3xl">📜</div>
           </div>
         </div>
       </div>
@@ -231,11 +232,7 @@ const AdminOverview: React.FC = () => {
               <h4 className="font-medium text-gray-900">Review Feedback</h4>
               <p className="text-sm text-gray-600">Review and respond to citizen feedback</p>
             </button>
-            <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <div className="text-2xl mb-2">🏗️</div>
-              <h4 className="font-medium text-gray-900">Manage Projects</h4>
-              <p className="text-sm text-gray-600">Create and update national projects</p>
-            </button>
+
             <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
               <div className="text-2xl mb-2">📜</div>
               <h4 className="font-medium text-gray-900">Manage Bills</h4>

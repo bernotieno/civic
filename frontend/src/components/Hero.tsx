@@ -21,7 +21,7 @@ export default function Hero() {
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4">
             <Link to="/projects" className="bg-teal-700 hover:bg-teal-800 text-white px-6 py-3 rounded-lg font-medium transition-colors text-center">
-              Explore Projects
+              Explore Bills
             </Link>
             <Link to="/login" className="border border-teal-700 text-teal-700 hover:bg-teal-50 px-6 py-3 rounded-lg font-medium transition-colors text-center">
               Create an Account
@@ -29,20 +29,31 @@ export default function Hero() {
           </div>
 
           {/* Statistics Cards */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="bg-yellow-100 px-4 py-3 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">12,847</div>
-              <p>Feedback Received</p>
-            </div>
-            <div className="bg-teal-100 px-4 py-3 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">9,234</div>
-              <p>Issues Resolved</p>
-            </div>
-            <div className="bg-purple-100 px-4 py-3 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">94%</div>
-              <p>Response Rate</p>
-            </div>
-          </div>
+<div className="flex flex-col sm:flex-row gap-6">
+  <div className="relative bg-gradient-to-br from-lime-100 to-lime-200 px-6 py-8 rounded-3xl shadow-sm overflow-hidden">
+    <div className="absolute top-0 right-0 w-20 h-20 bg-lime-200 rounded-full opacity-50 transform translate-x-8 -translate-y-8"></div>
+    <div className="relative z-10">
+      <div className="text-3xl font-bold text-gray-800 mb-1">12,847</div>
+      <p className="text-sm text-gray-600 font-medium">Feedback Received</p>
+    </div>
+  </div>
+  
+  <div className="relative bg-gradient-to-br from-teal-100 to-cyan-200 px-6 py-8 rounded-3xl shadow-sm overflow-hidden">
+    <div className="absolute top-0 right-0 w-20 h-20 bg-cyan-200 rounded-full opacity-50 transform translate-x-8 -translate-y-8"></div>
+    <div className="relative z-10">
+      <div className="text-3xl font-bold text-gray-800 mb-1">9,234</div>
+      <p className="text-sm text-gray-600 font-medium">Issues Resolved</p>
+    </div>
+  </div>
+  
+  <div className="relative bg-gradient-to-br from-indigo-100 to-purple-200 px-6 py-8 rounded-3xl shadow-sm overflow-hidden">
+    <div className="absolute top-0 right-0 w-20 h-20 bg-purple-200 rounded-full opacity-50 transform translate-x-8 -translate-y-8"></div>
+    <div className="relative z-10">
+      <div className="text-3xl font-bold text-gray-800 mb-1">87%</div>
+      <p className="text-sm text-gray-600 font-medium">Response Rate</p>
+    </div>
+  </div>
+</div>
         </div>
 
         {/* Right Illustration */}
