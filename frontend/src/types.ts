@@ -116,7 +116,7 @@ export interface NavItem {
 }
 
 // Dashboard View Types
-export type DashboardView = 'home' | 'submit-feedback' | 'my-feedback' | 'track-feedback' | 'bills-projects' | 'community-impact' | 'feedback-success' | 'feedback-error';
+export type DashboardView = 'home' | 'submit-feedback' | 'my-feedback' | 'track-feedback' | 'bills-projects' | 'community-impact' | 'profile' | 'feedback-success' | 'feedback-error';
 
 // Bill Types
 export interface Bill {

@@ -24,6 +24,7 @@ import FeedbackError from '../feedback/FeedbackError';
 import FeedbackTracker from '../feedback/FeedbackTracker';
 import FeedbackHistory from '../feedback/FeedbackHistory';
 import Bills from './Bills';
+import UserProfile from './UserProfile';
 
 
 
@@ -244,10 +245,13 @@ const CitizensDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 prevent-horizontal-scroll">
       {/* Fixed Header */}
       <div className="fixed top-0 left-0 right-0 z-30">
-        <DashboardHeader onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+        <DashboardHeader 
+          onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          onViewChange={handleViewChange}
+        />
       </div>
 
       <div className="flex pt-16">
@@ -263,18 +267,18 @@ const CitizensDashboard: React.FC = () => {
         {/* Main Content */}
         <div className={`flex-1 transition-all duration-300 ${
           isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
-        }`}>
-          <div className="p-6">
+        } safe-area-padding`}>
+          <div className="p-4 sm:p-6 container-mobile">
             {/* Render different views based on currentView */}
             {currentView === 'home' && (
               <div className="space-y-6">
                 <WelcomeSection user={user} />
                 <FeedbackOverviewCards stats={dashboardData.stats} />
-                <div className="grid lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                   <RecentFeedbackStatus recentFeedback={dashboardData.recentFeedback} />
                   <QuickActionsPanel onViewChange={handleViewChange} />
                 </div>
-                <div className="grid lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                   <TransparencySection />
                 </div>
               </div>
@@ -314,6 +318,10 @@ const CitizensDashboard: React.FC = () => {
                 </div>
                 <CommunityImpactSection communityStats={dashboardData.communityStats} />
               </div>
+            )}
+
+            {currentView === 'profile' && (
+              <UserProfile onBack={handleBackToHome} />
             )}
 
             {currentView === 'feedback-success' && submissionData && (

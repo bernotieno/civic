@@ -27,9 +27,10 @@ import {
 
 interface DashboardHeaderProps {
   onMobileMenuToggle?: () => void;
+  onViewChange?: (view: string) => void;
 }
 
-const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMobileMenuToggle }) => {
+const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMobileMenuToggle, onViewChange }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
@@ -84,7 +85,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMobileMenuToggle })
   }, [unreadCount]);
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 relative z-50" role="banner">
+    <header className="shadow-sm border-b border-gray-200 relative z-50" style={{ backgroundColor: '#E2FCF7' }} role="banner">
       {/* Skip to main content link */}
       <a
         href="#main-content"
@@ -96,19 +97,19 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMobileMenuToggle })
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Mobile menu button and Page Title */}
-          <div className="flex items-center">
+          <div className="flex items-center min-w-0 flex-1">
             <button
               onClick={onMobileMenuToggle}
-              className="lg:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 mr-3"
+              className="lg:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 mr-3 flex-shrink-0"
               aria-label="Open sidebar menu"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <h1 className="text-xl font-semibold text-gray-900">Citizens Dashboard</h1>
+            <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">Citizens Dashboard</h1>
           </div>
 
           {/* Search Bar - Optional */}
-          <div className="hidden md:flex flex-1 max-w-lg mx-8">
+          <div className="hidden lg:flex flex-1 max-w-lg mx-8">
             <div className="relative w-full">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-4 w-4 text-gray-400" />
@@ -122,7 +123,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMobileMenuToggle })
           </div>
 
           {/* Right side - Notifications and Profile */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
             {/* Notifications */}
             <div className="relative">
               <button
@@ -153,7 +154,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMobileMenuToggle })
               {isNotificationDropdownOpen && (
                 <div
                   id="notifications-dropdown"
-                  className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-h-96 overflow-y-auto"
+                  className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-h-96 overflow-y-auto"
                   role="menu"
                   aria-labelledby="notifications-button"
                   aria-orientation="vertical"
@@ -235,23 +236,23 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMobileMenuToggle })
             <div className="relative">
               <button
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center space-x-2 sm:space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                <div className="h-8 w-8 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center">
+                <div className="h-8 w-8 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center flex-shrink-0">
                   <span className="text-white font-medium text-sm">
                     {user?.name?.charAt(0).toUpperCase() || 'U'}
                   </span>
                 </div>
-                <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                  <p className="text-xs text-gray-500">{user?.county_name}</p>
+                <div className="hidden sm:block text-left min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{user?.county_name}</p>
                 </div>
-                <ChevronDown className="h-4 w-4 text-gray-500" />
+                <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
               </button>
 
               {/* Profile Dropdown Menu */}
               {isProfileDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                <div className="absolute right-0 mt-2 w-56 sm:w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                   <div className="px-4 py-3 border-b border-gray-100">
                     <p className="text-sm font-medium text-gray-900">{user?.name}</p>
                     <p className="text-sm text-gray-500">{user?.email}</p>
@@ -261,7 +262,9 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMobileMenuToggle })
                   <button
                     onClick={() => {
                       setIsProfileDropdownOpen(false);
-                      // TODO: Navigate to profile settings
+                      if (onViewChange) {
+                        onViewChange('profile');
+                      }
                     }}
                     className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   >

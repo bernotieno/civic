@@ -34,7 +34,7 @@ const WelcomeSection: React.FC<WelcomeSectionProps> = ({ user }) => {
   };
 
   return (
-    <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 rounded-2xl p-6 lg:p-8 mb-8 text-white relative overflow-hidden w-full">
+    <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 text-white relative overflow-hidden w-full">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-0 left-0 w-40 h-40 bg-white rounded-full -translate-x-20 -translate-y-20"></div>
@@ -46,20 +46,20 @@ const WelcomeSection: React.FC<WelcomeSectionProps> = ({ user }) => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           {/* Left Side - Simplified Greeting */}
           <div className="mb-6 lg:mb-0">
-            <div className="flex items-center mb-3">
-              <Sparkles className="h-6 w-6 mr-2 text-yellow-300" />
-              <h1 className="text-2xl lg:text-3xl font-bold">
+            <div className="flex items-start sm:items-center mb-3">
+              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-yellow-300 flex-shrink-0 mt-1 sm:mt-0" />
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold leading-tight">
                 {getGreeting()}, {userName}!
               </h1>
             </div>
 
-            <p className="text-blue-100 text-base mb-4">
+            <p className="text-blue-100 text-sm sm:text-base mb-4 leading-relaxed">
               Your voice matters. Engage with Parliament and shape national policy.
             </p>
 
             {/* Single Key Stat */}
-            <div className="flex items-center bg-white/10 rounded-full px-4 py-2 text-sm w-fit">
-              <TrendingUp className="h-4 w-4 mr-2 text-green-300" />
+            <div className="flex items-center bg-white/10 rounded-full px-3 sm:px-4 py-2 text-xs sm:text-sm w-fit">
+              <TrendingUp className="h-4 w-4 mr-2 text-green-300 flex-shrink-0" />
               <span className="font-semibold">{monthlyResolved} bills open for public participation</span>
             </div>
           </div>
@@ -69,11 +69,11 @@ const WelcomeSection: React.FC<WelcomeSectionProps> = ({ user }) => {
             {/* Primary CTA - Submit Feedback */}
             <button
               onClick={() => navigate('/submit-feedback')}
-              className="bg-white text-blue-700 px-8 py-4 rounded-xl font-semibold hover:bg-blue-50 transition-all duration-200 flex items-center justify-center group shadow-lg"
+              className="bg-white text-blue-700 px-6 sm:px-8 py-3 sm:py-4 rounded-lg sm:rounded-xl font-semibold hover:bg-blue-50 transition-all duration-200 flex items-center justify-center group shadow-lg text-sm sm:text-base"
             >
-              <MessageSquare className="h-5 w-5 mr-2" />
-              Engage with Parliament
-              <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0" />
+              <span className="truncate">Engage with Parliament</span>
+              <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform flex-shrink-0" />
             </button>
           </div>
         </div>

@@ -198,10 +198,10 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-center py-12">
+      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-center justify-center py-12 gap-3">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-2 text-gray-600">Loading your feedback history...</span>
+          <span className="text-gray-600 text-center">Loading your feedback history...</span>
         </div>
       </div>
     );
@@ -209,13 +209,13 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
 
   if (error) {
     return (
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
+      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-4 sm:p-6">
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <div className="flex">
-            <ExclamationCircleIcon className="h-5 w-5 text-red-400 mr-2 mt-0.5" />
-            <div>
+          <div className="flex flex-col sm:flex-row">
+            <ExclamationCircleIcon className="h-5 w-5 text-red-400 mb-2 sm:mb-0 sm:mr-2 sm:mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
               <h3 className="text-sm font-medium text-red-800">Error Loading History</h3>
-              <p className="text-sm text-red-700 mt-1">{error}</p>
+              <p className="text-sm text-red-700 mt-1 break-words">{error}</p>
               <button
                 onClick={() => loadFeedbackList(currentPage)}
                 className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
@@ -232,23 +232,23 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
   return (
     <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center justify-between">
+      <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">My Feedback History</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">My Feedback History</h2>
             <p className="text-gray-600 mt-1">
               {totalCount} total submission{totalCount !== 1 ? 's' : ''}
             </p>
           </div>
           
           {/* Filters */}
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
             <div className="flex items-center">
-              <FunnelIcon className="h-4 w-4 text-gray-400 mr-2" />
+              <FunnelIcon className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
               >
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
@@ -262,7 +262,7 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
             >
               <option value="all">All Categories</option>
               <option value="infrastructure">Infrastructure</option>
@@ -282,7 +282,7 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
       {/* Feedback List */}
       <div className="divide-y divide-gray-200">
         {filteredFeedback.length === 0 ? (
-          <div className="px-6 py-12 text-center">
+          <div className="px-4 sm:px-6 py-12 text-center">
             <ExclamationCircleIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No feedback found</h3>
             <p className="text-gray-600">
@@ -298,14 +298,14 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
             const StatusIcon = statusConfig.icon;
             
             return (
-              <div key={item.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
-                <div className="flex items-start justify-between">
+              <div key={item.id} className="px-4 sm:px-6 py-4 hover:bg-gray-50 transition-colors">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center mb-2">
-                      <h3 className="text-lg font-medium text-gray-900 truncate mr-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                      <h3 className="text-base sm:text-lg font-medium text-gray-900 line-clamp-2">
                         {item.title}
                       </h3>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         {item.is_anonymous && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                             👤 Anonymous
@@ -318,21 +318,21 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
                       </div>
                     </div>
                     
-                    <div className="flex items-center text-sm text-gray-500 space-x-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center text-sm text-gray-500 gap-2 sm:gap-4">
                       <span className="flex items-center">
                         <span className="font-medium">ID:</span>
-                        <code className="ml-1 font-mono">{item.tracking_id}</code>
+                        <code className="ml-1 font-mono text-xs">{item.tracking_id}</code>
                       </span>
-                      <span>{getCategoryDisplay(item.category)}</span>
-                      <span>{formatDate(item.created_at)}</span>
+                      <span className="text-xs sm:text-sm">{getCategoryDisplay(item.category)}</span>
+                      <span className="text-xs sm:text-sm">{formatDate(item.created_at)}</span>
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-2 ml-4">
+                  <div className="flex items-center gap-2 sm:ml-4">
                     {onTrackFeedback && (
                       <button
                         onClick={() => onTrackFeedback(item.tracking_id)}
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 rounded border border-blue-200 hover:bg-blue-50"
                       >
                         Track
                       </button>
@@ -340,7 +340,7 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
                     {onViewDetails && (
                       <button
                         onClick={() => onViewDetails(item.id)}
-                        className="flex items-center text-gray-600 hover:text-gray-800 text-sm"
+                        className="flex items-center text-gray-600 hover:text-gray-800 text-sm px-3 py-1 rounded border border-gray-200 hover:bg-gray-50"
                       >
                         <EyeIcon className="h-4 w-4 mr-1" />
                         View
@@ -356,14 +356,14 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
 
       {/* Pagination */}
       {totalCount > itemsPerPage && (
-        <div className="px-6 py-4 border-t border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-700">
+        <div className="px-4 sm:px-6 py-4 border-t border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="text-sm text-gray-700 text-center sm:text-left">
               Showing {Math.min((currentPage - 1) * itemsPerPage + 1, totalCount)} to{' '}
               {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount} results
             </div>
             
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-center gap-2">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={!hasPrevious}
@@ -374,11 +374,13 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
                 }`}
               >
                 <ChevronLeftIcon className="h-4 w-4 mr-1" />
-                Previous
+                <span className="hidden sm:inline">Previous</span>
+                <span className="sm:hidden">Prev</span>
               </button>
               
-              <span className="text-sm text-gray-700">
-                Page {currentPage} of {Math.ceil(totalCount / itemsPerPage)}
+              <span className="text-sm text-gray-700 px-2">
+                <span className="hidden sm:inline">Page {currentPage} of {Math.ceil(totalCount / itemsPerPage)}</span>
+                <span className="sm:hidden">{currentPage}/{Math.ceil(totalCount / itemsPerPage)}</span>
               </span>
               
               <button
@@ -390,7 +392,8 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
                     : 'text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed'
                 }`}
               >
-                Next
+                <span className="hidden sm:inline">Next</span>
+                <span className="sm:hidden">Next</span>
                 <ChevronRightIcon className="h-4 w-4 ml-1" />
               </button>
             </div>

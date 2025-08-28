@@ -36,9 +36,9 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
 
   if (!user && !allowAnonymous) {
     return (
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
+      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-4 sm:p-6">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Authentication Required</h2>
           <p className="text-gray-600">Please log in to submit feedback.</p>
         </div>
       </div>
@@ -412,9 +412,9 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
 
   if (locationLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
+      <div className="flex flex-col sm:flex-row items-center justify-center p-6 sm:p-8 gap-3">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2 text-gray-600">Loading counties...</span>
+        <span className="text-gray-600 text-center">Loading counties...</span>
       </div>
     );
   }
@@ -422,7 +422,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
   if (locationError) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-md p-4">
-        <div className="text-red-800">
+        <div className="text-red-800 break-words">
           <strong>Error loading location data:</strong> {locationError}
         </div>
       </div>
@@ -430,9 +430,9 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
   }
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
+    <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-4 sm:p-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Submit Feedback</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Submit Feedback</h2>
         <p className="text-gray-600">
           {isAnonymous 
             ? 'Submit anonymous feedback to your county government. Your identity will remain completely private.'
@@ -442,9 +442,9 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
         
         {/* Anonymous Mode Toggle */}
         {allowAnonymous && (
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <div className="flex items-center justify-between">
-              <div>
+          <div className="mt-4 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex-1">
                 <h3 className="text-sm font-medium text-blue-900">Submission Mode</h3>
                 <p className="text-xs text-blue-700 mt-1">
                   {isAnonymous ? 'Anonymous - Your identity is completely protected' : 'Authenticated - Linked to your account'}
@@ -567,7 +567,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
         </div>
 
         {/* Category and Priority Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {/* Category Field */}
           <div>
             <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
@@ -633,7 +633,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
         <div className="space-y-4">
           <h3 className="text-lg font-medium text-gray-900">Location Information</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* County Selection */}
             <div>
               <label htmlFor="county" className="block text-sm font-medium text-gray-700 mb-1">
@@ -780,7 +780,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
 
 
         {/* Submit Button */}
-        <div className="flex justify-end space-x-4">
+        <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
           <button
             type="button"
             onClick={() => {
@@ -797,7 +797,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
               });
               setErrors({});
             }}
-            className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full sm:w-auto px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={isSubmitting}
           >
             Clear Form
@@ -806,19 +806,19 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           <button
             type="submit"
             disabled={isSubmitting || (!isAnonymous && !rateLimitInfo.canSubmit) || (isAnonymous && !anonymousSession?.session_id)}
-            className={`px-6 py-2 rounded-md text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full sm:w-auto px-6 py-2 rounded-md text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               isSubmitting || (!isAnonymous && !rateLimitInfo.canSubmit) || (isAnonymous && !anonymousSession?.session_id)
                 ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-blue-600 hover:bg-blue-700'
             }`}
           >
             {isSubmitting ? (
-              <span className="flex items-center">
+              <span className="flex items-center justify-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Submitting...
+                <span className="truncate">Submitting...</span>
               </span>
             ) : (
-              isAnonymous ? 'Submit Anonymous Feedback' : 'Submit Feedback'
+              <span className="truncate">{isAnonymous ? 'Submit Anonymous Feedback' : 'Submit Feedback'}</span>
             )}
           </button>
         </div>

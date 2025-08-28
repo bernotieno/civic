@@ -106,7 +106,7 @@ const StatCard: React.FC<StatCardProps> = ({
   };
 
   return (
-    <div className={`${classes.bg} border ${classes.borderColor} rounded-xl p-6 hover:shadow-md transition-shadow duration-200`}>
+    <div className={`${classes.bg} border ${classes.borderColor} rounded-xl p-4 sm:p-6 hover:shadow-md transition-shadow duration-200`}>
       <div className="flex items-center justify-between mb-4">
         <div className={`${classes.iconBg} p-3 rounded-lg`}>
           <Icon className={`h-6 w-6 ${classes.iconColor}`} />
@@ -123,7 +123,7 @@ const StatCard: React.FC<StatCardProps> = ({
       
       <div>
         <h3 className="text-sm font-medium text-gray-600 mb-1">{title}</h3>
-        <p className="text-3xl font-bold text-gray-900 mb-1">{value}</p>
+        <p className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{value}</p>
         <p className="text-sm text-gray-500">{subtitle}</p>
         {trend && (
           <p className="text-xs text-gray-400 mt-2">{trend.label}</p>
@@ -194,7 +194,7 @@ const FeedbackOverviewCards: React.FC<FeedbackOverviewCardsProps> = ({ stats }) 
         </button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {cards.map((card, index) => (
           <StatCard
             key={index}
@@ -209,9 +209,9 @@ const FeedbackOverviewCards: React.FC<FeedbackOverviewCardsProps> = ({ stats }) 
       </div>
 
       {/* Quick Insights */}
-      <div className="mt-6 bg-white rounded-xl border border-gray-200 p-6">
+      <div className="mt-6 bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Insights</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex items-start space-x-3">
             <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
             <div>

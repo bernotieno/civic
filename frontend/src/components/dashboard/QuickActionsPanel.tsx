@@ -64,7 +64,7 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onViewChange }) =
   ];
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
+    <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
       <div className="flex items-center mb-6">
         <Zap className="h-5 w-5 text-blue-600 mr-2" />
         <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
@@ -76,19 +76,19 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onViewChange }) =
           <button
             key={index}
             onClick={action.action}
-            className={`w-full ${action.color} ${action.textColor} p-4 rounded-lg transition-all duration-200 group text-left`}
+            className={`w-full ${action.color} ${action.textColor} p-3 sm:p-4 rounded-lg transition-all duration-200 group text-left`}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <action.icon className="h-5 w-5 mr-3" />
-                <div>
-                  <p className="font-medium">{action.title}</p>
-                  <p className={`text-sm ${action.isPrimary ? 'text-blue-100' : 'text-gray-500'} mt-1`}>
+            <div className="flex items-start justify-between">
+              <div className="flex items-start min-w-0 flex-1">
+                <action.icon className="h-5 w-5 mr-3 flex-shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-sm sm:text-base">{action.title}</p>
+                  <p className={`text-xs sm:text-sm ${action.isPrimary ? 'text-blue-100' : 'text-gray-500'} mt-1`}>
                     {action.description}
                   </p>
                 </div>
               </div>
-              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform flex-shrink-0 ml-2" />
             </div>
           </button>
         ))}
@@ -140,13 +140,13 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onViewChange }) =
 
       {/* Quick Stats */}
       <div className="border-t border-gray-200 pt-6 mt-6">
-        <div className="grid grid-cols-2 gap-4 text-center">
-          <div className="bg-blue-50 rounded-lg p-3">
-            <p className="text-2xl font-bold text-blue-600">2.5</p>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 text-center">
+          <div className="bg-blue-50 rounded-lg p-2 sm:p-3">
+            <p className="text-xl sm:text-2xl font-bold text-blue-600">2.5</p>
             <p className="text-xs text-blue-600">Avg Response Days</p>
           </div>
-          <div className="bg-green-50 rounded-lg p-3">
-            <p className="text-2xl font-bold text-green-600">87%</p>
+          <div className="bg-green-50 rounded-lg p-2 sm:p-3">
+            <p className="text-xl sm:text-2xl font-bold text-green-600">87%</p>
             <p className="text-xs text-green-600">Resolution Rate</p>
           </div>
         </div>

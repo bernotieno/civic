@@ -7,17 +7,12 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home,
-  MessageSquare,
   FileText,
-  Search,
-  Construction,
-  Users,
   Settings,
   HelpCircle,
   ChevronLeft,
   ChevronRight,
-  Bell,
-  UserX
+  Bell
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRealTimeUpdates } from '../../hooks/useRealTimeUpdates';
@@ -57,47 +52,22 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       current: currentView === 'home'
     },
     {
-      name: 'Submit Feedback',
-      view: 'submit-feedback' as DashboardView,
-      icon: MessageSquare,
-      current: currentView === 'submit-feedback'
-    },
-    {
       name: 'My Feedback',
       view: 'my-feedback' as DashboardView,
       icon: FileText,
       current: currentView === 'my-feedback'
     },
     {
-      name: 'Track Feedback',
-      view: 'track-feedback' as DashboardView,
-      icon: Search,
-      current: currentView === 'track-feedback'
-    },
-    {
       name: 'Parliamentary Bills',
       view: 'bills-projects' as DashboardView,
       icon: FileText,
       current: currentView === 'bills-projects'
-    },
-    {
-      name: 'Community Impact',
-      view: 'community-impact' as DashboardView,
-      icon: Users,
-      current: currentView === 'community-impact'
     }
   ];
 
 
 
-  const anonymousNavItems = [
-    {
-      name: 'Anonymous Feedback',
-      href: '/anonymous-feedback',
-      icon: UserX,
-      description: 'Submit without revealing identity'
-    }
-  ];
+
 
   const bottomNavItems = [
     {
@@ -139,26 +109,24 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       )}
 
       {/* Sidebar */}
-      <div className={`fixed top-16 bottom-0 left-0 z-40 flex flex-col bg-white border-r border-gray-200 transition-all duration-300 ${
-        isCollapsed ? 'w-16' : 'w-64'
+      <div className={`fixed top-16 bottom-0 left-0 z-40 flex flex-col transition-all duration-300 sidebar-mobile ${
+        isCollapsed ? 'lg:w-16 w-64' : 'w-64'
       } ${
         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0`}>
+      } lg:translate-x-0`} style={{ backgroundColor: '#0D3C43' }}>
         
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-          {!isCollapsed && (
-            <div className="flex items-center">
-              <div className="h-8 w-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">CA</span>
-              </div>
-              <span className="ml-3 text-lg font-semibold text-gray-900">CivicAI</span>
+        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-600">
+          <div className={`flex items-center ${isCollapsed ? 'lg:hidden' : ''}`}>
+            <div className="h-8 w-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">CA</span>
             </div>
-          )}
+            <span className="ml-3 text-lg font-semibold text-white">CivicAI</span>
+          </div>
           
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="hidden lg:block p-1.5 rounded-md text-gray-300 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {isCollapsed ? (
@@ -170,39 +138,35 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         </div>
 
         {/* User Info */}
-        {!isCollapsed && (
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center">
-              <div className="h-10 w-10 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-medium text-sm">
-                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+        <div className={`p-4 border-b border-gray-600 ${isCollapsed ? 'lg:hidden' : ''}`}>
+          <div className="flex items-center">
+            <div className="h-10 w-10 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-white font-medium text-sm">
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </span>
+            </div>
+            <div className="ml-3 min-w-0 flex-1">
+              <p className="text-sm font-medium text-white truncate">{user?.name}</p>
+              <p className="text-xs text-gray-300 truncate">{user?.county_name} County</p>
+            </div>
+            {unreadCount > 0 && (
+              <div className="ml-2 flex-shrink-0">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                  <Bell className="h-3 w-3 mr-1" />
+                  {unreadCount}
                 </span>
               </div>
-              <div className="ml-3 min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
-                <p className="text-xs text-gray-500 truncate">{user?.county_name} County</p>
-              </div>
-              {unreadCount > 0 && (
-                <div className="ml-2">
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                    <Bell className="h-3 w-3 mr-1" />
-                    {unreadCount}
-                  </span>
-                </div>
-              )}
-            </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4">
           {/* Main Navigation */}
           <div className="px-3 mb-6">
-            {!isCollapsed && (
-              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                National Assembly
-              </h3>
-            )}
+            <h3 className={`px-3 text-xs font-semibold text-gray-300 uppercase tracking-wider mb-3 ${isCollapsed ? 'lg:hidden' : ''}`}>
+              National Assembly
+            </h3>
             <ul className="space-y-1">
               {mainNavItems.map((item) => {
                 const Icon = item.icon;
@@ -212,23 +176,19 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                       onClick={() => handleNavigation(item)}
                       className={`group flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                         item.current
-                          ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                          : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                          ? 'bg-blue-600 text-white border-r-2 border-blue-400'
+                          : 'text-gray-300 hover:text-white hover:bg-gray-700'
                       }`}
                       aria-current={item.current ? 'page' : undefined}
                     >
                       <Icon className={`flex-shrink-0 h-5 w-5 ${
-                        item.current ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
+                        item.current ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'
                       }`} />
-                      {!isCollapsed && (
-                        <>
-                          <span className="ml-3 truncate">{item.name}</span>
-                          {item.badge && (
-                            <span className="ml-auto inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                              {item.badge}
-                            </span>
-                          )}
-                        </>
+                      <span className={`ml-3 truncate ${isCollapsed ? 'lg:hidden' : ''}`}>{item.name}</span>
+                      {item.badge && (
+                        <span className={`ml-auto inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 ${isCollapsed ? 'lg:hidden' : ''}`}>
+                          {item.badge}
+                        </span>
                       )}
                     </button>
                   </li>
@@ -237,50 +197,22 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             </ul>
           </div>
 
-          {/* Anonymous Section */}
-          <div className="px-3 mb-6">
-            {!isCollapsed && (
-              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                Privacy Options
-              </h3>
-            )}
-            <ul className="space-y-1">
-              {anonymousNavItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <li key={item.name}>
-                    <button
-                      onClick={() => handleNavigation(item)}
-                      className="group flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:text-gray-900 hover:bg-gray-50 transition-colors"
-                    >
-                      <Icon className="flex-shrink-0 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
-                      {!isCollapsed && (
-                        <div className="ml-3 min-w-0 flex-1">
-                          <span className="truncate">{item.name}</span>
-                          <p className="text-xs text-gray-500 truncate">{item.description}</p>
-                        </div>
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+
         </nav>
 
         {/* Bottom Navigation */}
-        <div className="border-t border-gray-200 p-3">
+        <div className="border-t border-gray-600 p-3">
           <ul className="space-y-1">
             {bottomNavItems.map((item) => {
               const Icon = item.icon;
               return (
                 <li key={item.name}>
                   <button
-                    onClick={() => handleNavigation(item.href)}
-                    className="group flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                    onClick={() => handleNavigation(item)}
+                    className="group flex items-center w-full px-3 py-2 text-sm font-medium text-gray-300 rounded-md hover:text-white hover:bg-gray-700 transition-colors"
                   >
-                    <Icon className="flex-shrink-0 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
-                    {!isCollapsed && <span className="ml-3 truncate">{item.name}</span>}
+                    <Icon className="flex-shrink-0 h-5 w-5 text-gray-400 group-hover:text-gray-200" />
+                    <span className={`ml-3 truncate ${isCollapsed ? 'lg:hidden' : ''}`}>{item.name}</span>
                   </button>
                 </li>
               );

@@ -117,13 +117,13 @@ const FeedbackCard: React.FC<{ feedback: FeedbackItem }> = ({ feedback }) => {
   };
 
   return (
-    <div className="bg-gray-50 border border-gray-100 rounded-lg p-4 hover:bg-white hover:shadow-sm transition-all duration-200">
-      <div className="flex items-start justify-between mb-4">
+    <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 sm:p-4 hover:bg-white hover:shadow-sm transition-all duration-200">
+      <div className="mb-3 sm:mb-4">
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-medium text-gray-900 truncate mb-2">
+          <h3 className="text-sm font-medium text-gray-900 mb-2 line-clamp-2">
             {feedback.title}
           </h3>
-          <div className="flex items-center space-x-2 mb-2">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             <StatusBadge status={feedback.status} />
             <CategoryBadge category={feedback.category} />
             {feedback.is_anonymous && (
@@ -135,19 +135,19 @@ const FeedbackCard: React.FC<{ feedback: FeedbackItem }> = ({ feedback }) => {
         </div>
       </div>
 
-      <div className="flex items-center justify-between text-sm text-gray-500">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm text-gray-500">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
           <div className="flex items-center">
             <Calendar className="h-4 w-4 mr-1" />
-            {formatDate(feedback.created_at)}
+            <span className="text-xs sm:text-sm">{formatDate(feedback.created_at)}</span>
           </div>
           <div className="flex items-center font-mono">
             <FileText className="h-4 w-4 mr-1" />
-            {feedback.tracking_id}
+            <span className="text-xs sm:text-sm">{feedback.tracking_id}</span>
           </div>
         </div>
         
-        <button className="flex items-center text-blue-600 hover:text-blue-700 font-medium">
+        <button className="flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm self-start sm:self-auto">
           View Details
           <ExternalLink className="h-4 w-4 ml-1" />
         </button>
@@ -176,10 +176,10 @@ const RecentFeedbackStatus: React.FC<RecentFeedbackStatusProps> = ({ recentFeedb
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
         <h2 className="text-lg font-semibold text-gray-900">Recent Feedback</h2>
-        <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+        <button className="text-sm text-blue-600 hover:text-blue-700 font-medium self-start sm:self-auto">
           View all →
         </button>
       </div>

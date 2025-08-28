@@ -532,11 +532,22 @@ def admin_bill_detail(request, bill_id):
 def public_bills_list(request):
     """Get public bills list - no authentication required"""
     
+    # Get limit parameter from query string
+    limit = request.GET.get('limit')
+    
     # Get all active bills with public participation open
     bills = Bill.objects.filter(
         is_deleted=False,
         public_participation_open=True
     ).select_related('created_by')
+    
+    # Apply limit if provided
+    if limit:
+        try:
+            limit_int = int(limit)
+            bills = bills[:limit_int]
+        except ValueError:
+            pass  # Ignore invalid limit values
     
     bills_data = [{
         'id': str(b.id),

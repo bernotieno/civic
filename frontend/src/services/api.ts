@@ -292,6 +292,59 @@ class CivicAIApiService {
     }
   }
 
+  /**
+   * Update user profile
+   */
+  async updateUserProfile(profileData: { name: string; phone?: string }): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/auth/profile/`, {
+        method: 'PATCH',
+        headers: this.getHeaders(true),
+        body: JSON.stringify(profileData),
+      });
+
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Change user password
+   */
+  async changePassword(passwordData: { current_password: string; new_password: string; confirm_password: string }): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/auth/change-password/`, {
+        method: 'POST',
+        headers: this.getHeaders(true),
+        body: JSON.stringify(passwordData),
+      });
+
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('Error changing password:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Export user data
+   */
+  async exportUserData(): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/auth/export-data/`, {
+        method: 'GET',
+        headers: this.getHeaders(true),
+      });
+
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('Error exporting user data:', error);
+      throw error;
+    }
+  }
+
   // =============================================================================
   // FEEDBACK API METHODS
   // =============================================================================
