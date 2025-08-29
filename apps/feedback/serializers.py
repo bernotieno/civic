@@ -775,7 +775,7 @@ class UserFeedbackListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feedback
         fields = [
-            'id', 'tracking_id', 'title', 'category', 'category_display',
+            'id', 'tracking_id', 'title', 'content', 'category', 'category_display',
             'priority', 'priority_display', 'status', 'status_display',
             'created_at', 'updated_at', 'edited_at', 'edit_count',
             'response_count', 'last_response_at', 'view_count',
