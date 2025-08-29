@@ -125,6 +125,8 @@ export interface Bill {
   description: string;
   summary?: string;
   sponsor: string;
+  status: string;
+  status_display?: string;
   participation_deadline?: string;
   document?: string;
   created_at: string;

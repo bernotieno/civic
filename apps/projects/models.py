@@ -46,6 +46,7 @@ class Bill(SoftDeleteModel):
     title = models.CharField(max_length=300)
     description = models.TextField()
     sponsor = models.CharField(max_length=200, help_text="Bill sponsor (MP/Ministry)")
+    status = models.CharField(max_length=20, choices=BILL_STATUS_CHOICES, default='draft')
     document = models.FileField(upload_to='bills/documents/', null=True, blank=True)
     participation_deadline = models.DateField(null=True, blank=True)
     
