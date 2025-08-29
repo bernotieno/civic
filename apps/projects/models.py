@@ -75,6 +75,7 @@ class Project(SoftDeleteModel):
     title = models.CharField(max_length=200)
     description = models.TextField()
     sponsor = models.CharField(max_length=200, default="Ministry of Public Works", help_text="Project sponsor (Ministry/Department)")
+    status = models.CharField(max_length=20, choices=PROJECT_STATUS_CHOICES, default='proposed')
     document = models.FileField(upload_to='projects/documents/', null=True, blank=True)
     participation_deadline = models.DateField(null=True, blank=True)
     

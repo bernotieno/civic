@@ -34,6 +34,7 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
   const [hasPrevious, setHasPrevious] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [viewingFeedback, setViewingFeedback] = useState<FeedbackItem | null>(null);
 
   const itemsPerPage = 10;
 
@@ -337,15 +338,13 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
                         Track
                       </button>
                     )}
-                    {onViewDetails && (
-                      <button
-                        onClick={() => onViewDetails(item.id)}
-                        className="flex items-center text-gray-600 hover:text-gray-800 text-sm px-3 py-1 rounded border border-gray-200 hover:bg-gray-50"
-                      >
-                        <EyeIcon className="h-4 w-4 mr-1" />
-                        View
-                      </button>
-                    )}
+                    <button
+                      onClick={() => setViewingFeedback(item)}
+                      className="flex items-center text-gray-600 hover:text-gray-800 text-sm px-3 py-1 rounded border border-gray-200 hover:bg-gray-50"
+                    >
+                      <EyeIcon className="h-4 w-4 mr-1" />
+                      View
+                    </button>
                   </div>
                 </div>
               </div>
@@ -395,6 +394,89 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
                 <span className="hidden sm:inline">Next</span>
                 <span className="sm:hidden">Next</span>
                 <ChevronRightIcon className="h-4 w-4 ml-1" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Feedback Modal */}
+      {viewingFeedback && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-4 mx-auto p-6 border w-full max-w-3xl shadow-lg rounded-md bg-white m-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Feedback Details</h3>
+              <button
+                onClick={() => setViewingFeedback(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Title</label>
+                <p className="mt-1 text-sm text-gray-900">{viewingFeedback.title}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Content</label>
+                <div className="mt-1 p-3 bg-gray-50 rounded-md">
+                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{viewingFeedback.content}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Category</label>
+                  <p className="mt-1 text-sm text-gray-900">{getCategoryDisplay(viewingFeedback.category)}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Status</label>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusConfig(viewingFeedback.status).bgColor} ${getStatusConfig(viewingFeedback.status).color}`}>
+                    {getStatusConfig(viewingFeedback.status).label}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Tracking ID</label>
+                  <p className="mt-1 text-gray-900 font-mono">{viewingFeedback.tracking_id}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Submission Date</label>
+                  <p className="mt-1 text-gray-900">{new Date(viewingFeedback.created_at).toLocaleString()}</p>
+                </div>
+              </div>
+              
+              {viewingFeedback.is_anonymous && (
+                <div className="p-3 bg-purple-50 rounded-md">
+                  <p className="text-sm text-purple-800">
+                    👤 This feedback was submitted anonymously
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end mt-6">
+              {onTrackFeedback && (
+                <button
+                  onClick={() => {
+                    onTrackFeedback(viewingFeedback.tracking_id);
+                    setViewingFeedback(null);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 mr-3"
+                >
+                  Track This Feedback
+                </button>
+              )}
+              <button
+                onClick={() => setViewingFeedback(null)}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Close
               </button>
             </div>
           </div>

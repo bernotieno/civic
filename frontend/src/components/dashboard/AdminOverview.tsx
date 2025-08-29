@@ -5,9 +5,13 @@ interface DashboardStats {
   total_counties: number;
   total_feedback: number;
   pending_feedback: number;
+  in_review_feedback: number;
+  responded_feedback: number;
+  resolved_feedback: number;
+  total_projects: number;
+  active_projects: number;
   total_bills: number;
   active_bills: number;
-  responded_feedback: number;
 }
 
 interface Feedback {
@@ -52,7 +56,7 @@ const AdminOverview: React.FC = () => {
         console.log('📈 Stats data:', statsData);
         setStats(statsData.data);
       } else {
-        console.error('❌ Failed to fetch stats:', statsResponse.status);
+        console.error('❌ Failed to fetch stats:', statsResponse.status, await statsResponse.text());
       }
 
       // Fetch recent feedback
@@ -62,7 +66,7 @@ const AdminOverview: React.FC = () => {
         console.log('📝 Feedback data:', feedbackData);
         setRecentFeedback(feedbackData.data?.slice(0, 4) || []); // Show only 4 recent items
       } else {
-        console.error('❌ Failed to fetch feedback:', feedbackResponse.status);
+        console.error('❌ Failed to fetch feedback:', feedbackResponse.status, await feedbackResponse.text());
       }
     } catch (error) {
       console.error('❌ Error fetching dashboard data:', error);
@@ -121,6 +125,7 @@ const AdminOverview: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Pending Feedback</p>
               <p className="text-2xl font-bold text-gray-900">{stats?.pending_feedback || 0}</p>
+              <p className="text-xs text-gray-500">In Review: {stats?.in_review_feedback || 0}</p>
             </div>
             <div className="text-3xl">⏱️</div>
           </div>
@@ -129,10 +134,10 @@ const AdminOverview: React.FC = () => {
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Active Bills</p>
-              <p className="text-2xl font-bold text-gray-900">{stats?.active_bills || 0}</p>
+              <p className="text-sm font-medium text-gray-600">Total Projects</p>
+              <p className="text-2xl font-bold text-gray-900">{stats?.total_projects || 0}</p>
             </div>
-            <div className="text-3xl">📜</div>
+            <div className="text-3xl">🏗️</div>
           </div>
         </div>
       </div>
@@ -174,8 +179,9 @@ const AdminOverview: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Response Rate</p>
               <p className="text-2xl font-bold text-gray-900">
-                {stats?.total_feedback > 0 ? Math.round((stats?.responded_feedback / stats?.total_feedback) * 100) : 0}%
+                {stats?.total_feedback > 0 ? Math.round(((stats?.responded_feedback + stats?.resolved_feedback) / stats?.total_feedback) * 100) : 0}%
               </p>
+              <p className="text-xs text-gray-500">Resolved: {stats?.resolved_feedback || 0}</p>
             </div>
             <div className="text-3xl">📊</div>
           </div>
@@ -195,7 +201,7 @@ const AdminOverview: React.FC = () => {
                   <div className="flex-1">
                     <h4 className="font-medium text-gray-900">{feedback.title}</h4>
                     <p className="text-sm text-gray-600">
-                      {feedback.category_display || feedback.category} • {feedback.user_name} • {feedback.county}
+                      {feedback.category_display || feedback.category} • {feedback.user_name || 'Anonymous'} • {feedback.county || 'Unknown'}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
                       ID: {feedback.tracking_id} • {new Date(feedback.created_at).toLocaleDateString()}

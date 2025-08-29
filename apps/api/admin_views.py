@@ -3,13 +3,16 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Case, When, IntegerField
 from django.utils import timezone
 from apps.users.models import CustomUser, County
 from apps.feedback.models import Feedback
 from apps.api.utils import summarize_bill_document
 from apps.projects.models import Project, Bill, AdminFeedbackResponse
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -21,35 +24,48 @@ def admin_dashboard_stats(request):
         return Response({'error': 'Access denied'}, status=403)
     
     # Debug logging
-    print(f"📊 National dashboard stats for {user.name} (Level: {user.admin_level})")
+    logger.info(f"📊 National dashboard stats for {user.name} (Level: {user.admin_level})")
     
-    # Get national stats (no county filtering for national system)
-    total_feedback = Feedback.objects.filter(is_deleted=False).count()
-    pending_feedback = Feedback.objects.filter(status='pending', is_deleted=False).count()
-    in_review_feedback = Feedback.objects.filter(status='in_review', is_deleted=False).count()
-    responded_feedback = Feedback.objects.filter(status='responded', is_deleted=False).count()
-    resolved_feedback = Feedback.objects.filter(status='resolved', is_deleted=False).count()
+    # Optimize feedback stats with single aggregated query
+    feedback_stats = Feedback.objects.filter(is_deleted=False).aggregate(
+        total_feedback=Count('id'),
+        pending_feedback=Count(Case(When(status='pending', then=1), output_field=IntegerField())),
+        in_review_feedback=Count(Case(When(status='in_review', then=1), output_field=IntegerField())),
+        responded_feedback=Count(Case(When(status='responded', then=1), output_field=IntegerField())),
+        resolved_feedback=Count(Case(When(status='resolved', then=1), output_field=IntegerField()))
+    )
     
-    print(f"📈 National feedback stats: Total={total_feedback}, Pending={pending_feedback}, In Review={in_review_feedback}, Responded={responded_feedback}, Resolved={resolved_feedback}")
+    logger.info(f"📈 National feedback stats: {feedback_stats}")
+    
+    # Get other stats
+    total_users = CustomUser.objects.filter(is_deleted=False).count()
+    total_counties = County.objects.filter(is_active=True).count()
+    total_projects = Project.objects.filter(is_deleted=False).count()
+    
+    # Bills stats with optimized query
+    bill_stats = Bill.objects.filter(is_deleted=False).aggregate(
+        total_bills=Count('id'),
+        active_bills=Count(Case(
+            When(status__in=['first_reading', 'committee_stage', 'second_reading'], then=1),
+            output_field=IntegerField()
+        ))
+    )
     
     stats = {
-        'total_users': CustomUser.objects.filter(is_deleted=False).count(),
-        'total_counties': County.objects.filter(is_active=True).count(),
-        'total_feedback': total_feedback,
-        'pending_feedback': pending_feedback,
-        'in_review_feedback': in_review_feedback,
-        'responded_feedback': responded_feedback,
-        'resolved_feedback': resolved_feedback,
-        'total_projects': Project.objects.filter(is_deleted=False).count(),
+        'total_users': total_users,
+        'total_counties': total_counties,
+        'total_feedback': feedback_stats['total_feedback'],
+        'pending_feedback': feedback_stats['pending_feedback'],
+        'in_review_feedback': feedback_stats['in_review_feedback'],
+        'responded_feedback': feedback_stats['responded_feedback'],
+        'resolved_feedback': feedback_stats['resolved_feedback'],
+        'total_projects': total_projects,
         'active_projects': Project.objects.filter(
-            status__in=['approved', 'in_progress'],
+            status__in=['approved', 'in_progress'], 
             is_deleted=False
         ).count(),
-        'total_bills': Bill.objects.filter(is_deleted=False).count(),
-        'active_bills': Bill.objects.filter(
-            status__in=['first_reading', 'committee_stage', 'second_reading'],
-            is_deleted=False
-        ).count(),
+        'total_bills': bill_stats['total_bills'],
+        'active_bills': bill_stats['active_bills'],
     }
     
     return Response({
@@ -78,7 +94,7 @@ def admin_users_list(request):
         'role': u.role,
         'role_display': u.get_role_display(),
         'admin_level': u.admin_level,
-        'county': u.user_county.name,
+        'county': u.user_county.name if u.user_county else 'No County',
         'is_active': u.is_active,
         'date_joined': u.date_joined
     } for u in users]
@@ -98,14 +114,14 @@ def admin_feedback_list(request):
         return Response({'error': 'Access denied'}, status=403)
     
     # Debug logging
-    print(f"🔍 Parliament Admin {user.name} (Level: {user.admin_level}) accessing national feedback")
+    logger.info(f"🔍 Parliament Admin {user.name} (Level: {user.admin_level}) accessing national feedback")
     
-    # Get all national feedback (no county filtering)
+    # Get all national feedback with optimized query
     feedback_queryset = Feedback.objects.filter(
         is_deleted=False  # Only show non-deleted feedback
-    ).select_related('user').order_by('-created_at')
+    ).select_related('user', 'user__user_county').order_by('-created_at')
     
-    print(f"📊 Total national feedback found: {feedback_queryset.count()}")
+    logger.info(f"📊 Total national feedback found: {feedback_queryset.count()}")
     
     feedback_data = []
     for f in feedback_queryset:
@@ -121,7 +137,7 @@ def admin_feedback_list(request):
                 'status': f.status,
                 'status_display': f.get_status_display(),
                 'tracking_id': f.tracking_id,
-                'county': f.user.user_county.name if f.user else 'Unknown',
+                'county': f.user.user_county.name if f.user and f.user.user_county else 'Unknown',
                 'location_path': f.get_location_path(),
                 'created_at': f.created_at,
                 'updated_at': f.updated_at,
@@ -140,10 +156,10 @@ def admin_feedback_list(request):
             }
             feedback_data.append(feedback_item)
         except Exception as e:
-            print(f"❌ Error processing feedback {f.id}: {e}")
+            logger.error(f"❌ Error processing feedback {f.id}: {e}")
             continue
     
-    print(f"✅ Successfully processed {len(feedback_data)} national feedback items")
+    logger.info(f"✅ Successfully processed {len(feedback_data)} national feedback items")
     
     return Response({
         'success': True,
@@ -169,7 +185,7 @@ def respond_to_feedback(request, feedback_id):
         if not response_text:
             return Response({'error': 'Response text required'}, status=400)
         
-        print(f"💬 Parliament Admin {user.name} responding to feedback {feedback.tracking_id}")
+        logger.info(f"💬 Parliament Admin {user.name} responding to feedback {feedback.tracking_id}")
         
         # Create feedback response using the correct model
         from apps.feedback.models import FeedbackResponse
@@ -187,7 +203,7 @@ def respond_to_feedback(request, feedback_id):
         feedback.last_response_at = timezone.now()
         feedback.save(update_fields=['status', 'response_count', 'last_response_at'])
         
-        print(f"✅ Parliament response created successfully for feedback {feedback.tracking_id}")
+        logger.info(f"✅ Parliament response created successfully for feedback {feedback.tracking_id}")
         
         return Response({
             'success': True,
@@ -199,7 +215,7 @@ def respond_to_feedback(request, feedback_id):
     except Feedback.DoesNotExist:
         return Response({'error': 'Feedback not found'}, status=404)
     except Exception as e:
-        print(f"❌ Error responding to feedback: {e}")
+        logger.error(f"❌ Error responding to feedback: {e}")
         return Response({'error': f'Failed to send response: {str(e)}'}, status=500)
 
 @api_view(['GET', 'POST'])
@@ -222,6 +238,8 @@ def admin_projects_list(request):
             'sponsor': p.sponsor,
             'participation_deadline': p.participation_deadline,
             'document': p.document.url if p.document else None,
+            'status': p.status,
+            'status_display': p.get_status_display(),
             'summary': p.summary,
             'created_by': p.created_by.name if p.created_by else 'System',
             'created_at': p.created_at
@@ -240,6 +258,7 @@ def admin_projects_list(request):
                 title=data.get('title'),
                 description=data.get('description'),
                 sponsor=data.get('sponsor'),
+                status=data.get('status', 'proposed'),
                 participation_deadline=data.get('participation_deadline'),
                 document=request.FILES.get('document'),
                 created_by=user
@@ -300,6 +319,7 @@ def admin_project_detail(request, project_id):
             project.title = data.get('title', project.title)
             project.description = data.get('description', project.description)
             project.sponsor = data.get('sponsor', project.sponsor)
+            project.status = data.get('status', project.status)
             project.participation_deadline = data.get('participation_deadline', project.participation_deadline)
             
             if 'document' in request.FILES:
@@ -339,6 +359,8 @@ def public_projects_list(request):
         'sponsor': p.sponsor,
         'participation_deadline': p.participation_deadline,
         'document': p.document.url if p.document else None,
+        'status': p.status,
+        'status_display': p.get_status_display(),
         'summary': p.summary,
         'created_at': p.created_at
     } for p in projects]
@@ -432,6 +454,7 @@ def admin_bill_detail(request, bill_id):
             bill.title = data.get('title', bill.title)
             bill.description = data.get('description', bill.description)
             bill.sponsor = data.get('sponsor', bill.sponsor)
+            bill.status = data.get('status', bill.status)
             bill.participation_deadline = data.get('participation_deadline', bill.participation_deadline)
             
             if 'document' in request.FILES:

@@ -12,8 +12,8 @@ const AdminDashboardLayout: React.FC = () => {
       <AdminHeader />
       <div className="flex">
         <AdminSidebar />
-        <main className="flex-1 p-6">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 ml-0 lg:ml-64 pt-16">
+          <div className="p-6">
             <Outlet />
           </div>
         </main>

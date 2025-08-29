@@ -34,6 +34,7 @@ const AdminFeedbackManagement: React.FC = () => {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
+  const [viewingFeedback, setViewingFeedback] = useState<Feedback | null>(null);
   const [responseText, setResponseText] = useState('');
   const [responding, setResponding] = useState(false);
 
@@ -198,7 +199,8 @@ const AdminFeedbackManagement: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white shadow-sm rounded-lg border border-gray-200">
+      {/* Desktop Table */}
+      <div className="hidden lg:block bg-white shadow-sm rounded-lg border border-gray-200">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -216,12 +218,6 @@ const AdminFeedbackManagement: React.FC = () => {
                   County
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Submitted By
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -236,7 +232,7 @@ const AdminFeedbackManagement: React.FC = () => {
                         {item.content}
                       </div>
                       <div className="text-xs text-gray-400 mt-1">
-                        ID: {item.tracking_id}
+                        ID: {item.tracking_id} • {item.user_name} • {new Date(item.created_at).toLocaleDateString()}
                       </div>
                     </div>
                   </td>
@@ -253,13 +249,13 @@ const AdminFeedbackManagement: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {item.county}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {item.user_name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(item.created_at).toLocaleDateString()}
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => setViewingFeedback(item)}
+                      className="text-gray-600 hover:text-gray-900 mr-3"
+                    >
+                      View
+                    </button>
                     {item.response_count === 0 && item.status === 'pending' && (
                       <button
                         onClick={() => setSelectedFeedback(item)}
@@ -284,21 +280,173 @@ const AdminFeedbackManagement: React.FC = () => {
         </div>
       </div>
 
+      {/* Mobile Cards */}
+      <div className="lg:hidden space-y-4">
+        {feedback.map((item) => (
+          <div key={item.id} className="bg-white shadow-sm rounded-lg border border-gray-200 p-4">
+            <div className="mb-3">
+              <h3 className="text-sm font-medium text-gray-900 mb-1">{item.title}</h3>
+              <p className="text-sm text-gray-500 mb-2">{item.content}</p>
+            </div>
+            
+            <div className="flex flex-wrap gap-2 mb-3">
+              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(item.category)}`}>
+                {item.category_display || item.category.replace('_', ' ')}
+              </span>
+              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
+                {item.status_display || item.status.replace('_', ' ')}
+              </span>
+            </div>
+            
+            <div className="text-xs text-gray-500 mb-3">
+              <div>ID: {item.tracking_id}</div>
+              <div>County: {item.county} • User: {item.user_name}</div>
+              <div>Date: {new Date(item.created_at).toLocaleDateString()}</div>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <button
+                onClick={() => setViewingFeedback(item)}
+                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded"
+              >
+                View Full
+              </button>
+              <div>
+                {item.response_count === 0 && item.status === 'pending' && (
+                  <button
+                    onClick={() => setSelectedFeedback(item)}
+                    className="px-3 py-1 text-sm text-blue-600 hover:text-blue-900 border border-blue-300 rounded"
+                  >
+                    Respond
+                  </button>
+                )}
+                {item.response_count > 0 && (
+                  <span className="text-sm text-green-600">
+                    Responded ({item.response_count})
+                  </span>
+                )}
+                {item.status === 'resolved' && (
+                  <span className="text-sm text-green-700 font-medium">Resolved</span>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* View Feedback Modal */}
+      {viewingFeedback && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-4 mx-auto p-6 border w-full max-w-3xl shadow-lg rounded-md bg-white m-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Feedback Details</h3>
+              <button
+                onClick={() => setViewingFeedback(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Title</label>
+                <p className="mt-1 text-sm text-gray-900">{viewingFeedback.title}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Content</label>
+                <div className="mt-1 p-3 bg-gray-50 rounded-md">
+                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{viewingFeedback.content}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Category</label>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(viewingFeedback.category)}`}>
+                    {viewingFeedback.category_display || viewingFeedback.category.replace('_', ' ')}
+                  </span>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Status</label>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(viewingFeedback.status)}`}>
+                    {viewingFeedback.status_display || viewingFeedback.status.replace('_', ' ')}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Tracking ID</label>
+                  <p className="mt-1 text-gray-900">{viewingFeedback.tracking_id}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">County</label>
+                  <p className="mt-1 text-gray-900">{viewingFeedback.county}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Submitted By</label>
+                  <p className="mt-1 text-gray-900">{viewingFeedback.user_name}</p>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Submission Date</label>
+                <p className="mt-1 text-sm text-gray-900">{new Date(viewingFeedback.created_at).toLocaleString()}</p>
+              </div>
+              
+              {viewingFeedback.response_count > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Response Status</label>
+                  <p className="mt-1 text-sm text-green-600">
+                    {viewingFeedback.response_count} response(s) sent
+                    {viewingFeedback.last_response_at && (
+                      <span className="text-gray-500"> • Last: {new Date(viewingFeedback.last_response_at).toLocaleString()}</span>
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end mt-6">
+              {viewingFeedback.response_count === 0 && viewingFeedback.status === 'pending' && (
+                <button
+                  onClick={() => {
+                    setSelectedFeedback(viewingFeedback);
+                    setViewingFeedback(null);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 mr-3"
+                >
+                  Respond to This Feedback
+                </button>
+              )}
+              <button
+                onClick={() => setViewingFeedback(null)}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Response Modal */}
       {selectedFeedback && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+          <div className="relative top-4 mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-md bg-white m-4">
             <div className="mt-3">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
                 Respond to Feedback
               </h3>
-              <div className="mb-4">
-                <h4 className="font-medium text-gray-900">{selectedFeedback.title}</h4>
-                <p className="text-sm text-gray-600 mt-1">{selectedFeedback.content}</p>
-                <div className="text-xs text-gray-500 mt-2">
-                  <span>Tracking ID: {selectedFeedback.tracking_id}</span> | 
-                  <span> County: {selectedFeedback.county}</span> | 
-                  <span> User: {selectedFeedback.user_name}</span>
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">{selectedFeedback.title}</h4>
+                <p className="text-sm text-gray-600 mb-3 whitespace-pre-wrap">{selectedFeedback.content}</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-gray-500">
+                  <span>ID: {selectedFeedback.tracking_id}</span>
+                  <span>County: {selectedFeedback.county}</span>
+                  <span>User: {selectedFeedback.user_name}</span>
                 </div>
               </div>
               <textarea
@@ -308,7 +456,7 @@ const AdminFeedbackManagement: React.FC = () => {
                 className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows={4}
               />
-              <div className="flex justify-end space-x-3 mt-4">
+              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
                 <button
                   onClick={() => {
                     setSelectedFeedback(null);
