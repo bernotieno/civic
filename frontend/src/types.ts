@@ -121,14 +121,21 @@ export type DashboardView = 'home' | 'submit-feedback' | 'my-feedback' | 'track-
 // Bill Types
 export interface Bill {
   id: string;
+  bill_number?: string;
   title: string;
   description: string;
   summary?: string;
   sponsor: string;
+  committee?: string;
   status: string;
   status_display?: string;
+  introduced_date?: string;
+  first_reading_date?: string;
+  committee_deadline?: string;
+  public_participation_open?: boolean;
   participation_deadline?: string;
   document?: string;
+  image?: string;
   created_at: string;
 }
 

@@ -23,7 +23,16 @@ const Bills: React.FC<BillsProps> = ({ onFeedbackClick, onBillExplore }) => {
   const fetchBills = async () => {
     setLoading(true);
     try {
-      const billsResponse = await fetch('http://127.0.0.1:8000/api/public/bills/');
+      const token = localStorage.getItem('access_token');
+      const headers: HeadersInit = {};
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const billsResponse = await fetch('http://127.0.0.1:8000/api/public/bills/', {
+        headers
+      });
       
       if (billsResponse.ok) {
         const billsData = await billsResponse.json();
@@ -116,7 +125,9 @@ const Bills: React.FC<BillsProps> = ({ onFeedbackClick, onBillExplore }) => {
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">{bill.title}</h3>
-                    <p className="text-gray-700 mb-3">{bill.description}</p>
+                    <p className="text-gray-700 mb-3">
+                      {bill.summary ? bill.summary : bill.description}
+                    </p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ml-4 flex-shrink-0 ${getStatusColor(bill.status)}`}>
                     {bill.status_display || bill.status.replace('_', ' ').toUpperCase()}

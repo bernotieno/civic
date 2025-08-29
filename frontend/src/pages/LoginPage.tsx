@@ -63,14 +63,14 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-6 px-4 sm:py-12 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="mx-auto w-full max-w-sm sm:max-w-md">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
             {t('auth.welcomeBack')}
           </h1>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             {t('auth.signInToContinue')}
           </p>
         </div>
@@ -78,7 +78,7 @@ const LoginPage: React.FC = () => {
 
       {/* Error Message */}
       {loginStatus === 'error' && errorMessage && (
-        <div className="sm:mx-auto sm:w-full sm:max-w-md mt-6">
+        <div className="mx-auto w-full max-w-sm sm:max-w-md mt-4 sm:mt-6">
           <div className="bg-red-50 border border-red-200 rounded-md p-4 flex items-center">
             <AlertCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0" />
             <div>
@@ -90,7 +90,7 @@ const LoginPage: React.FC = () => {
       )}
 
       {/* Login Form */}
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="mt-6 sm:mt-8 mx-auto w-full max-w-sm sm:max-w-md">
         <LoginForm
           onSuccess={handleLoginSuccess}
           onError={handleLoginError}
@@ -98,19 +98,10 @@ const LoginPage: React.FC = () => {
       </div>
 
       {/* Navigation Links */}
-      <div className="mt-6 text-center">
-        <p className="text-sm text-gray-600">
-          {t('auth.dontHaveAccount')}{' '}
-          <button
-            onClick={() => navigate('/register')}
-            className="text-blue-600 hover:text-blue-500 font-medium transition-colors"
-          >
-            {t('auth.signUp')}
-          </button>
-        </p>
+      <div className="mt-4 sm:mt-6 text-center px-4">
         <button
           onClick={() => navigate('/')}
-          className="text-gray-500 hover:text-gray-700 text-sm mt-2 transition-colors"
+          className="text-gray-500 hover:text-gray-700 text-sm transition-colors"
         >
           ← {t('navigation.home')}
         </button>

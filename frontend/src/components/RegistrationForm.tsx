@@ -171,11 +171,11 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
 
   if (isSuccess) {
     return (
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+      <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow-md p-4 sm:p-6">
         <div className="text-center">
-          <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Successful!</h2>
-          <p className="text-gray-600 mb-4">
+          <CheckCircle className="mx-auto h-10 sm:h-12 w-10 sm:w-12 text-green-500 mb-4" />
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Registration Successful!</h2>
+          <p className="text-sm sm:text-base text-gray-600 mb-4">
             Your account has been created successfully. You can now access the CivicAI platform.
           </p>
         </div>
@@ -184,10 +184,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Register for CivicAI</h2>
-        <p className="text-gray-600 mt-2">Create your account to engage with the National Assembly</p>
+    <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow-md p-4 sm:p-6">
+      <div className="text-center mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Register for CivicAI</h2>
+        <p className="text-sm sm:text-base text-gray-600 mt-2">Create your account to engage with the National Assembly</p>
       </div>
 
       {errors.general && (
@@ -197,7 +197,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
         {/* National ID Field */}
         <div>
           <label htmlFor="national_id" className="block text-sm font-medium text-gray-700 mb-1">
@@ -213,7 +213,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
               onChange={handleInputChange}
               placeholder="12345678"
               maxLength={8}
-              className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${
                 errors.national_id ? 'border-red-500' : 'border-gray-300'
               }`}
             />
@@ -235,7 +235,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
             value={formData.name}
             onChange={handleInputChange}
             placeholder="John Doe Kiprop"
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${
               errors.name ? 'border-red-500' : 'border-gray-300'
             }`}
           />
@@ -258,7 +258,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
               value={formData.email}
               onChange={handleInputChange}
               placeholder="john.kiprop@gmail.com"
-              className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${
                 errors.email ? 'border-red-500' : 'border-gray-300'
               }`}
             />
@@ -282,7 +282,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
               value={formData.password}
               onChange={handleInputChange}
               placeholder="••••••••"
-              className={`w-full pl-10 pr-10 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full pl-10 pr-10 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${
                 errors.password ? 'border-red-500' : 'border-gray-300'
               }`}
             />
@@ -313,7 +313,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
               value={formData.county_id}
               onChange={handleInputChange}
               disabled={loadingCounties}
-              className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${
                 errors.county_id ? 'border-red-500' : 'border-gray-300'
               }`}
             >
@@ -338,7 +338,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full bg-[#0D3C43] text-white py-2 px-4 rounded-md hover:bg-[#0D3C43]/90 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isLoading ? 'Creating Account...' : 'Create Account'}
         </button>
@@ -347,7 +347,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600">
           Already have an account?{' '}
-          <a href="/login" className="text-blue-600 hover:text-blue-500 font-medium">
+          <a href="/login" className="text-teal-700 hover:text-teal-600 font-medium">
             Sign in here
           </a>
         </p>

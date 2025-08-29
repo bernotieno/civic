@@ -385,13 +385,20 @@ def admin_bills_list(request):
         
         bills_data = [{
             'id': str(b.id),
+            'bill_number': b.bill_number,
             'title': b.title,
             'description': b.description,
             'sponsor': b.sponsor,
+            'committee': b.committee,
             'status': b.status,
             'status_display': b.get_status_display(),
+            'introduced_date': b.introduced_date,
+            'first_reading_date': b.first_reading_date,
+            'committee_deadline': b.committee_deadline,
+            'public_participation_open': b.public_participation_open,
             'participation_deadline': b.participation_deadline,
             'document': b.document.url if b.document else None,
+            'image': b.image.url if b.image else None,
             'summary': b.summary,
             'created_by': b.created_by.name if b.created_by else 'System',
             'created_at': b.created_at
@@ -489,18 +496,35 @@ def public_bills_list(request):
         is_deleted=False
     ).select_related('created_by')
     
-    bills_data = [{
-        'id': str(b.id),
-        'title': b.title,
-        'description': b.description,
-        'sponsor': b.sponsor,
-        'status': b.status,
-        'status_display': b.get_status_display(),
-        'participation_deadline': b.participation_deadline,
-        'document': b.document.url if b.document else None,
-        'summary': b.summary,
-        'created_at': b.created_at
-    } for b in bills]
+    # Check if user is authenticated
+    is_authenticated = request.user.is_authenticated
+    
+    bills_data = []
+    for b in bills:
+        bill_data = {
+            'id': str(b.id),
+            'bill_number': b.bill_number,
+            'title': b.title,
+            'description': b.description,
+            'sponsor': b.sponsor,
+            'committee': b.committee,
+            'status': b.status,
+            'status_display': b.get_status_display(),
+            'introduced_date': b.introduced_date,
+            'first_reading_date': b.first_reading_date,
+            'committee_deadline': b.committee_deadline,
+            'public_participation_open': b.public_participation_open,
+            'participation_deadline': b.participation_deadline,
+            'document': b.document.url if b.document else None,
+            'image': b.image.url if b.image else None,
+            'created_at': b.created_at
+        }
+        
+        # Only include summary for authenticated users
+        if is_authenticated:
+            bill_data['summary'] = b.summary
+        
+        bills_data.append(bill_data)
     
     return Response({
         'success': True,

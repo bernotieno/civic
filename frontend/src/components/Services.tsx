@@ -45,8 +45,16 @@ const Bills: React.FC = () => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
         
+        const token = localStorage.getItem('access_token');
+        const headers: HeadersInit = {};
+        
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        
         const response = await fetch('http://127.0.0.1:8000/api/public/bills/', {
-          signal: controller.signal
+          signal: controller.signal,
+          headers
         });
         
         clearTimeout(timeoutId);
@@ -159,7 +167,9 @@ const Bills: React.FC = () => {
                   {/* Title and Description */}
                   <div className="px-4 mt-2">
                     <h4 className="font-semibold text-gray-900 mb-1">{bill.title}</h4>
-                    <p className="text-gray-600 text-sm">{bill.summary || bill.description}</p>
+                    <p className="text-gray-600 text-sm">
+                      {isAuthenticated && bill.summary ? bill.summary : bill.description}
+                    </p>
                   </div>
 
                   {/* Sponsor + Committee */}

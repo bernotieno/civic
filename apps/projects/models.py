@@ -43,12 +43,25 @@ PROJECT_TYPES = [
 class Bill(SoftDeleteModel):
     """Parliamentary Bills for public engagement"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    bill_number = models.CharField(max_length=50, unique=True, null=True, blank=True, help_text="Official bill number (e.g., HB-2024-001)")
     title = models.CharField(max_length=300)
     description = models.TextField()
     sponsor = models.CharField(max_length=200, help_text="Bill sponsor (MP/Ministry)")
+    committee = models.CharField(max_length=200, blank=True, null=True, help_text="Parliamentary committee handling the bill")
     status = models.CharField(max_length=20, choices=BILL_STATUS_CHOICES, default='draft')
-    document = models.FileField(upload_to='bills/documents/', null=True, blank=True)
+    
+    # Dates
+    introduced_date = models.DateField(null=True, blank=True)
+    first_reading_date = models.DateField(null=True, blank=True)
+    committee_deadline = models.DateField(null=True, blank=True)
     participation_deadline = models.DateField(null=True, blank=True)
+    
+    # Files
+    document = models.FileField(upload_to='bills/documents/', null=True, blank=True)
+    image = models.ImageField(upload_to='bills/images/', null=True, blank=True)
+    
+    # Public participation
+    public_participation_open = models.BooleanField(default=True)
     
     # Auto-generated fields
     summary = models.TextField(blank=True, help_text="Auto-generated summary from document")
