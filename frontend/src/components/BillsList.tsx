@@ -4,6 +4,8 @@ import { Users, Search, Filter, MessageSquare, ChevronDown, ChevronUp } from 'lu
 import Header from './Header';
 import Footer from './Footer';
 import LoadingSkeleton from './LoadingSkeleton';
+import CustomAlert from './CustomAlert';
+import { useAlert } from '../hooks/useAlert';
 
 interface Bill {
   id: string;
@@ -45,6 +47,7 @@ const BillsList: React.FC = () => {
     is_anonymous: false
   });
   const [userProfile, setUserProfile] = useState<any>(null);
+  const { alert, showSuccess, showError, showWarning, hideAlert } = useAlert();
 
   useEffect(() => {
     // Load bills immediately but defer other operations
@@ -195,7 +198,7 @@ const BillsList: React.FC = () => {
 
   const submitFeedback = async (billId: string) => {
     if (!userProfile) {
-      alert('User profile not loaded. Please refresh the page.');
+      showWarning('Profile Required', 'User profile not loaded. Please refresh the page.');
       return;
     }
 
@@ -208,7 +211,7 @@ const BillsList: React.FC = () => {
       const userCounty = countiesData.find((county: any) => county.name === userProfile.county_name);
       
       if (!userCounty) {
-        alert('Could not determine your county. Please contact support.');
+        showError('County Error', 'Could not determine your county. Please contact support.');
         return;
       }
 
@@ -229,7 +232,7 @@ const BillsList: React.FC = () => {
 
       if (response.ok) {
         const result = await response.json();
-        alert(`Feedback submitted successfully! Tracking ID: ${result.data.tracking_id}`);
+        showSuccess('Success', `Feedback submitted successfully! Tracking ID: ${result.data.tracking_id}`);
         setExpandedFeedback(null);
         setFeedbackData({
           content: '',
@@ -240,11 +243,11 @@ const BillsList: React.FC = () => {
       } else {
         const errorData = await response.json();
         console.error('Feedback submission error:', errorData);
-        alert(`Failed to submit feedback: ${errorData.message || 'Unknown error'}`);
+        showError('Submission Failed', `Failed to submit feedback: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      alert('Error submitting feedback');
+      showError('Error', 'Error submitting feedback');
     }
   };
 
@@ -512,6 +515,15 @@ const BillsList: React.FC = () => {
       </div>
       </div>
       <Footer />
+      
+      {/* Custom Alert */}
+      <CustomAlert
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        isOpen={alert.isOpen}
+        onClose={hideAlert}
+      />
     </div>
   );
 };

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import CustomAlert from '../CustomAlert';
+import { useAlert } from '../../hooks/useAlert';
 
 interface Feedback {
   id: string;
@@ -37,6 +39,7 @@ const AdminFeedbackManagement: React.FC = () => {
   const [viewingFeedback, setViewingFeedback] = useState<Feedback | null>(null);
   const [responseText, setResponseText] = useState('');
   const [responding, setResponding] = useState(false);
+  const { alert, showSuccess, showError, hideAlert } = useAlert();
 
   useEffect(() => {
     fetchFeedback();
@@ -97,15 +100,15 @@ const AdminFeedbackManagement: React.FC = () => {
         setResponseText('');
         setSelectedFeedback(null);
         fetchFeedback(); // Refresh the list
-        alert('Response sent successfully!');
+        showSuccess('Success', 'Response sent successfully!');
       } else {
         const errorData = await response.json().catch(() => ({}));
         console.error('❌ Failed to send response:', errorData);
-        alert(`Failed to send response: ${errorData.error || 'Unknown error'}`);
+        showError('Error', `Failed to send response: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('❌ Error sending response:', error);
-      alert('Error sending response');
+      showError('Error', 'Error sending response');
     } finally {
       setResponding(false);
     }
@@ -478,6 +481,15 @@ const AdminFeedbackManagement: React.FC = () => {
           </div>
         </div>
       )}
+      
+      {/* Custom Alert */}
+      <CustomAlert
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        isOpen={alert.isOpen}
+        onClose={hideAlert}
+      />
     </div>
   );
 };

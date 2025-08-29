@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import CustomAlert from '../CustomAlert';
+import { useAlert } from '../../hooks/useAlert';
 
 interface User {
   id: number;
@@ -31,6 +33,7 @@ const AdminUserManagement: React.FC = () => {
     official_level: 'local',
     county_id: ''
   });
+  const { alert, showSuccess, showError, showWarning, hideAlert } = useAlert();
 
   useEffect(() => {
     fetchUsers();
@@ -101,7 +104,7 @@ const AdminUserManagement: React.FC = () => {
   const toggleUserStatus = async (userId: number, currentStatus: boolean) => {
     // This would need a backend endpoint to activate/deactivate users
     console.log(`Toggle user ${userId} status from ${currentStatus}`);
-    alert('User status toggle functionality needs backend implementation');
+    showWarning('Not Implemented', 'User status toggle functionality needs backend implementation');
   };
 
   const handleAddUser = async (e: React.FormEvent) => {
@@ -128,14 +131,14 @@ const AdminUserManagement: React.FC = () => {
           county_id: ''
         });
         fetchUsers();
-        alert('User added successfully!');
+        showSuccess('Success', 'User added successfully!');
       } else {
         const errorData = await response.json();
-        alert(`Failed to add user: ${errorData.message || 'Unknown error'}`);
+        showError('Error', `Failed to add user: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error adding user:', error);
-      alert('Error adding user');
+      showError('Error', 'Error adding user');
     }
   };
 
@@ -361,6 +364,14 @@ const AdminUserManagement: React.FC = () => {
           </div>
         </div>
       )}
+      
+      <CustomAlert
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        isOpen={alert.isOpen}
+        onClose={hideAlert}
+      />
     </div>
   );
 };

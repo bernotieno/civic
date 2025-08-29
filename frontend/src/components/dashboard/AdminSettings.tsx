@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import CustomAlert from '../CustomAlert';
+import { useAlert } from '../../hooks/useAlert';
 
 const AdminSettings: React.FC = () => {
   const [settings, setSettings] = useState({
@@ -12,6 +14,7 @@ const AdminSettings: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [userInfo, setUserInfo] = useState<any>(null);
+  const { alert, showSuccess, hideAlert } = useAlert();
 
   useEffect(() => {
     fetchUserInfo();
@@ -49,7 +52,7 @@ const AdminSettings: React.FC = () => {
 
   const handleSave = () => {
     // Save settings logic here
-    alert('Settings saved successfully!');
+    showSuccess('Success', 'Settings saved successfully!');
   };
 
   if (loading) {
@@ -192,6 +195,14 @@ const AdminSettings: React.FC = () => {
           Save Settings
         </button>
       </div>
+      
+      <CustomAlert
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        isOpen={alert.isOpen}
+        onClose={hideAlert}
+      />
     </div>
   );
 };

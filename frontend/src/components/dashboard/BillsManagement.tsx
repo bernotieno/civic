@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import LoadingBar from '../LoadingBar';
+import CustomAlert from '../CustomAlert';
+import { useAlert } from '../../hooks/useAlert';
 
 interface Bill {
   id: string;
@@ -32,6 +34,7 @@ const BillsManagement: React.FC = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState('');
+  const { alert, showSuccess, showError, hideAlert } = useAlert();
 
   useEffect(() => {
     fetchBills();
@@ -83,14 +86,14 @@ const BillsManagement: React.FC = () => {
       if (!response.ok) {
         console.error('Failed to update status:', responseData);
         fetchBills();
-        alert(`Failed to update bill status: ${responseData.error || 'Unknown error'}`);
+        showError('Update Failed', `Failed to update bill status: ${responseData.error || 'Unknown error'}`);
       } else {
         console.log('Status updated successfully');
       }
     } catch (error) {
       console.error('Error updating bill status:', error);
       fetchBills();
-      alert('Error updating bill status');
+      showError('Error', 'Error updating bill status');
     }
   };
 
@@ -125,13 +128,13 @@ const BillsManagement: React.FC = () => {
 
       if (response.ok) {
         fetchBills();
-        alert('Bill deleted successfully!');
+        showSuccess('Success', 'Bill deleted successfully!');
       } else {
-        alert('Failed to delete bill');
+        showError('Error', 'Failed to delete bill');
       }
     } catch (error) {
       console.error('Error deleting bill:', error);
-      alert('Error deleting bill');
+      showError('Error', 'Error deleting bill');
     }
   };
 
@@ -193,20 +196,20 @@ const BillsManagement: React.FC = () => {
           setUploadProgress(0);
           setUploadMessage('');
           fetchBills();
-          alert('Bill updated successfully!');
+          showSuccess('Success', 'Bill updated successfully!');
         }, 1000);
       } else {
         setIsUploading(false);
         setUploadProgress(0);
         setUploadMessage('');
-        alert('Failed to update bill');
+        showError('Error', 'Failed to update bill');
       }
     } catch (error) {
       console.error('Error updating bill:', error);
       setIsUploading(false);
       setUploadProgress(0);
       setUploadMessage('');
-      alert('Error updating bill');
+      showError('Error', 'Error updating bill');
     }
   };
 
@@ -271,21 +274,21 @@ const BillsManagement: React.FC = () => {
           setUploadProgress(0);
           setUploadMessage('');
           fetchBills();
-          alert('Bill created successfully!');
+          showSuccess('Success', 'Bill created successfully!');
         }, 1000);
       } else {
         const errorText = await response.text();
         setIsUploading(false);
         setUploadProgress(0);
         setUploadMessage('');
-        alert(`Failed to create bill: ${errorText}`);
+        showError('Error', `Failed to create bill: ${errorText}`);
       }
     } catch (error) {
       console.error('Error creating bill:', error);
       setIsUploading(false);
       setUploadProgress(0);
       setUploadMessage('');
-      alert('Error creating bill');
+      showError('Error', 'Error creating bill');
     }
   };
 
@@ -668,6 +671,15 @@ const BillsManagement: React.FC = () => {
           message={uploadMessage}
         />
       )}
+      
+      {/* Custom Alert */}
+      <CustomAlert
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        isOpen={alert.isOpen}
+        onClose={hideAlert}
+      />
     </div>
   );
 };

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Bill } from '../../types';
+import CustomAlert from '../CustomAlert';
+import { useAlert } from '../../hooks/useAlert';
 
 interface BillDetailsViewProps {
   billId: string;
@@ -19,6 +21,7 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
   });
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const { alert, showSuccess, showError, showWarning, hideAlert } = useAlert();
 
   useEffect(() => {
     fetchBill();
@@ -61,7 +64,7 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
 
   const submitFeedback = async () => {
     if (!userProfile || !feedbackData.content.trim()) {
-      alert('Please enter your feedback.');
+      showWarning('Input Required', 'Please enter your feedback.');
       return;
     }
 
@@ -76,7 +79,7 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
       const userCounty = counties.find((county: any) => county.name === userProfile.county_name);
       
       if (!userCounty) {
-        alert('Could not determine your county. Please contact support.');
+        showError('County Error', 'Could not determine your county. Please contact support.');
         return;
       }
 
@@ -138,7 +141,7 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
       if (response.ok) {
         const result = await response.json();
         const trackingId = result.data?.tracking_id || result.tracking_id;
-        alert(`${feedbackData.is_anonymous ? 'Anonymous ' : ''}Feedback submitted successfully! Tracking ID: ${trackingId}`);
+        showSuccess('Success', `${feedbackData.is_anonymous ? 'Anonymous ' : ''}Feedback submitted successfully! Tracking ID: ${trackingId}`);
         setFeedbackData({
           content: '',
           category: 'legislation',
@@ -148,11 +151,11 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
       } else {
         const errorData = await response.json();
         console.error('Feedback submission error:', errorData);
-        alert(`Failed to submit feedback: ${errorData.message || 'Unknown error'}`);
+        showError('Submission Failed', `Failed to submit feedback: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      alert('Error submitting feedback: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      showError('Error', 'Error submitting feedback: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setIsSubmittingFeedback(false);
     }
@@ -402,6 +405,14 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
           )}
         </div>
       </div>
+      
+      <CustomAlert
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        isOpen={alert.isOpen}
+        onClose={hideAlert}
+      />
     </div>
   );
 };
