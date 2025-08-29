@@ -1,15 +1,16 @@
 import React from 'react';
 
 interface BillTabsProps {
-  activeTab: 'original' | 'summary' | 'chat';
-  onTabChange: (tab: 'original' | 'summary' | 'chat') => void;
+  activeTab: 'description' | 'ai-summary' | 'ai-chat' | 'feedback';
+  onTabChange: (tab: 'description' | 'ai-summary' | 'ai-chat' | 'feedback') => void;
 }
 
 const BillTabs: React.FC<BillTabsProps> = ({ activeTab, onTabChange }) => {
   const tabs = [
-    { id: 'original' as const, name: 'Original Bill', description: 'Full bill text' },
-    { id: 'summary' as const, name: 'Summary', description: 'Key points & overview' },
-    { id: 'chat' as const, name: 'AI Chat', description: 'Ask questions about this bill' }
+    { id: 'description' as const, name: 'Description', description: 'Full bill text' },
+    { id: 'ai-summary' as const, name: 'AI Summary', description: 'Key points & overview' },
+    { id: 'ai-chat' as const, name: 'AI Chat', description: 'Ask questions about this bill' },
+    { id: 'feedback' as const, name: 'Feedback', description: 'Submit your feedback' }
   ];
 
   return (

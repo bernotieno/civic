@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { Bill } from '../../types';
+import { Bill, ChatHistory } from '../../types';
 import CustomAlert from '../CustomAlert';
 import { useAlert } from '../../hooks/useAlert';
+import ChatTab from '../ChatTab';
 
 interface BillDetailsViewProps {
   billId: string;
@@ -13,6 +14,7 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
   const [bill, setBill] = useState<Bill | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'original' | 'summary' | 'feedback' | 'chat'>('original');
+  const [chatHistory, setChatHistory] = useState<ChatHistory | null>(null);
   const [feedbackData, setFeedbackData] = useState({
     content: '',
     category: 'legislation',
@@ -404,13 +406,11 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
           )}
 
           {activeTab === 'chat' && (
-            <div>
-              <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">AI Chat Assistant</h3>
-              <div className="bg-gray-50 rounded-lg p-4 sm:p-6 text-center">
-                <p className="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base">Chat with AI about this bill to get answers to your questions.</p>
-                <p className="text-xs sm:text-sm text-gray-500">AI Chat feature coming soon...</p>
-              </div>
-            </div>
+            <ChatTab 
+              billId={billId} 
+              initialHistory={chatHistory} 
+              onHistoryUpdate={setChatHistory}
+            />
           )}
         </div>
       </div>

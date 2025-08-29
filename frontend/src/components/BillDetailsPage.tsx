@@ -9,7 +9,7 @@ const BillDetailsPage: React.FC = () => {
   const [bill, setBill] = useState<Bill | null>(null);
   const [billSummary, setBillSummary] = useState<BillSummary | null>(null);
   const [chatHistory, setChatHistory] = useState<ChatHistory | null>(null);
-  const [activeTab, setActiveTab] = useState<'original' | 'summary' | 'chat'>('original');
+  const [activeTab, setActiveTab] = useState<'description' | 'ai-summary' | 'ai-chat' | 'feedback'>('description');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -82,7 +82,7 @@ const BillDetailsPage: React.FC = () => {
 
         {/* Content */}
         <div className="bg-white rounded-lg shadow-sm p-6">
-          {activeTab === 'original' && (
+          {activeTab === 'description' && (
             <div className="prose max-w-none">
               <h3 className="text-xl font-semibold mb-4">Bill Description</h3>
               <div className="whitespace-pre-wrap text-gray-700 mb-6">
@@ -104,7 +104,7 @@ const BillDetailsPage: React.FC = () => {
             </div>
           )}
 
-          {activeTab === 'summary' && (
+          {activeTab === 'ai-summary' && (
             <div>
               <h3 className="text-xl font-semibold mb-4">Bill Summary</h3>
               {billSummary ? (
@@ -127,12 +127,68 @@ const BillDetailsPage: React.FC = () => {
             </div>
           )}
 
-          {activeTab === 'chat' && (
+          {activeTab === 'ai-chat' && (
             <ChatTab 
               billId={id!} 
               initialHistory={chatHistory} 
               onHistoryUpdate={setChatHistory}
             />
+          )}
+
+          {activeTab === 'feedback' && (
+            <div>
+              <h3 className="text-xl font-semibold mb-4">Submit Feedback on This Bill</h3>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <p className="text-blue-800 text-sm">
+                  💡 <strong>Tip:</strong> Your feedback will be specifically linked to this bill and sent to the relevant parliamentary committee.
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Feedback Title
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Brief title for your feedback..."
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Your Feedback
+                  </label>
+                  <textarea
+                    rows={6}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Share your thoughts, concerns, or suggestions about this bill..."
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Priority Level
+                  </label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="low">Low - General comment</option>
+                    <option value="medium">Medium - Important concern</option>
+                    <option value="high">High - Significant impact</option>
+                    <option value="urgent">Urgent - Critical issue</option>
+                  </select>
+                </div>
+                
+                <div className="flex gap-3">
+                  <button className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                    Submit Feedback
+                  </button>
+                  <button className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                    Save as Draft
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

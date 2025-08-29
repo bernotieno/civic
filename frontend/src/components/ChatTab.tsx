@@ -41,35 +41,29 @@ const ChatTab: React.FC<ChatTabProps> = ({ billId, initialHistory, onHistoryUpda
     setMessages(prev => [...prev, userMessage]);
 
     try {
-      const response = await fetch(`/api/bills/${billId}/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ question })
+      // Use bill-specific chat service
+      const { billChatService } = await import('../services/billChatService');
+      
+      const data = await billChatService.sendMessage({
+        billId,
+        question,
+        billTitle: 'Current Bill' // This would come from props in real implementation
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        const aiMessage: ChatMessage = {
-          id: data.id || (Date.now() + 1).toString(),
-          question,
-          response: data.response,
-          timestamp: data.timestamp || new Date().toISOString()
-        };
+      const aiMessage: ChatMessage = {
+        id: data.id,
+        question,
+        response: data.response,
+        timestamp: data.timestamp
+      };
 
-        setMessages(prev => {
-          const updated = [...prev.slice(0, -1), aiMessage];
-          onHistoryUpdate({ messages: updated });
-          return updated;
-        });
-      } else {
-        // Handle error - remove user message and show error
-        setMessages(prev => prev.slice(0, -1));
-        console.error('Failed to send message');
-      }
+      setMessages(prev => {
+        const updated = [...prev.slice(0, -1), aiMessage];
+        onHistoryUpdate({ messages: updated });
+        return updated;
+      });
     } catch (error) {
-      // Handle error - remove user message
+      // Handle error - remove user message and show error
       setMessages(prev => prev.slice(0, -1));
       console.error('Error sending message:', error);
     } finally {
