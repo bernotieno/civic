@@ -324,6 +324,12 @@ const Bills: React.FC<BillsProps> = ({ onFeedbackClick }) => {
                       <ExternalLink className="inline-block w-4 h-4 mr-1" />
                       View Details
                     </button>
+                    <button 
+                      onClick={() => navigate(`/bills/${bill.id}/details`)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                    >
+                      Explore Bill
+                    </button>
                   </div>
                 </div>
                 

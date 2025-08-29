@@ -125,6 +125,7 @@ export interface Bill {
   title: string;
   description: string;
   summary: string;
+  content?: string;
   sponsor: string;
   committee?: string;
   status: 'draft' | 'first_reading' | 'committee_stage' | 'second_reading' | 'third_reading' | 'presidential_assent' | 'enacted' | 'withdrawn';
@@ -452,4 +453,22 @@ export interface DetailedFeedbackItem extends FeedbackItem {
   edit_restriction_reason?: string;
   delete_restriction_reason?: string;
   is_anonymous: boolean;
+}
+
+// Bill Details Types
+export interface BillSummary {
+  id: string;
+  summary: string;
+  key_points: string[];
+}
+
+export interface ChatMessage {
+  id: string;
+  question: string;
+  response: string;
+  timestamp: string;
+}
+
+export interface ChatHistory {
+  messages: ChatMessage[];
 }

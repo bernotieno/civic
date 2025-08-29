@@ -1,7 +1,9 @@
 import React from "react";
 import { ThumbsUp, ThumbsDown, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 type BillCardProps = {
+  id: string;
   title: string;
   image: string;
   votes: string;
@@ -11,6 +13,7 @@ type BillCardProps = {
 };
 
 const BillCard: React.FC<BillCardProps> = React.memo(({
+  id,
   title,
   image,
   votes,
@@ -18,6 +21,7 @@ const BillCard: React.FC<BillCardProps> = React.memo(({
   link,
   status,
 }) => {
+  const navigate = useNavigate();
   return (
     <div className="bg-white shadow-md rounded-2xl overflow-hidden border border-gray-200 w-full max-w-sm">
       {/* Header */}
@@ -64,9 +68,17 @@ const BillCard: React.FC<BillCardProps> = React.memo(({
             <ThumbsDown size={14} /> Disagree
           </button>
         </div>
-        <button className="bg-green-800 hover:bg-green-900 text-white text-sm px-4 py-2 rounded-md font-medium">
-          Submit Feedback
-        </button>
+        <div className="flex gap-2">
+          <button className="bg-green-800 hover:bg-green-900 text-white text-sm px-3 py-2 rounded-md font-medium">
+            Submit Feedback
+          </button>
+          <button 
+            onClick={() => navigate(`/bills/${id}/details`)}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-2 rounded-md font-medium"
+          >
+            Explore Bill
+          </button>
+        </div>
       </div>
     </div>
   );

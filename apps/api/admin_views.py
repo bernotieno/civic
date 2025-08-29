@@ -7,6 +7,7 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from apps.users.models import CustomUser, County
 from apps.feedback.models import Feedback
+from apps.api.utils import summarize_bill_document
 from apps.projects.models import Project, Bill, AdminFeedbackResponse
 import json
 
@@ -419,13 +420,20 @@ def admin_bills_list(request):
     
     elif request.method == 'POST':
         data = request.data
+
+        uploaded_doc = request.FILES.get('document')
+        summary = None
+
+        if uploaded_doc:
+            summary = summarize_bill_document(uploaded_doc)
+
         
         try:
             bill = Bill.objects.create(
                 bill_number=data.get('bill_number'),
                 title=data.get('title'),
                 description=data.get('description'),
-                summary=data.get('summary'),
+                summary=summary,
                 sponsor=data.get('sponsor'),
                 committee=data.get('committee', ''),
                 introduced_date=data.get('introduced_date'),
@@ -532,22 +540,11 @@ def admin_bill_detail(request, bill_id):
 def public_bills_list(request):
     """Get public bills list - no authentication required"""
     
-    # Get limit parameter from query string
-    limit = request.GET.get('limit')
-    
     # Get all active bills with public participation open
     bills = Bill.objects.filter(
         is_deleted=False,
         public_participation_open=True
     ).select_related('created_by')
-    
-    # Apply limit if provided
-    if limit:
-        try:
-            limit_int = int(limit)
-            bills = bills[:limit_int]
-        except ValueError:
-            pass  # Ignore invalid limit values
     
     bills_data = [{
         'id': str(b.id),

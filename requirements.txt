@@ -42,6 +42,7 @@ django-celery-beat==2.7.0
 # LLM API Integration
 openai==1.54.3
 anthropic==0.40.0
+requests==2.32.3
 
 
 # Enhanced Caching & Performance
