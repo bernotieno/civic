@@ -49,7 +49,16 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
   const fetchBill = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://127.0.0.1:8000/api/public/bills/');
+      const token = localStorage.getItem('access_token');
+      const headers: HeadersInit = {};
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch('http://127.0.0.1:8000/api/public/bills/', {
+        headers
+      });
       if (response.ok) {
         const data = await response.json();
         const foundBill = data.data.find((b: Bill) => b.id === billId);
@@ -242,8 +251,8 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
             {[
               { id: 'original' as const, name: 'Description', shortName: 'Details', description: 'Full bill details' },
               { id: 'summary' as const, name: 'AI Summary', shortName: 'Summary', description: 'Key points & overview' },
-              { id: 'feedback' as const, name: 'Submit Feedback', shortName: 'Feedback', description: 'Share your views' },
-              { id: 'chat' as const, name: 'AI Chat', shortName: 'Chat', description: 'Ask questions about this bill' }
+              { id: 'chat' as const, name: 'AI Chat', shortName: 'Chat', description: 'Ask questions about this bill' },
+              { id: 'feedback' as const, name: 'Submit Feedback', shortName: 'Feedback', description: 'Share your views' }
             ].map((tab) => (
               <button
                 key={tab.id}

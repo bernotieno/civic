@@ -126,7 +126,7 @@ const Bills: React.FC<BillsProps> = ({ onFeedbackClick, onBillExplore }) => {
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">{bill.title}</h3>
                     <p className="text-gray-700 mb-3">
-                      {bill.summary ? bill.summary : bill.description}
+                      {bill.description}
                     </p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ml-4 flex-shrink-0 ${getStatusColor(bill.status)}`}>
