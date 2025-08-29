@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import LoadingBar from '../LoadingBar';
 
 interface Bill {
   id: string;
@@ -28,6 +29,9 @@ const BillsManagement: React.FC = () => {
     participation_deadline: '',
   });
   const [selectedDocument, setSelectedDocument] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState('');
 
   useEffect(() => {
     fetchBills();
@@ -135,9 +139,16 @@ const BillsManagement: React.FC = () => {
     e.preventDefault();
     if (!selectedBill) return;
     
+    setIsUploading(true);
+    setUploadProgress(0);
+    setUploadMessage('Preparing bill update...');
+    
     try {
       const token = localStorage.getItem('access_token');
       const formDataToSend = new FormData();
+      
+      setUploadProgress(25);
+      setUploadMessage('Processing form data...');
       
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== '') {
@@ -145,9 +156,15 @@ const BillsManagement: React.FC = () => {
         }
       });
       
+      setUploadProgress(50);
+      
       if (selectedDocument) {
+        setUploadMessage('Uploading new document...');
         formDataToSend.append('document', selectedDocument);
       }
+      
+      setUploadProgress(75);
+      setUploadMessage('Updating bill...');
 
       const response = await fetch(`http://127.0.0.1:8000/api/admin/bills/${selectedBill.id}/`, {
         method: 'PUT',
@@ -158,23 +175,37 @@ const BillsManagement: React.FC = () => {
       });
 
       if (response.ok) {
-        setShowEditForm(false);
-        setSelectedBill(null);
-        setFormData({
-          title: '',
-          description: '',
-          sponsor: '',
-          status: 'draft',
-          participation_deadline: '',
-        });
-        setSelectedDocument(null);
-        fetchBills();
-        alert('Bill updated successfully!');
+        setUploadProgress(100);
+        setUploadMessage('Bill updated successfully!');
+        
+        setTimeout(() => {
+          setIsUploading(false);
+          setShowEditForm(false);
+          setSelectedBill(null);
+          setFormData({
+            title: '',
+            description: '',
+            sponsor: '',
+            status: 'draft',
+            participation_deadline: '',
+          });
+          setSelectedDocument(null);
+          setUploadProgress(0);
+          setUploadMessage('');
+          fetchBills();
+          alert('Bill updated successfully!');
+        }, 1000);
       } else {
+        setIsUploading(false);
+        setUploadProgress(0);
+        setUploadMessage('');
         alert('Failed to update bill');
       }
     } catch (error) {
       console.error('Error updating bill:', error);
+      setIsUploading(false);
+      setUploadProgress(0);
+      setUploadMessage('');
       alert('Error updating bill');
     }
   };
@@ -182,9 +213,17 @@ const BillsManagement: React.FC = () => {
   const handleCreateBill = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    setIsUploading(true);
+    setUploadProgress(0);
+    setUploadMessage('Preparing bill data...');
+    
     try {
       const token = localStorage.getItem('access_token');
       const formDataToSend = new FormData();
+      
+      // Simulate progress steps
+      setUploadProgress(20);
+      setUploadMessage('Processing form data...');
       
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== '') {
@@ -192,9 +231,15 @@ const BillsManagement: React.FC = () => {
         }
       });
       
+      setUploadProgress(40);
+      
       if (selectedDocument) {
+        setUploadMessage('Uploading document...');
         formDataToSend.append('document', selectedDocument);
       }
+      
+      setUploadProgress(60);
+      setUploadMessage('Creating bill...');
 
       const response = await fetch('http://127.0.0.1:8000/api/admin/bills/', {
         method: 'POST',
@@ -204,24 +249,42 @@ const BillsManagement: React.FC = () => {
         body: formDataToSend,
       });
 
+      setUploadProgress(80);
+      setUploadMessage('Processing response...');
+
       if (response.ok) {
-        setShowCreateForm(false);
-        setFormData({
-          title: '',
-          description: '',
-          sponsor: '',
-          status: 'draft',
-          participation_deadline: '',
-        });
-        setSelectedDocument(null);
-        fetchBills();
-        alert('Bill created successfully!');
+        setUploadProgress(100);
+        setUploadMessage('Bill created successfully!');
+        
+        // Small delay to show completion
+        setTimeout(() => {
+          setIsUploading(false);
+          setShowCreateForm(false);
+          setFormData({
+            title: '',
+            description: '',
+            sponsor: '',
+            status: 'draft',
+            participation_deadline: '',
+          });
+          setSelectedDocument(null);
+          setUploadProgress(0);
+          setUploadMessage('');
+          fetchBills();
+          alert('Bill created successfully!');
+        }, 1000);
       } else {
         const errorText = await response.text();
+        setIsUploading(false);
+        setUploadProgress(0);
+        setUploadMessage('');
         alert(`Failed to create bill: ${errorText}`);
       }
     } catch (error) {
       console.error('Error creating bill:', error);
+      setIsUploading(false);
+      setUploadProgress(0);
+      setUploadMessage('');
       alert('Error creating bill');
     }
   };
@@ -596,6 +659,14 @@ const BillsManagement: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+      
+      {/* Loading Bar */}
+      {isUploading && (
+        <LoadingBar 
+          progress={uploadProgress} 
+          message={uploadMessage}
+        />
       )}
     </div>
   );

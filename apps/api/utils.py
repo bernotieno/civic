@@ -1,8 +1,8 @@
 # apps/api/utils.py
 try:
-    import PyPDF2
+    from PyPDF2 import PdfReader
 except ImportError:
-    PyPDF2 = None
+    PdfReader = None
 from django.core.files.uploadedfile import UploadedFile
 from dotenv import load_dotenv
 import os
@@ -21,7 +21,9 @@ def summarize_bill_document(uploaded_file: UploadedFile) -> str:
             if api_key:
                 print(f"🤖 Attempting OpenAI summarization with direct API call...")
                 
-                reader = PyPDF2.PdfReader(uploaded_file)
+                if PdfReader is None:
+                    raise ImportError("PyPDF2 not available")
+                reader = PdfReader(uploaded_file)
                 text = ''
                 for page in reader.pages:
                     text += page.extract_text() or ''
@@ -60,7 +62,9 @@ def summarize_bill_document(uploaded_file: UploadedFile) -> str:
             pass
             
         # Fallback: Extract and format text
-        reader = PyPDF2.PdfReader(uploaded_file)
+        if PdfReader is None:
+            return "PDF processing library not available. Please install PyPDF2."
+        reader = PdfReader(uploaded_file)
         text = ''
         page_count = len(reader.pages)
         
