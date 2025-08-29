@@ -1,5 +1,8 @@
 # apps/api/utils.py
-import PyPDF2
+try:
+    import PyPDF2
+except ImportError:
+    PyPDF2 = None
 from django.core.files.uploadedfile import UploadedFile
 from dotenv import load_dotenv
 import os

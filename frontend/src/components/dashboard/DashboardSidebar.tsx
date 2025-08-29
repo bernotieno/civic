@@ -61,13 +61,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       name: 'Parliamentary Bills',
       view: 'bills-projects' as DashboardView,
       icon: FileText,
-      current: currentView === 'bills-projects'
-    },
-    {
-      name: 'Bill Details',
-      href: '/bills/details',
-      icon: FileText,
-      current: location.pathname.includes('/bills/') && location.pathname.includes('/details')
+      current: currentView === 'bills-projects' || currentView === 'bill-details'
     }
   ];
 

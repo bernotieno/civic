@@ -5,21 +5,12 @@ import Footer from './Footer';
 
 interface Bill {
   id: string;
-  bill_number: string;
   title: string;
   description: string;
-  summary: string;
+  summary?: string;
   sponsor: string;
-  committee?: string;
-  status: string;
-  status_display: string;
-  introduced_date?: string;
-  first_reading_date?: string;
-  committee_deadline?: string;
-  public_participation_open: boolean;
   participation_deadline?: string;
   document?: string;
-  image?: string;
   created_at: string;
 }
 
@@ -92,7 +83,7 @@ const BillDetails: React.FC = () => {
             category: feedbackData.category,
             priority: feedbackData.priority,
             county_id: 1,
-            related_bill_id: bill?.bill_number
+            related_bill_id: bill?.id
           })
         });
       } else {
@@ -110,7 +101,7 @@ const BillDetails: React.FC = () => {
             category: feedbackData.category,
             priority: feedbackData.priority,
             county_id: 1,
-            related_bill_id: bill?.bill_number
+            related_bill_id: bill?.id
           })
         });
       }
@@ -134,19 +125,7 @@ const BillDetails: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'draft': return 'bg-gray-100 text-gray-800';
-      case 'first_reading': return 'bg-blue-100 text-blue-800';
-      case 'committee_stage': return 'bg-yellow-100 text-yellow-800';
-      case 'second_reading': return 'bg-orange-100 text-orange-800';
-      case 'third_reading': return 'bg-purple-100 text-purple-800';
-      case 'presidential_assent': return 'bg-indigo-100 text-indigo-800';
-      case 'enacted': return 'bg-green-100 text-green-800';
-      case 'withdrawn': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+
 
   if (loading) {
     return (
@@ -197,26 +176,18 @@ const BillDetails: React.FC = () => {
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">{bill.title}</h1>
-                  <p className="text-lg text-gray-600">{bill.bill_number}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(bill.status)}`}>
-                  {bill.status_display}
-                </span>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-6 mb-8">
+              <div className="grid md:grid-cols-2 gap-6 mb-8">
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h3 className="font-semibold text-gray-900 mb-1">Sponsor</h3>
                   <p className="text-lg text-gray-700">{bill.sponsor}</p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-gray-900 mb-1">Committee</h3>
-                  <p className="text-lg text-gray-700">{bill.committee || 'Not assigned'}</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-gray-900 mb-1">Introduced</h3>
+                  <h3 className="font-semibold text-gray-900 mb-1">Participation Deadline</h3>
                   <p className="text-lg text-gray-700">
-                    {bill.introduced_date ? new Date(bill.introduced_date).toLocaleDateString() : 'Not specified'}
+                    {bill.participation_deadline ? new Date(bill.participation_deadline).toLocaleDateString() : 'No deadline set'}
                   </p>
                 </div>
               </div>
@@ -232,10 +203,14 @@ const BillDetails: React.FC = () => {
               )}
 
               <div className="mb-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Bill Summary</h2>
-                <p className="text-gray-700 leading-relaxed mb-4">{bill.summary}</p>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Full Description</h3>
-                <p className="text-gray-700 leading-relaxed">{bill.description}</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Bill Description</h2>
+                <p className="text-gray-700 leading-relaxed mb-4">{bill.description}</p>
+                {bill.summary && (
+                  <>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">AI-Generated Summary</h3>
+                    <p className="text-gray-700 leading-relaxed">{bill.summary}</p>
+                  </>
+                )}
               </div>
 
               {bill.document && (

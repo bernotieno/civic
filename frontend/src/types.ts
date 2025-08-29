@@ -116,28 +116,30 @@ export interface NavItem {
 }
 
 // Dashboard View Types
-export type DashboardView = 'home' | 'submit-feedback' | 'my-feedback' | 'track-feedback' | 'bills-projects' | 'community-impact' | 'profile' | 'feedback-success' | 'feedback-error';
+export type DashboardView = 'home' | 'submit-feedback' | 'my-feedback' | 'track-feedback' | 'bills-projects' | 'bill-details' | 'community-impact' | 'profile' | 'feedback-success' | 'feedback-error';
 
 // Bill Types
 export interface Bill {
   id: string;
-  bill_number: string;
   title: string;
   description: string;
-  summary: string;
-  content?: string;
+  summary?: string;
   sponsor: string;
-  committee?: string;
-  status: 'draft' | 'first_reading' | 'committee_stage' | 'second_reading' | 'third_reading' | 'presidential_assent' | 'enacted' | 'withdrawn';
-  introduced_date?: string;
-  first_reading_date?: string;
-  committee_deadline?: string;
-  public_participation_open: boolean;
   participation_deadline?: string;
   document?: string;
-  image?: string;
   created_at: string;
-  updated_at: string;
+}
+
+// Project Types
+export interface Project {
+  id: string;
+  title: string;
+  description: string;
+  summary?: string;
+  sponsor: string;
+  participation_deadline?: string;
+  document?: string;
+  created_at: string;
 }
 
 // API Response Types

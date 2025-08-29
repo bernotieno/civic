@@ -219,17 +219,10 @@ def admin_projects_list(request):
             'id': str(p.id),
             'title': p.title,
             'description': p.description,
-            'project_type': p.project_type,
-            'status': p.status,
-            'budget': str(p.budget) if p.budget else None,
-            'implementing_ministry': p.implementing_ministry,
-            'target_beneficiaries': p.target_beneficiaries,
-            'start_date': p.start_date,
-            'end_date': p.end_date,
-            'public_participation_open': p.public_participation_open,
+            'sponsor': p.sponsor,
             'participation_deadline': p.participation_deadline,
-            'image': p.image.url if p.image else None,
             'document': p.document.url if p.document else None,
+            'summary': p.summary,
             'created_by': p.created_by.name if p.created_by else 'System',
             'created_at': p.created_at
         } for p in projects]
@@ -246,15 +239,8 @@ def admin_projects_list(request):
             project = Project.objects.create(
                 title=data.get('title'),
                 description=data.get('description'),
-                project_type=data.get('project_type'),
-                budget=data.get('budget'),
-                implementing_ministry=data.get('implementing_ministry'),
-                target_beneficiaries=data.get('target_beneficiaries'),
-                start_date=data.get('start_date'),
-                end_date=data.get('end_date'),
-                public_participation_open=data.get('public_participation_open', False),
+                sponsor=data.get('sponsor'),
                 participation_deadline=data.get('participation_deadline'),
-                image=request.FILES.get('image'),
                 document=request.FILES.get('document'),
                 created_by=user
             )
@@ -313,17 +299,8 @@ def admin_project_detail(request, project_id):
             
             project.title = data.get('title', project.title)
             project.description = data.get('description', project.description)
-            project.project_type = data.get('project_type', project.project_type)
-            project.budget = data.get('budget', project.budget)
-            project.implementing_ministry = data.get('implementing_ministry', project.implementing_ministry)
-            project.target_beneficiaries = data.get('target_beneficiaries', project.target_beneficiaries)
-            project.start_date = data.get('start_date', project.start_date)
-            project.end_date = data.get('end_date', project.end_date)
-            project.public_participation_open = data.get('public_participation_open', project.public_participation_open)
+            project.sponsor = data.get('sponsor', project.sponsor)
             project.participation_deadline = data.get('participation_deadline', project.participation_deadline)
-            
-            if 'image' in request.FILES:
-                project.image = request.FILES['image']
             
             if 'document' in request.FILES:
                 project.document = request.FILES['document']
@@ -359,18 +336,10 @@ def public_projects_list(request):
         'id': str(p.id),
         'title': p.title,
         'description': p.description,
-        'project_type': p.project_type,
-        'status': p.status,
-        'budget': str(p.budget) if p.budget else None,
-        'implementing_ministry': p.implementing_ministry,
-        'target_beneficiaries': p.target_beneficiaries,
-        'start_date': p.start_date,
-        'end_date': p.end_date,
-        'public_participation_open': p.public_participation_open,
+        'sponsor': p.sponsor,
         'participation_deadline': p.participation_deadline,
-        'image': p.image.url if p.image else None,
         'document': p.document.url if p.document else None,
-        'created_by': p.created_by.name if p.created_by else 'System',
+        'summary': p.summary,
         'created_at': p.created_at
     } for p in projects]
     
@@ -394,21 +363,12 @@ def admin_bills_list(request):
         
         bills_data = [{
             'id': str(b.id),
-            'bill_number': b.bill_number,
             'title': b.title,
             'description': b.description,
-            'summary': b.summary,
             'sponsor': b.sponsor,
-            'committee': b.committee,
-            'status': b.status,
-            'status_display': b.get_status_display(),
-            'introduced_date': b.introduced_date,
-            'first_reading_date': b.first_reading_date,
-            'committee_deadline': b.committee_deadline,
-            'public_participation_open': b.public_participation_open,
             'participation_deadline': b.participation_deadline,
             'document': b.document.url if b.document else None,
-            'image': b.image.url if b.image else None,
+            'summary': b.summary,
             'created_by': b.created_by.name if b.created_by else 'System',
             'created_at': b.created_at
         } for b in bills]
@@ -430,19 +390,12 @@ def admin_bills_list(request):
         
         try:
             bill = Bill.objects.create(
-                bill_number=data.get('bill_number'),
                 title=data.get('title'),
                 description=data.get('description'),
-                summary=summary,
                 sponsor=data.get('sponsor'),
-                committee=data.get('committee', ''),
-                introduced_date=data.get('introduced_date'),
-                first_reading_date=data.get('first_reading_date'),
-                committee_deadline=data.get('committee_deadline'),
-                public_participation_open=data.get('public_participation_open', True),
                 participation_deadline=data.get('participation_deadline'),
                 document=request.FILES.get('document'),
-                image=request.FILES.get('image'),
+                summary=summary or '',
                 created_by=user
             )
             
@@ -455,32 +408,7 @@ def admin_bills_list(request):
         except Exception as e:
             return Response({'error': str(e)}, status=400)
 
-@api_view(['PUT'])
-@permission_classes([IsAuthenticated])
-def update_bill_status(request, bill_id):
-    """Update parliamentary bill status"""
-    user = request.user
-    
-    if user.role != 'parliament_admin':
-        return Response({'error': 'Access denied'}, status=403)
-    
-    try:
-        bill = Bill.objects.get(id=bill_id, is_deleted=False)
-        
-        new_status = request.data.get('status')
-        if new_status not in dict(Bill._meta.get_field('status').choices):
-            return Response({'error': 'Invalid status'}, status=400)
-        
-        bill.status = new_status
-        bill.save()
-        
-        return Response({
-            'success': True,
-            'message': 'Bill status updated successfully'
-        })
-        
-    except Bill.DoesNotExist:
-        return Response({'error': 'Bill not found'}, status=404)
+
 
 @api_view(['PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
@@ -498,23 +426,13 @@ def admin_bill_detail(request, bill_id):
             # Update bill
             data = request.data
             
-            bill.bill_number = data.get('bill_number', bill.bill_number)
             bill.title = data.get('title', bill.title)
             bill.description = data.get('description', bill.description)
-            bill.summary = data.get('summary', bill.summary)
             bill.sponsor = data.get('sponsor', bill.sponsor)
-            bill.committee = data.get('committee', bill.committee)
-            bill.introduced_date = data.get('introduced_date', bill.introduced_date)
-            bill.first_reading_date = data.get('first_reading_date', bill.first_reading_date)
-            bill.committee_deadline = data.get('committee_deadline', bill.committee_deadline)
-            bill.public_participation_open = data.get('public_participation_open', bill.public_participation_open)
             bill.participation_deadline = data.get('participation_deadline', bill.participation_deadline)
             
             if 'document' in request.FILES:
                 bill.document = request.FILES['document']
-            
-            if 'image' in request.FILES:
-                bill.image = request.FILES['image']
             
             bill.save()
             
@@ -540,28 +458,19 @@ def admin_bill_detail(request, bill_id):
 def public_bills_list(request):
     """Get public bills list - no authentication required"""
     
-    # Get all active bills with public participation open
+    # Get all active bills
     bills = Bill.objects.filter(
-        is_deleted=False,
-        public_participation_open=True
+        is_deleted=False
     ).select_related('created_by')
     
     bills_data = [{
         'id': str(b.id),
-        'bill_number': b.bill_number,
         'title': b.title,
         'description': b.description,
-        'summary': b.summary,
         'sponsor': b.sponsor,
-        'committee': b.committee,
-        'status': b.status,
-        'status_display': b.get_status_display(),
-        'introduced_date': b.introduced_date,
-        'first_reading_date': b.first_reading_date,
-        'committee_deadline': b.committee_deadline,
         'participation_deadline': b.participation_deadline,
         'document': b.document.url if b.document else None,
-        'image': b.image.url if b.image else None,
+        'summary': b.summary,
         'created_at': b.created_at
     } for b in bills]
     

@@ -2,17 +2,12 @@ import React, { useState, useEffect } from 'react';
 
 interface Bill {
   id: string;
-  bill_number: string;
   title: string;
   description: string;
-  summary: string;
   sponsor: string;
-  committee?: string;
-  status: string;
-  introduced_date?: string;
-  public_participation_open: boolean;
   participation_deadline?: string;
   document?: string;
+  summary?: string;
   created_at: string;
 }
 
@@ -21,13 +16,9 @@ const BillsManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [formData, setFormData] = useState({
-    bill_number: '',
     title: '',
     description: '',
-    summary: '',
     sponsor: '',
-    committee: '',
-    public_participation_open: true,
     participation_deadline: '',
   });
   const [selectedDocument, setSelectedDocument] = useState<File | null>(null);
@@ -65,12 +56,8 @@ const BillsManagement: React.FC = () => {
       const formDataToSend = new FormData();
       
       Object.entries(formData).forEach(([key, value]) => {
-        if (value !== '' || !['participation_deadline'].includes(key)) {
-          if (key === 'public_participation_open') {
-            formDataToSend.append(key, value ? 'True' : 'False');
-          } else {
-            formDataToSend.append(key, value);
-          }
+        if (value !== '') {
+          formDataToSend.append(key, value);
         }
       });
       
@@ -89,13 +76,9 @@ const BillsManagement: React.FC = () => {
       if (response.ok) {
         setShowCreateForm(false);
         setFormData({
-          bill_number: '',
           title: '',
           description: '',
-          summary: '',
           sponsor: '',
-          committee: '',
-          public_participation_open: true,
           participation_deadline: '',
         });
         setSelectedDocument(null);
@@ -111,41 +94,9 @@ const BillsManagement: React.FC = () => {
     }
   };
 
-  const updateBillStatus = async (billId: string, newStatus: string) => {
-    try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch(`http://127.0.0.1:8000/api/admin/bills/${billId}/status/`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
 
-      if (response.ok) {
-        fetchBills();
-        alert('Bill status updated successfully!');
-      } else {
-        alert('Failed to update bill status');
-      }
-    } catch (error) {
-      console.error('Error updating bill status:', error);
-      alert('Error updating bill status');
-    }
-  };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'draft': return 'bg-gray-100 text-gray-800';
-      case 'first_reading': return 'bg-blue-100 text-blue-800';
-      case 'committee_stage': return 'bg-yellow-100 text-yellow-800';
-      case 'second_reading': return 'bg-orange-100 text-orange-800';
-      case 'third_reading': return 'bg-purple-100 text-purple-800';
-      case 'enacted': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+
 
   if (loading) {
     return (
@@ -179,7 +130,7 @@ const BillsManagement: React.FC = () => {
                   Sponsor
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                  Deadline
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -192,26 +143,14 @@ const BillsManagement: React.FC = () => {
                   <td className="px-6 py-4">
                     <div>
                       <div className="text-sm font-medium text-gray-900">{bill.title}</div>
-                      <div className="text-sm text-gray-500">Bill No: {bill.bill_number}</div>
-                      <div className="text-sm text-gray-500 truncate max-w-xs">{bill.summary}</div>
+                      <div className="text-sm text-gray-500 truncate max-w-xs">{bill.description}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {bill.sponsor}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <select
-                      value={bill.status}
-                      onChange={(e) => updateBillStatus(bill.id, e.target.value)}
-                      className={`text-xs font-semibold rounded-full px-2 py-1 border-0 ${getStatusColor(bill.status)}`}
-                    >
-                      <option value="draft">Draft</option>
-                      <option value="first_reading">First Reading</option>
-                      <option value="committee_stage">Committee Stage</option>
-                      <option value="second_reading">Second Reading</option>
-                      <option value="third_reading">Third Reading</option>
-                      <option value="enacted">Enacted</option>
-                    </select>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {bill.participation_deadline ? new Date(bill.participation_deadline).toLocaleDateString() : 'No deadline'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button className="text-blue-600 hover:text-blue-900 mr-4">
@@ -236,18 +175,6 @@ const BillsManagement: React.FC = () => {
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Bill Number</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.bill_number}
-                    onChange={(e) => setFormData({...formData, bill_number: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                    placeholder="e.g., HB-2024-001"
-                  />
-                </div>
-
-                <div>
                   <label className="block text-sm font-medium text-gray-700">Title</label>
                   <input
                     type="text"
@@ -255,17 +182,6 @@ const BillsManagement: React.FC = () => {
                     value={formData.title}
                     onChange={(e) => setFormData({...formData, title: e.target.value})}
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Summary</label>
-                  <textarea
-                    required
-                    value={formData.summary}
-                    onChange={(e) => setFormData({...formData, summary: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                    rows={2}
                   />
                 </div>
 
@@ -292,16 +208,6 @@ const BillsManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Committee</label>
-                  <input
-                    type="text"
-                    value={formData.committee}
-                    onChange={(e) => setFormData({...formData, committee: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                  />
-                </div>
-
-                <div>
                   <label className="block text-sm font-medium text-gray-700">Bill Document</label>
                   <input
                     type="file"
@@ -312,28 +218,14 @@ const BillsManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.public_participation_open}
-                      onChange={(e) => setFormData({...formData, public_participation_open: e.target.checked})}
-                      className="mr-2"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Open for Public Participation</span>
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">Participation Deadline</label>
+                  <input
+                    type="date"
+                    value={formData.participation_deadline}
+                    onChange={(e) => setFormData({...formData, participation_deadline: e.target.value})}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
                 </div>
-
-                {formData.public_participation_open && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Participation Deadline</label>
-                    <input
-                      type="date"
-                      value={formData.participation_deadline}
-                      onChange={(e) => setFormData({...formData, participation_deadline: e.target.value})}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                    />
-                  </div>
-                )}
               </div>
 
               <div className="flex justify-end space-x-3 mt-6">

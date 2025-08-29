@@ -5,14 +5,14 @@ import { Bill } from '../../types';
 
 interface BillsProps {
   onFeedbackClick?: (billId?: string) => void;
+  onBillExplore?: (billId: string) => void;
 }
 
-const Bills: React.FC<BillsProps> = ({ onFeedbackClick }) => {
+const Bills: React.FC<BillsProps> = ({ onFeedbackClick, onBillExplore }) => {
   const navigate = useNavigate();
   const [bills, setBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null);
   const [feedbackData, setFeedbackData] = useState({
     content: '',
@@ -23,6 +23,7 @@ const Bills: React.FC<BillsProps> = ({ onFeedbackClick }) => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+
 
   const fetchUserProfile = async () => {
     try {
@@ -63,19 +64,7 @@ const Bills: React.FC<BillsProps> = ({ onFeedbackClick }) => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    const colors = {
-      draft: 'bg-gray-100 text-gray-800',
-      first_reading: 'bg-blue-100 text-blue-800',
-      committee_stage: 'bg-yellow-100 text-yellow-800',
-      second_reading: 'bg-orange-100 text-orange-800',
-      third_reading: 'bg-purple-100 text-purple-800',
-      presidential_assent: 'bg-indigo-100 text-indigo-800',
-      enacted: 'bg-green-100 text-green-800',
-      withdrawn: 'bg-red-100 text-red-800'
-    };
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
-  };
+
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-KE', {
@@ -87,9 +76,8 @@ const Bills: React.FC<BillsProps> = ({ onFeedbackClick }) => {
 
   const filteredBills = bills.filter(bill => {
     const matchesSearch = bill.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         bill.bill_number.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || bill.status === statusFilter;
-    return matchesSearch && matchesStatus;
+                         bill.description.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
 
   const toggleFeedbackForm = (id: string) => {
@@ -234,22 +222,7 @@ const Bills: React.FC<BillsProps> = ({ onFeedbackClick }) => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="pl-10 pr-8 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Status</option>
-              <option value="draft">Draft</option>
-              <option value="first_reading">First Reading</option>
-              <option value="committee_stage">Committee Stage</option>
-              <option value="second_reading">Second Reading</option>
-              <option value="third_reading">Third Reading</option>
-              <option value="enacted">Enacted</option>
-            </select>
-          </div>
+
         </div>
       </div>
 
@@ -263,31 +236,16 @@ const Bills: React.FC<BillsProps> = ({ onFeedbackClick }) => {
           ) : (
             filteredBills.map((bill) => (
               <div key={bill.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{bill.title}</h3>
-                    <p className="text-sm text-gray-600 mb-2">Bill Number: {bill.bill_number}</p>
-                    <p className="text-gray-700 mb-3">{bill.summary}</p>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(bill.status)}`}>
-                    {bill.status.replace('_', ' ').toUpperCase()}
-                  </span>
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{bill.title}</h3>
+                  <p className="text-gray-700 mb-3">{bill.description}</p>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <p className="text-sm text-gray-600">Sponsor: <span className="font-medium">{bill.sponsor}</span></p>
-                    {bill.committee && (
-                      <p className="text-sm text-gray-600">Committee: <span className="font-medium">{bill.committee}</span></p>
-                    )}
                   </div>
                   <div>
-                    {bill.introduced_date && (
-                      <p className="text-sm text-gray-600">
-                        <Calendar className="inline-block w-4 h-4 mr-1" />
-                        Introduced: {formatDate(bill.introduced_date)}
-                      </p>
-                    )}
                     {bill.participation_deadline && (
                       <p className="text-sm text-gray-600">
                         <Calendar className="inline-block w-4 h-4 mr-1" />
@@ -299,11 +257,9 @@ const Bills: React.FC<BillsProps> = ({ onFeedbackClick }) => {
 
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-4">
-                    {bill.public_participation_open && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Open for Public Participation
-                      </span>
-                    )}
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Open for Public Participation
+                    </span>
                   </div>
                   <div className="flex space-x-2">
                     <button
@@ -325,7 +281,7 @@ const Bills: React.FC<BillsProps> = ({ onFeedbackClick }) => {
                       View Details
                     </button>
                     <button 
-                      onClick={() => navigate(`/bills/${bill.id}/details`)}
+                      onClick={() => onBillExplore?.(bill.id)}
                       className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
                     >
                       Explore Bill
@@ -431,11 +387,6 @@ const Bills: React.FC<BillsProps> = ({ onFeedbackClick }) => {
             <div className="space-y-4">
               <div>
                 <h4 className="font-semibold text-gray-900">{selectedBill.title}</h4>
-                <p className="text-sm text-gray-600">Bill Number: {selectedBill.bill_number}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Summary</label>
-                <p className="text-sm text-gray-900">{selectedBill.summary}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Description</label>
@@ -447,20 +398,8 @@ const Bills: React.FC<BillsProps> = ({ onFeedbackClick }) => {
                   <p className="text-sm text-gray-900">{selectedBill.sponsor}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Committee</label>
-                  <p className="text-sm text-gray-900">{selectedBill.committee || 'Not assigned'}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Status</label>
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedBill.status)}`}>
-                    {selectedBill.status.replace('_', ' ').toUpperCase()}
-                  </span>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Introduced Date</label>
-                  <p className="text-sm text-gray-900">{selectedBill.introduced_date ? formatDate(selectedBill.introduced_date) : 'Not specified'}</p>
+                  <label className="block text-sm font-medium text-gray-700">Participation Deadline</label>
+                  <p className="text-sm text-gray-900">{selectedBill.participation_deadline ? formatDate(selectedBill.participation_deadline) : 'No deadline'}</p>
                 </div>
               </div>
             </div>

@@ -15,6 +15,7 @@ import DashboardPage from './pages/DashboardPage';
 import AnonymousFeedbackPage from './pages/AnonymousFeedbackPage';
 import BillsList from './components/BillsList';
 import BillDetails from './components/BillDetails';
+import BillDetailsPage from './components/BillDetailsPage';
 import AboutPage from './pages/AboutPage';
 // import AdminDashboard from './components/dashboard/AdminDashboard';
 import AdminDashboardLayout from './components/dashboard/AdminDashboardLayout';
@@ -58,6 +59,7 @@ function App() {
 
             <Route path="/bills" element={<BillsList />} />
             <Route path="/bill/:id" element={<BillDetails />} />
+            <Route path="/bill/:id/details" element={<BillDetailsPage />} />
             <Route path="/about" element={<AboutPage />} />
             {/* Role-based dashboard routes */}
             <Route path="/citizen-dashboard" element={<DashboardPage />} />

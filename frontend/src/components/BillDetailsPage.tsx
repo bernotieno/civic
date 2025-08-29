@@ -21,20 +21,21 @@ const BillDetailsPage: React.FC = () => {
   const fetchBillData = async (billId: string) => {
     try {
       setLoading(true);
-      const [billResponse, summaryResponse, chatResponse] = await Promise.all([
-        fetch(`/api/bills/${billId}`),
-        fetch(`/api/bills/${billId}/summary`),
-        fetch(`/api/bills/${billId}/chat-history`)
-      ]);
-
+      const billResponse = await fetch('http://127.0.0.1:8000/api/public/bills/');
+      
       if (billResponse.ok) {
-        setBill(await billResponse.json());
-      }
-      if (summaryResponse.ok) {
-        setBillSummary(await summaryResponse.json());
-      }
-      if (chatResponse.ok) {
-        setChatHistory(await chatResponse.json());
+        const data = await billResponse.json();
+        const foundBill = data.data.find((b: Bill) => b.id === billId);
+        if (foundBill) {
+          setBill(foundBill);
+          if (foundBill.summary) {
+            setBillSummary({
+              id: foundBill.id,
+              summary: foundBill.summary,
+              key_points: []
+            });
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching bill data:', error);
@@ -69,9 +70,10 @@ const BillDetailsPage: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{bill.title}</h1>
           <div className="flex items-center gap-4 text-sm text-gray-600">
-            <span>Bill Number: {bill.bill_number}</span>
-            <span>Status: {bill.status}</span>
             <span>Sponsor: {bill.sponsor}</span>
+            {bill.participation_deadline && (
+              <span>Participation Deadline: {new Date(bill.participation_deadline).toLocaleDateString()}</span>
+            )}
           </div>
         </div>
 
@@ -82,10 +84,23 @@ const BillDetailsPage: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-6">
           {activeTab === 'original' && (
             <div className="prose max-w-none">
-              <h3 className="text-xl font-semibold mb-4">Original Bill Text</h3>
-              <div className="whitespace-pre-wrap text-gray-700">
-                {bill.content || bill.description}
+              <h3 className="text-xl font-semibold mb-4">Bill Description</h3>
+              <div className="whitespace-pre-wrap text-gray-700 mb-6">
+                {bill.description}
               </div>
+              {bill.document && (
+                <div className="mt-6">
+                  <h4 className="text-lg font-semibold mb-2">Bill Document</h4>
+                  <a 
+                    href={`http://127.0.0.1:8000${bill.document}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    📄 Download Bill Document
+                  </a>
+                </div>
+              )}
             </div>
           )}
 

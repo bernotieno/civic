@@ -43,72 +43,14 @@ PROJECT_TYPES = [
 class Bill(SoftDeleteModel):
     """Parliamentary Bills for public engagement"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    bill_number = models.CharField(max_length=50, unique=True, help_text="Official bill number")
     title = models.CharField(max_length=300)
     description = models.TextField()
-    full_text = models.TextField(blank=True, help_text="Full bill text")
-    summary = models.TextField(help_text="Executive summary for citizens")
-    
-    # Bill metadata
     sponsor = models.CharField(max_length=200, help_text="Bill sponsor (MP/Ministry)")
-    committee = models.CharField(max_length=200, blank=True, help_text="Assigned committee")
-    status = models.CharField(max_length=20, choices=BILL_STATUS_CHOICES, default='draft')
-    
-    # Dates
-    introduced_date = models.DateField(null=True, blank=True)
-    first_reading_date = models.DateField(null=True, blank=True)
-    committee_deadline = models.DateField(null=True, blank=True)
-    
-    # Files
     document = models.FileField(upload_to='bills/documents/', null=True, blank=True)
-    image = models.ImageField(upload_to='bills/', null=True, blank=True)
-    
-    # Engagement
-    public_participation_open = models.BooleanField(default=True)
     participation_deadline = models.DateField(null=True, blank=True)
     
-    # Admin
-    created_by = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE)
-    
-    objects = ActiveManager()
-    all_objects = models.Manager()
-    
-    class Meta:
-        ordering = ['-introduced_date', '-created_at']
-        indexes = [
-            models.Index(fields=['status', 'public_participation_open']),
-            models.Index(fields=['bill_number']),
-            models.Index(fields=['introduced_date']),
-        ]
-    
-    def __str__(self):
-        return f"{self.bill_number}: {self.title}"
-
-
-class Project(SoftDeleteModel):
-    """National Projects for public engagement"""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    title = models.CharField(max_length=200)
-    description = models.TextField()
-    project_type = models.CharField(max_length=20, choices=PROJECT_TYPES)
-    status = models.CharField(max_length=20, choices=PROJECT_STATUS_CHOICES, default='proposed')
-    
-    # Project details
-    budget = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
-    implementing_ministry = models.CharField(max_length=200, blank=True)
-    target_beneficiaries = models.TextField(blank=True)
-    
-    # Timeline
-    start_date = models.DateField(null=True, blank=True)
-    end_date = models.DateField(null=True, blank=True)
-    
-    # Files
-    image = models.ImageField(upload_to='projects/', null=True, blank=True)
-    document = models.FileField(upload_to='projects/documents/', null=True, blank=True)
-    
-    # Engagement
-    public_participation_open = models.BooleanField(default=True)
-    participation_deadline = models.DateField(null=True, blank=True)
+    # Auto-generated fields
+    summary = models.TextField(blank=True, help_text="Auto-generated summary from document")
     
     # Admin
     created_by = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE)
@@ -119,13 +61,39 @@ class Project(SoftDeleteModel):
     class Meta:
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['status', 'public_participation_open']),
-            models.Index(fields=['project_type']),
-            models.Index(fields=['start_date']),
+            models.Index(fields=['participation_deadline']),
         ]
     
     def __str__(self):
-        return f"{self.title} ({self.get_status_display()})"
+        return self.title
+
+
+class Project(SoftDeleteModel):
+    """National Projects for public engagement"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    sponsor = models.CharField(max_length=200, default="Ministry of Public Works", help_text="Project sponsor (Ministry/Department)")
+    document = models.FileField(upload_to='projects/documents/', null=True, blank=True)
+    participation_deadline = models.DateField(null=True, blank=True)
+    
+    # Auto-generated fields
+    summary = models.TextField(blank=True, help_text="Auto-generated summary from document")
+    
+    # Admin
+    created_by = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE)
+    
+    objects = ActiveManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['participation_deadline']),
+        ]
+    
+    def __str__(self):
+        return self.title
 
 class AdminFeedbackResponse(SoftDeleteModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

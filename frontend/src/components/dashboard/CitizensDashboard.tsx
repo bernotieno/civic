@@ -24,6 +24,7 @@ import FeedbackError from '../feedback/FeedbackError';
 import FeedbackTracker from '../feedback/FeedbackTracker';
 import FeedbackHistory from '../feedback/FeedbackHistory';
 import Bills from './Bills';
+import BillDetailsView from './BillDetailsView';
 import UserProfile from './UserProfile';
 
 
@@ -45,6 +46,7 @@ const CitizensDashboard: React.FC = () => {
 
   // Dashboard view state
   const [currentView, setCurrentView] = useState<DashboardView>('home');
+  const [selectedBillId, setSelectedBillId] = useState<string | null>(null);
   const [submissionData, setSubmissionData] = useState<SubmissionData | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [errorType, setErrorType] = useState<'validation' | 'rate_limit' | 'auth' | 'network' | 'server' | 'permission'>('server');
@@ -68,8 +70,12 @@ const CitizensDashboard: React.FC = () => {
   // Handle URL parameters for view navigation
   useEffect(() => {
     const viewParam = searchParams.get('view');
-    if (viewParam && ['home', 'submit-feedback', 'my-feedback', 'track-feedback', 'bills-projects', 'community-impact'].includes(viewParam)) {
+    const billIdParam = searchParams.get('billId');
+    if (viewParam && ['home', 'submit-feedback', 'my-feedback', 'track-feedback', 'bills-projects', 'bill-details', 'community-impact'].includes(viewParam)) {
       setCurrentView(viewParam as DashboardView);
+      if (viewParam === 'bill-details' && billIdParam) {
+        setSelectedBillId(billIdParam);
+      }
     }
   }, [searchParams]);
 
@@ -108,9 +114,15 @@ const CitizensDashboard: React.FC = () => {
     setCurrentView('feedback-error');
   };
 
-  const handleViewChange = (view: DashboardView) => {
+  const handleViewChange = (view: DashboardView, billId?: string) => {
     setCurrentView(view);
-    setSearchParams({ view });
+    if (view === 'bill-details' && billId) {
+      setSelectedBillId(billId);
+      setSearchParams({ view, billId });
+    } else {
+      setSearchParams({ view });
+      setSelectedBillId(null);
+    }
     // Clear any previous error/success state when changing views
     if (view !== 'feedback-success') setSubmissionData(null);
     if (view !== 'feedback-error') setErrorMessage('');
@@ -121,6 +133,7 @@ const CitizensDashboard: React.FC = () => {
     setSearchParams({});
     setSubmissionData(null);
     setErrorMessage('');
+    setSelectedBillId(null);
   };
 
   const fetchDashboardData = async () => {
@@ -303,11 +316,23 @@ const CitizensDashboard: React.FC = () => {
             )}
 
             {currentView === 'bills-projects' && (
-              <Bills onFeedbackClick={(billId) => {
-                // Navigate to feedback form with pre-selected bill
-                handleViewChange('submit-feedback');
-                // TODO: Pass billId to feedback form
-              }} />
+              <Bills 
+                onFeedbackClick={(billId) => {
+                  // Navigate to feedback form with pre-selected bill
+                  handleViewChange('submit-feedback');
+                  // TODO: Pass billId to feedback form
+                }}
+                onBillExplore={(billId) => {
+                  handleViewChange('bill-details', billId);
+                }}
+              />
+            )}
+
+            {currentView === 'bill-details' && selectedBillId && (
+              <BillDetailsView 
+                billId={selectedBillId}
+                onBack={() => handleViewChange('bills-projects')}
+              />
             )}
 
             {currentView === 'community-impact' && (
