@@ -14,6 +14,7 @@ import {
   ActivityIndicator
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -203,12 +204,16 @@ export default function LoginScreen() {
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
-                <TouchableOpacity
+               <TouchableOpacity
                   style={styles.eyeButton}
                   onPress={() => setShowPassword(!showPassword)}
                 >
-                  <Text style={styles.eyeText}>{showPassword ? '🙈' : '👁️'}</Text>
-                </TouchableOpacity>
+                  <Ionicons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={24}
+                    color="gray"
+                  />
+              </TouchableOpacity>
               </View>
               {errors.password && (
                 <Text style={styles.errorText}>{errors.password}</Text>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { 
   View, 
   Text, 
@@ -11,12 +11,13 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
-  Alert
+  Alert,
+  Keyboard
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 type Message = {
   id: string;
@@ -51,6 +52,7 @@ export default function BillDetailsScreen() {
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Sample bill data - in real app, this would come from an API
   const getBillData = (billId: string | string[]): BillData => {
@@ -221,6 +223,32 @@ Core elements:
 
   const billData = getBillData(id);
 
+  // Enhanced keyboard handling
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+        // Auto scroll to bottom when keyboard shows
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      }
+    );
+    
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        setKeyboardHeight(0);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
+    };
+  }, []);
+
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
 
@@ -235,6 +263,11 @@ Core elements:
     setInputText('');
     setIsTyping(true);
 
+    // Auto-scroll to bottom immediately after adding user message
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 50);
+
     // Simulate AI response
     setTimeout(() => {
       const aiResponse: Message = {
@@ -247,7 +280,7 @@ Core elements:
       setMessages(prev => [...prev, aiResponse]);
       setIsTyping(false);
       
-      // Auto-scroll to bottom
+      // Auto-scroll to bottom after AI response
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 100);
@@ -277,61 +310,82 @@ Core elements:
   };
 
   const renderChat = () => (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-       keyboardVerticalOffset={Platform.OS === "ios" ? 120 : 250} // adjust if header/nav bar present
-      style={styles.chatContainer}
-    >
-      <ScrollView 
-        ref={scrollViewRef}
-        style={styles.messagesContainer}
-        contentContainerStyle={{...styles.messagesContent}}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"   // 👈 add thi
+    <View style={styles.chatContainer}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+        style={styles.keyboardAvoidingView}
       >
-        {messages.map((message) => (
-          <View 
-            key={message.id} 
-            style={[
-              styles.messageBubble, 
-              message.sender === 'user' ? styles.userMessage : styles.aiMessage
-            ]}
-          >
-            <Text style={[
-              styles.messageText,
-              message.sender === 'user' ? styles.userMessageText : styles.aiMessageText
-            ]}>
-              {message.text}
-            </Text>
-          </View>
-        ))}
-        
-        {isTyping && (
-          <View style={[styles.messageBubble, styles.aiMessage]}>
-            <Text style={styles.typingText}>CivicAI is typing...</Text>
-          </View>
-        )}
-      </ScrollView>
-      
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.chatInput}
-          placeholder="Ask CivicAI about this bill..."
-          placeholderTextColor="#718096"
-          value={inputText}
-          onChangeText={setInputText}
-          multiline
-          maxLength={500}
-        />
-        <TouchableOpacity
-          style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
-          onPress={handleSendMessage}
-          disabled={!inputText.trim() || isTyping}
+        <ScrollView 
+          ref={scrollViewRef}
+          style={styles.messagesContainer}
+          contentContainerStyle={styles.messagesContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          maintainVisibleContentPosition={{
+            minIndexForVisible: 0,
+            autoscrollToTopThreshold: 10,
+          }}
         >
-          <Text style={styles.sendButtonText}>Send</Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+          {messages.map((message) => (
+            <View 
+              key={message.id} 
+              style={[
+                styles.messageBubble, 
+                message.sender === 'user' ? styles.userMessage : styles.aiMessage
+              ]}
+            >
+              <Text style={[
+                styles.messageText,
+                message.sender === 'user' ? styles.userMessageText : styles.aiMessageText
+              ]}>
+                {message.text}
+              </Text>
+            </View>
+          ))}
+          
+          {isTyping && (
+            <View style={[styles.messageBubble, styles.aiMessage]}>
+              <Text style={styles.typingText}>CivicAI is typing...</Text>
+            </View>
+          )}
+          
+          {/* Add some bottom padding when keyboard is visible */}
+          <View style={{ height: Platform.OS === 'android' ? keyboardHeight * 0.1 : 0 }} />
+        </ScrollView>
+        
+        <View style={[
+          styles.inputContainer,
+          Platform.OS === 'android' && keyboardHeight > 0 && {
+            marginBottom: Math.max(0, keyboardHeight * 0.05)
+          }
+        ]}>
+          <TextInput
+            style={styles.chatInput}
+            placeholder="Ask CivicAI about this bill..."
+            placeholderTextColor="#718096"
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+            maxLength={500}
+            textAlignVertical="top"
+            onFocus={() => {
+              // Scroll to bottom when input is focused
+              setTimeout(() => {
+                scrollViewRef.current?.scrollToEnd({ animated: true });
+              }, 200);
+            }}
+          />
+          <TouchableOpacity
+            style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
+            onPress={handleSendMessage}
+            disabled={!inputText.trim() || isTyping}
+          >
+            <Text style={styles.sendButtonText}>Send</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </View>
   );
 
   const renderContent = () => {
@@ -374,7 +428,6 @@ Core elements:
   };
 
   return (
-    
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#135D66" />
       
@@ -423,15 +476,17 @@ Core elements:
         {renderContent()}
       </View>
 
-      {/* Submit Feedback Button */}
-      <View style={styles.bottomContainer}>
-        <TouchableOpacity
-          style={styles.feedbackButton}
-          onPress={() => router.push(`/FeedBackScreen?billId=${billData.id}`)}
-        >
-          <Text style={styles.feedbackButtonText}>Submit Feedback on This Bill</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Submit Feedback Button - Only show when not in chat tab or when keyboard is hidden */}
+      {(activeTab !== 'chat' || keyboardHeight === 0) && (
+        <View style={styles.bottomContainer}>
+          <TouchableOpacity
+            style={styles.feedbackButton}
+            onPress={() => router.push(`/FeedBackScreen?billId=${billData.id}`)}
+          >
+            <Text style={styles.feedbackButtonText}>Submit Feedback on This Bill</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -592,6 +647,9 @@ const styles = StyleSheet.create({
   chatContainer: {
     flex: 1,
   },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   messagesContainer: {
     flex: 1,
     backgroundColor: "#fff",
@@ -606,6 +664,7 @@ const styles = StyleSheet.create({
   messagesContent: {
     padding: 15,
     paddingBottom: 20,
+    flexGrow: 1,
   },
   messageBubble: {
     maxWidth: '80%',
@@ -650,6 +709,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 2,
+    minHeight: 60,
   },
   chatInput: {
     flex: 1,
@@ -659,6 +719,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 10,
     maxHeight: 100,
+    minHeight: 40,
     fontSize: 14,
     marginRight: 10,
   },
@@ -667,6 +728,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 20,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   sendButtonDisabled: {
     opacity: 0.5,

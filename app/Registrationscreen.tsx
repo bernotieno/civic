@@ -13,6 +13,7 @@ import {
   KeyboardAvoidingView,
   Platform
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 
 interface RegisterForm {
@@ -231,19 +232,25 @@ export default function Register() {
         />
         {isPassword && (
           <TouchableOpacity
-            style={styles.eyeButton}
-            onPress={() => {
-              if (field === 'password') {
-                setShowPassword(!showPassword);
-              } else {
-                setShowConfirmPassword(!showConfirmPassword);
-              }
-            }}
-          >
-            <Text style={styles.eyeText}>
-              {(field === 'password' ? showPassword : showConfirmPassword) ? '🙈' : '👁️'}
-            </Text>
-          </TouchableOpacity>
+              style={styles.eyeButton}
+              onPress={() => {
+                if (field === "password") {
+                  setShowPassword(!showPassword);
+                } else {
+                  setShowConfirmPassword(!showConfirmPassword);
+                }
+              }}
+            >
+              <Ionicons
+                name={
+                  (field === "password" ? showPassword : showConfirmPassword)
+                    ? "eye-off-outline"
+                    : "eye-outline"
+                }
+                size={24}
+                color="gray"
+              />
+        </TouchableOpacity>
         )}
       </View>
       {errors[field] && (
