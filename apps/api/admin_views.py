@@ -440,12 +440,11 @@ def admin_bill_detail(request, bill_id):
 def public_bills_list(request):
     """Get public bills list - no authentication required"""
     
-    # Get only completed and publicly accessible bills
+    # Get all bills including drafts
     bills = Bill.objects.filter(
         is_deleted=False,
-        processing_status='completed',  # Only fully processed bills
-        status__in=[  # Only publicly accessible bill statuses
-            'first_reading', 'committee_stage', 'second_reading', 
+        status__in=[  # Include draft bills
+            'draft', 'first_reading', 'committee_stage', 'second_reading', 
             'third_reading', 'presidential_assent', 'enacted'
         ]
     ).select_related('created_by')
@@ -492,7 +491,6 @@ def admin_bills_list(request):
         
         bills_data = []
         for b in bills:
-            # Basic bill data (Phase 1 - unchanged)
             bill_data = {
                 'id': str(b.id),
                 'title': b.title,
@@ -505,51 +503,21 @@ def admin_bills_list(request):
                 'summary': b.summary,
                 'created_by': b.created_by.name if b.created_by else 'System',
                 'created_at': b.created_at,
-                # Phase 1 enhanced fields
-                'summary_html': getattr(b, 'summary_html', ''),
-                'processing_status': getattr(b, 'processing_status', 'completed'),
-                'processing_progress': getattr(b, 'processing_progress', 100),
-                'processing_message': getattr(b, 'processing_message', ''),
-                'estimated_time_remaining': getattr(b, 'estimated_time_remaining', None),
-                'is_chunked': getattr(b, 'is_chunked', False),
-                'total_chunks': getattr(b, 'total_chunks', 0),
             }
-            
-            # NEW Phase 2: Add async processing info if available
-            if bill_data['processing_status'] in ['processing', 'pending']:
-                try:
-                    async_status = get_bill_processing_status(str(b.id))
-                    bill_data.update({
-                        'async_info': {
-                            'task_id': async_status.get('task_id'),
-                            'can_retry': async_status.get('can_retry', False),
-                            'session_info': async_status.get('session_info', {}),
-                            'task_info': async_status.get('task_info', {}),
-                            'supports_realtime': True  # WebSocket available
-                        }
-                    })
-                except Exception as e:
-                    logger.warning(f"Could not get async status for bill {b.id}: {str(e)}")
-                    bill_data['async_info'] = {'supports_realtime': False}
-            else:
-                bill_data['async_info'] = {'supports_realtime': False}
-            
             bills_data.append(bill_data)
         
         return Response({
             'success': True,
-            'data': bills_data,
-            'async_processing_available': True,  # Phase 2 feature
-            'websocket_support': True  # Real-time updates available
+            'data': bills_data
         })
     
     elif request.method == 'POST':
         data = request.data
         uploaded_doc = request.FILES.get('document')
         
-        # NEW Phase 2: Check processing preference (default to async)
-        use_async = data.get('async_processing', True)
-        force_sync = data.get('force_sync', False)  # Override for debugging
+        # NEW Phase 2: Check processing preference (default to sync for now)
+        use_async = data.get('async_processing', False)  # Changed to False to force sync
+        force_sync = data.get('force_sync', True)  # Force sync by default
         
         # Validate file if provided
         validation_result = {}
@@ -562,12 +530,24 @@ def admin_bills_list(request):
                     'validation_errors': validation_result['errors']
                 }, status=400)
         
+        # Validate required fields
+        title = data.get('title', '').strip()
+        description = data.get('description', '').strip()
+        sponsor = data.get('sponsor', '').strip()
+        
+        if not title:
+            return Response({'error': 'Title is required'}, status=400)
+        if not description:
+            return Response({'error': 'Description is required'}, status=400)
+        if not sponsor:
+            return Response({'error': 'Sponsor is required'}, status=400)
+        
         try:
             # Create bill instance first (same as Phase 1)
             bill = Bill.objects.create(
-                title=data.get('title'),
-                description=data.get('description'),
-                sponsor=data.get('sponsor'),
+                title=title,
+                description=description,
+                sponsor=sponsor,
                 status=data.get('status', 'draft'),
                 participation_deadline=data.get('participation_deadline'),
                 document=uploaded_doc,
@@ -634,67 +614,29 @@ def admin_bills_list(request):
                 try:
                     logger.info(f"Starting sync processing for bill {bill.id}")
                     
-                    # Check if enhanced processing should be used
-                    use_enhanced = data.get('use_enhanced_processing', True)
+                    # Use simple fast processing
+                    summary = summarize_bill_document(uploaded_doc)
                     
-                    if use_enhanced:
-                        # Use Phase 1 enhanced processing
-                        result = process_bill_with_enhanced_features(
-                            uploaded_doc, 
-                            bill, 
-                            use_enhanced=True
-                        )
-                        
-                        if result['success']:
-                            return Response({
-                                'success': True,
-                                'message': 'Bill created and processed successfully (sync)',
-                                'bill_id': str(bill.id),
-                                'processing_async': False,
-                                'used_enhanced': result['used_enhanced'],
-                                'summary_generated': True,
-                                'sections_count': result['sections_count'],
-                                'chunks_created': result['chunks_created'],
-                                'processing_time': result.get('processing_time'),
-                                'summary_available': bool(bill.summary),
-                                'html_available': bool(getattr(bill, 'summary_html', ''))
-                            })
-                        else:
-                            # Enhanced processing failed, but bill was created
-                            return Response({
-                                'success': True,
-                                'message': 'Bill created but processing failed',
-                                'bill_id': str(bill.id),
-                                'processing_async': False,
-                                'processing_error': result.get('error'),
-                                'can_retry': True
-                            })
-                    else:
-                        # Use original Phase 1 function
-                        summary = summarize_bill_document(uploaded_doc)
-                        
-                        # Convert to HTML using Phase 1 function
-                        from .bill_processor import markdown_to_html
-                        summary_html = markdown_to_html(summary)
-                        
-                        # Update bill
-                        bill.summary = summary
-                        if hasattr(bill, 'summary_html'):
-                            bill.summary_html = summary_html
-                        bill.processing_status = 'completed'
-                        bill.processing_progress = 100
-                        bill.processing_message = 'Sync processing complete'
-                        bill.save()
-                        
-                        return Response({
-                            'success': True,
-                            'message': 'Bill created and processed successfully (sync)',
-                            'bill_id': str(bill.id),
-                            'processing_async': False,
-                            'used_enhanced': False,
-                            'summary_generated': True,
-                            'processing_method': 'original'
-                        })
+                    # Convert to HTML using simple conversion
+                    from .bill_processor import markdown_to_html
+                    summary_html = markdown_to_html(summary)
+                    
+                    # Update bill
+                    bill.summary = summary
+                    bill.summary_html = summary_html
+                    bill.processing_status = 'completed'
+                    bill.processing_progress = 100
+                    bill.processing_message = 'Processing complete'
+                    bill.save()
+                    
+                    return Response({
+                        'success': True,
+                        'message': 'Bill created and processed successfully',
+                        'bill_id': str(bill.id),
+                        'processing_async': False,
+                        'summary_generated': True,
+                        'processing_method': 'fast'
+                    })
                 
                 except Exception as e:
                     # Sync processing failed, update bill status

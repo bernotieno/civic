@@ -50,7 +50,7 @@ def public_bills_list(request):
     """
     try:
         # Cache key for bill list to improve performance
-        cache_key_base = 'citizen_bills_list'
+        cache_key_base = 'citizen_bills_list_v2'
         
         # Get query parameters
         page = int(request.GET.get('page', 1))
@@ -69,12 +69,11 @@ def public_bills_list(request):
             logger.debug(f"Returning cached bill list for citizen")
             return Response(cached_result)
         
-        # Base queryset - only completed processing and published bills
+        # Base queryset - all bills including drafts
         bills_queryset = Bill.objects.filter(
             is_deleted=False,
-            processing_status='completed',  # Only fully processed bills
-            status__in=[  # Only publicly accessible bill statuses
-                'first_reading', 'committee_stage', 'second_reading', 
+            status__in=[  # Include draft bills for public viewing
+                'draft', 'first_reading', 'committee_stage', 'second_reading', 
                 'third_reading', 'presidential_assent', 'enacted'
             ]
         ).select_related('created_by')
@@ -136,13 +135,11 @@ def public_bills_list(request):
         
         # Available filter options for frontend
         available_statuses = Bill.objects.filter(
-            is_deleted=False,
-            processing_status='completed'
+            is_deleted=False
         ).values_list('status', flat=True).distinct()
         
         available_sponsors = Bill.objects.filter(
-            is_deleted=False,
-            processing_status='completed'
+            is_deleted=False
         ).values_list('sponsor', flat=True).distinct()[:50]  # Limit for performance
         
         # Pagination info
@@ -214,7 +211,7 @@ def public_bill_detail(request, bill_id):
     """
     try:
         # Cache key for individual bill
-        cache_key = f'citizen_bill_detail_{bill_id}'
+        cache_key = f'citizen_bill_detail_v2_{bill_id}'
         
         # Try cache first
         cached_result = cache.get(cache_key)
@@ -227,9 +224,8 @@ def public_bill_detail(request, bill_id):
             bill = Bill.objects.select_related('created_by').get(
                 id=bill_id,
                 is_deleted=False,
-                processing_status='completed',  # Only completed processing
-                status__in=[  # Only public statuses
-                    'first_reading', 'committee_stage', 'second_reading',
+                status__in=[  # Include draft bills for public viewing
+                    'draft', 'first_reading', 'committee_stage', 'second_reading',
                     'third_reading', 'presidential_assent', 'enacted'
                 ]
             )
@@ -371,9 +367,8 @@ def public_bill_search(request, bill_id):
             bill = Bill.objects.get(
                 id=bill_id,
                 is_deleted=False,
-                processing_status='completed',
                 status__in=[
-                    'first_reading', 'committee_stage', 'second_reading',
+                    'draft', 'first_reading', 'committee_stage', 'second_reading',
                     'third_reading', 'presidential_assent', 'enacted'
                 ]
             )

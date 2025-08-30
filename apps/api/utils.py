@@ -46,30 +46,16 @@ def summarize_bill_document(uploaded_file: UploadedFile) -> str:
                 for page in reader.pages:
                     text += page.extract_text() or ''
                 
-                bill_text = text[:15000]
+                bill_text = text[:5000]  # Reduced for faster processing
                 print(f"📄 Extracted {len(bill_text)} characters for summarization")
                 
                 data = {
                     "model": "gpt-4o-mini",
                     "messages": [
-                        {"role": "user", "content": f'''You are a legal analyst and public policy expert tasked with summarizing official government bills for the general Kenyan public.
-                        Read and analyze the text below strictly without hallucinating or adding any information not found in the document.
-                        Now perform the following:
-                        1. Summarize the bill in clear, simple English that a non-expert Kenyan citizen can understand, avoiding legal or financial jargon.
-                        2. Extract and list all key points section by section, but focus only on the provisions that directly affect or matter to citizens (e.g. taxes, levies, penalties, rights, employment laws, prices of goods, social services, education, health, etc.)
-                        3. For each point, include:
-                            - What is changing or being introduced
-                            - Who it affects (e.g. citizens, workers, businesses, landlords, etc.)
-                            - How it affects the who it affects
-                            - If any, the increments or decrements in terms of percentage or statistics
-                            - When it takes effect
-                        4. Ensure the summary is accurate and comprehensive, but does not include irrelevant clauses, technical legal references, or duplicated provisions.
-                        5. Use bullet points, headings, and short paragraphs to improve readability.
-                        6. Only rely on the uploaded document. Do not add your own opinions or external sources.
-                        7. Ensure the output is error-free, avoids hallucinations, and represents the true intent and impact of the bill.:\n\n{bill_text}'''}
+                        {"role": "user", "content": f'''Summarize this Kenyan bill in simple English for citizens. Focus on key impacts like taxes, penalties, rights, and services. Be concise:\n\n{bill_text}'''}
                     ],
                     "temperature": 0.7,
-                    "max_tokens": 1500
+                    "max_tokens": 500
                 }
                 
                 req = urllib.request.Request(
@@ -81,7 +67,7 @@ def summarize_bill_document(uploaded_file: UploadedFile) -> str:
                     }
                 )
                 
-                with urllib.request.urlopen(req, timeout=30) as response:
+                with urllib.request.urlopen(req, timeout=10) as response:
                     if response.status == 200:
                         result = json.loads(response.read().decode('utf-8'))
                         print("🎉 OpenAI summarization completed successfully")
@@ -266,9 +252,9 @@ def validate_pdf_file(uploaded_file: UploadedFile) -> dict:
             errors.append(f"File too large ({file_size / 1024 / 1024:.1f}MB). Maximum size is 50MB.")
         
         # Try to read PDF
-        if PyPDF2:
+        if PdfReader:
             try:
-                reader = PyPDF2.PdfReader(uploaded_file)
+                reader = PdfReader(uploaded_file)
                 page_count = len(reader.pages)
                 
                 if page_count == 0:
