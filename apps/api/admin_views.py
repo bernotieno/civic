@@ -8,7 +8,27 @@ from django.utils import timezone
 from apps.users.models import CustomUser, County
 from apps.feedback.models import Feedback
 from apps.api.utils import summarize_bill_document
+from apps.api.utils import summarize_bill_document
 from apps.projects.models import Project, Bill, AdminFeedbackResponse
+from .utils import (
+    summarize_bill_document, 
+    process_bill_with_enhanced_features, 
+    validate_pdf_file
+)
+from .progress_tracker import (
+    get_bill_progress, 
+    reset_bill_progress, 
+    estimate_processing_time
+)
+from .async_progress_tracker import (
+    start_async_bill_processing,
+    get_bill_processing_status,
+    retry_failed_bill_processing,
+    cancel_bill_processing,
+    get_all_active_processing_sessions
+)
+from .tasks import save_uploaded_file_for_async
+
 import json
 import logging
 
@@ -370,70 +390,6 @@ def public_projects_list(request):
         'data': projects_data
     })
 
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def admin_bills_list(request):
-    """Get or create parliamentary bills"""
-    user = request.user
-    
-    if user.role != 'parliament_admin':
-        return Response({'error': 'Access denied'}, status=403)
-    
-    if request.method == 'GET':
-        # Get all bills
-        bills = Bill.objects.filter(is_deleted=False).select_related('created_by')
-        
-        bills_data = [{
-            'id': str(b.id),
-            'title': b.title,
-            'description': b.description,
-            'sponsor': b.sponsor,
-            'status': b.status,
-            'status_display': b.get_status_display(),
-            'participation_deadline': b.participation_deadline,
-            'document': b.document.url if b.document else None,
-            'summary': b.summary,
-            'created_by': b.created_by.name if b.created_by else 'System',
-            'created_at': b.created_at
-        } for b in bills]
-        
-        return Response({
-            'success': True,
-            'data': bills_data
-        })
-    
-    elif request.method == 'POST':
-        data = request.data
-
-        uploaded_doc = request.FILES.get('document')
-        summary = None
-
-        if uploaded_doc:
-            summary = summarize_bill_document(uploaded_doc)
-
-        
-        try:
-            bill = Bill.objects.create(
-                title=data.get('title'),
-                description=data.get('description'),
-                sponsor=data.get('sponsor'),
-                status=data.get('status', 'draft'),
-                participation_deadline=data.get('participation_deadline'),
-                document=request.FILES.get('document'),
-                summary=summary or '',
-                created_by=user
-            )
-            
-            return Response({
-                'success': True,
-                'message': 'Parliamentary bill created successfully',
-                'bill_id': str(bill.id)
-            })
-            
-        except Exception as e:
-            return Response({'error': str(e)}, status=400)
-
-
 
 @api_view(['PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
@@ -506,3 +462,633 @@ def public_bills_list(request):
         'success': True,
         'data': bills_data
     })
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def admin_bills_list(request):
+    """
+    Get or create parliamentary bills
+    ENHANCED: Now supports async processing with fallback to sync
+    BACKWARD COMPATIBLE: All Phase 1 functionality preserved
+    """
+    user = request.user
+    
+    if user.role != 'parliament_admin':
+        return Response({'error': 'Access denied'}, status=403)
+    
+    if request.method == 'GET':
+        # Get all bills with enhanced progress and async information
+        bills = Bill.objects.filter(is_deleted=False).select_related('created_by')
+        
+        bills_data = []
+        for b in bills:
+            # Basic bill data (Phase 1 - unchanged)
+            bill_data = {
+                'id': str(b.id),
+                'title': b.title,
+                'description': b.description,
+                'sponsor': b.sponsor,
+                'status': b.status,
+                'status_display': b.get_status_display(),
+                'participation_deadline': b.participation_deadline,
+                'document': b.document.url if b.document else None,
+                'summary': b.summary,
+                'created_by': b.created_by.name if b.created_by else 'System',
+                'created_at': b.created_at,
+                # Phase 1 enhanced fields
+                'summary_html': getattr(b, 'summary_html', ''),
+                'processing_status': getattr(b, 'processing_status', 'completed'),
+                'processing_progress': getattr(b, 'processing_progress', 100),
+                'processing_message': getattr(b, 'processing_message', ''),
+                'estimated_time_remaining': getattr(b, 'estimated_time_remaining', None),
+                'is_chunked': getattr(b, 'is_chunked', False),
+                'total_chunks': getattr(b, 'total_chunks', 0),
+            }
+            
+            # NEW Phase 2: Add async processing info if available
+            if bill_data['processing_status'] in ['processing', 'pending']:
+                try:
+                    async_status = get_bill_processing_status(str(b.id))
+                    bill_data.update({
+                        'async_info': {
+                            'task_id': async_status.get('task_id'),
+                            'can_retry': async_status.get('can_retry', False),
+                            'session_info': async_status.get('session_info', {}),
+                            'task_info': async_status.get('task_info', {}),
+                            'supports_realtime': True  # WebSocket available
+                        }
+                    })
+                except Exception as e:
+                    logger.warning(f"Could not get async status for bill {b.id}: {str(e)}")
+                    bill_data['async_info'] = {'supports_realtime': False}
+            else:
+                bill_data['async_info'] = {'supports_realtime': False}
+            
+            bills_data.append(bill_data)
+        
+        return Response({
+            'success': True,
+            'data': bills_data,
+            'async_processing_available': True,  # Phase 2 feature
+            'websocket_support': True  # Real-time updates available
+        })
+    
+    elif request.method == 'POST':
+        data = request.data
+        uploaded_doc = request.FILES.get('document')
+        
+        # NEW Phase 2: Check processing preference (default to async)
+        use_async = data.get('async_processing', True)
+        force_sync = data.get('force_sync', False)  # Override for debugging
+        
+        # Validate file if provided
+        validation_result = {}
+        if uploaded_doc:
+            validation_result = validate_pdf_file(uploaded_doc)
+            if not validation_result['valid']:
+                return Response({
+                    'success': False,
+                    'error': 'File validation failed',
+                    'validation_errors': validation_result['errors']
+                }, status=400)
+        
+        try:
+            # Create bill instance first (same as Phase 1)
+            bill = Bill.objects.create(
+                title=data.get('title'),
+                description=data.get('description'),
+                sponsor=data.get('sponsor'),
+                status=data.get('status', 'draft'),
+                participation_deadline=data.get('participation_deadline'),
+                document=uploaded_doc,
+                summary='',  # Will be populated after processing
+                created_by=user,
+                # Initialize progress fields
+                processing_status='pending' if uploaded_doc else 'completed',
+                processing_progress=0 if uploaded_doc else 100,
+                processing_message='Waiting to start processing...' if uploaded_doc else 'No document to process',
+            )
+            
+            logger.info(f"Created bill {bill.id}: {bill.title}")
+            
+            # Process document if provided
+            if uploaded_doc and use_async and not force_sync:
+                # NEW Phase 2: Async processing path
+                try:
+                    from .tasks import process_bill_async
+                    
+                    logger.info(f"Starting async processing for bill {bill.id}")
+                    
+                    # Save file for async processing
+                    file_path = save_uploaded_file_for_async(uploaded_doc, str(bill.id))
+                    
+                    # Start async task
+                    task = process_bill_async.delay(str(bill.id), file_path)
+                    
+                    # Setup progress tracking
+                    session_result = start_async_bill_processing(str(bill.id), task.id)
+                    
+                    if session_result['success']:
+                        response_data = {
+                            'success': True,
+                            'message': 'Bill created and async processing started',
+                            'bill_id': str(bill.id),
+                            'processing_async': True,
+                            'task_id': task.id,
+                            'session_id': session_result['session_id'],
+                            'websocket_channel': session_result['websocket_channel'],
+                            'estimated_time': estimate_processing_time(
+                                validation_result.get('page_count', 0)
+                            ),
+                            'progress_endpoints': {
+                                'status': f'/api/admin/bills/{bill.id}/status/',
+                                'websocket': f'/ws/bills/{bill.id}/progress/',
+                                'polling': f'/api/admin/bills/{bill.id}/progress/'
+                            }
+                        }
+                        
+                        logger.info(f"Async processing started for bill {bill.id}")
+                        return Response(response_data)
+                    else:
+                        logger.warning(f"Failed to start async session for bill {bill.id}, falling back to sync")
+                        # Fall through to sync processing
+                        use_async = False
+                
+                except Exception as e:
+                    logger.error(f"Async processing setup failed for bill {bill.id}: {str(e)}")
+                    # Fall through to sync processing
+                    use_async = False
+            
+            if uploaded_doc and (not use_async or force_sync):
+                # Phase 1: Sync processing path (maintained for backward compatibility)
+                try:
+                    logger.info(f"Starting sync processing for bill {bill.id}")
+                    
+                    # Check if enhanced processing should be used
+                    use_enhanced = data.get('use_enhanced_processing', True)
+                    
+                    if use_enhanced:
+                        # Use Phase 1 enhanced processing
+                        result = process_bill_with_enhanced_features(
+                            uploaded_doc, 
+                            bill, 
+                            use_enhanced=True
+                        )
+                        
+                        if result['success']:
+                            return Response({
+                                'success': True,
+                                'message': 'Bill created and processed successfully (sync)',
+                                'bill_id': str(bill.id),
+                                'processing_async': False,
+                                'used_enhanced': result['used_enhanced'],
+                                'summary_generated': True,
+                                'sections_count': result['sections_count'],
+                                'chunks_created': result['chunks_created'],
+                                'processing_time': result.get('processing_time'),
+                                'summary_available': bool(bill.summary),
+                                'html_available': bool(getattr(bill, 'summary_html', ''))
+                            })
+                        else:
+                            # Enhanced processing failed, but bill was created
+                            return Response({
+                                'success': True,
+                                'message': 'Bill created but processing failed',
+                                'bill_id': str(bill.id),
+                                'processing_async': False,
+                                'processing_error': result.get('error'),
+                                'can_retry': True
+                            })
+                    else:
+                        # Use original Phase 1 function
+                        summary = summarize_bill_document(uploaded_doc)
+                        
+                        # Convert to HTML using Phase 1 function
+                        from .bill_processor import markdown_to_html
+                        summary_html = markdown_to_html(summary)
+                        
+                        # Update bill
+                        bill.summary = summary
+                        if hasattr(bill, 'summary_html'):
+                            bill.summary_html = summary_html
+                        bill.processing_status = 'completed'
+                        bill.processing_progress = 100
+                        bill.processing_message = 'Sync processing complete'
+                        bill.save()
+                        
+                        return Response({
+                            'success': True,
+                            'message': 'Bill created and processed successfully (sync)',
+                            'bill_id': str(bill.id),
+                            'processing_async': False,
+                            'used_enhanced': False,
+                            'summary_generated': True,
+                            'processing_method': 'original'
+                        })
+                
+                except Exception as e:
+                    # Sync processing failed, update bill status
+                    error_msg = str(e)
+                    logger.error(f"Sync processing failed for bill {bill.id}: {error_msg}")
+                    
+                    bill.processing_status = 'failed'
+                    bill.processing_progress = 0
+                    bill.processing_message = f'Sync processing failed: {error_msg}'
+                    bill.save()
+                    
+                    return Response({
+                        'success': True,
+                        'message': 'Bill created but processing failed',
+                        'bill_id': str(bill.id),
+                        'processing_async': False,
+                        'processing_error': error_msg,
+                        'can_retry': True
+                    })
+            
+            # No document to process
+            return Response({
+                'success': True,
+                'message': 'Bill created successfully (no document)',
+                'bill_id': str(bill.id),
+                'processing_async': False,
+                'summary_generated': False
+            })
+            
+        except Exception as e:
+            logger.error(f"Bill creation failed: {str(e)}")
+            return Response({'error': str(e)}, status=400)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def admin_bill_progress(request, bill_id):
+    """
+    Get bill processing progress (Phase 1 endpoint - maintained)
+    Enhanced to work with both sync and async processing
+    """
+    user = request.user
+    
+    if user.role != 'parliament_admin':
+        return Response({'error': 'Access denied'}, status=403)
+    
+    try:
+        # Check if bill has async processing session
+        try:
+            async_status = get_bill_processing_status(bill_id)
+            if async_status['processing_status'] != 'error':
+                # Return async status
+                response_data = {
+                    'success': True,
+                    'bill_id': bill_id,
+                    'progress': async_status,
+                    'processing_type': 'async',
+                    'supports_realtime': True
+                }
+                return Response(response_data)
+        except Exception as e:
+            logger.debug(f"No async session for bill {bill_id}, using Phase 1 progress")
+        
+        # Fall back to Phase 1 progress tracking
+        progress_data = get_bill_progress(bill_id)
+        
+        # Get bill basic info
+        bill = Bill.objects.get(id=bill_id, is_deleted=False)
+        
+        response_data = {
+            'success': True,
+            'bill_id': bill_id,
+            'bill_title': bill.title,
+            'progress': progress_data,
+            'processing_type': 'sync',
+            'supports_realtime': False,
+            'bill_info': {
+                'has_document': bool(bill.document),
+                'created_at': bill.created_at,
+                'total_chunks': getattr(bill, 'total_chunks', 0),
+                'is_chunked': getattr(bill, 'is_chunked', False),
+            }
+        }
+        
+        return Response(response_data)
+        
+    except Bill.DoesNotExist:
+        return Response({
+            'success': False,
+            'error': 'Bill not found'
+        }, status=404)
+    except Exception as e:
+        logger.error(f"Failed to get progress for bill {bill_id}: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def admin_bill_processing_status(request, bill_id):
+    """
+    NEW ENDPOINT: Get detailed processing status for async operations
+    """
+    user = request.user
+    
+    if user.role != 'parliament_admin':
+        return Response({'error': 'Access denied'}, status=403)
+    
+    try:
+        # Get comprehensive processing status
+        status = get_bill_processing_status(bill_id)
+        
+        return Response({
+            'success': True,
+            'bill_id': bill_id,
+            'status': status,
+            'supports_cancellation': status.get('task_info', {}).get('task_active', False),
+            'supports_retry': status.get('can_retry', False)
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get processing status for bill {bill_id}: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def admin_retry_bill_processing(request, bill_id):
+    """
+    NEW ENDPOINT: Retry failed bill processing
+    """
+    user = request.user
+    
+    if user.role != 'parliament_admin':
+        return Response({'error': 'Access denied'}, status=403)
+    
+    try:
+        # Get processing preference from request
+        use_async = request.data.get('async_processing', True)
+        
+        if use_async:
+            # Async retry
+            result = retry_failed_bill_processing(bill_id)
+            
+            if result['success']:
+                return Response({
+                    'success': True,
+                    'message': result['message'],
+                    'bill_id': bill_id,
+                    'new_task_id': result['new_task_id'],
+                    'retry_attempt': result['retry_attempt'],
+                    'processing_async': True,
+                    'progress_endpoints': {
+                        'status': f'/api/admin/bills/{bill_id}/status/',
+                        'websocket': f'/ws/bills/{bill_id}/progress/',
+                        'polling': f'/api/admin/bills/{bill_id}/progress/'
+                    }
+                })
+            else:
+                return Response({
+                    'success': False,
+                    'error': result['message'],
+                    'can_try_sync': True
+                }, status=400)
+        else:
+            # Sync retry using Phase 1 functionality
+            try:
+                bill = Bill.objects.get(id=bill_id, is_deleted=False)
+                
+                if not bill.document:
+                    return Response({
+                        'success': False,
+                        'error': 'Bill has no document to process'
+                    }, status=400)
+                
+                # Reset progress
+                reset_bill_progress(bill_id)
+                
+                # Use Phase 1 enhanced processing
+                result = process_bill_with_enhanced_features(
+                    bill.document.file,
+                    bill,
+                    use_enhanced=True
+                )
+                
+                if result['success']:
+                    return Response({
+                        'success': True,
+                        'message': 'Bill reprocessing completed (sync)',
+                        'bill_id': bill_id,
+                        'processing_async': False,
+                        'result': {
+                            'used_enhanced': result['used_enhanced'],
+                            'sections_count': result['sections_count'],
+                            'chunks_created': result['chunks_created']
+                        }
+                    })
+                else:
+                    return Response({
+                        'success': False,
+                        'error': result['error']
+                    }, status=500)
+            
+            except Bill.DoesNotExist:
+                return Response({
+                    'success': False,
+                    'error': 'Bill not found'
+                }, status=404)
+        
+    except Exception as e:
+        logger.error(f"Failed to retry processing for bill {bill_id}: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def admin_cancel_bill_processing(request, bill_id):
+    """
+    NEW ENDPOINT: Cancel ongoing bill processing
+    """
+    user = request.user
+    
+    if user.role != 'parliament_admin':
+        return Response({'error': 'Access denied'}, status=403)
+    
+    try:
+        result = cancel_bill_processing(bill_id)
+        
+        if result['success']:
+            return Response({
+                'success': True,
+                'message': result['message'],
+                'bill_id': bill_id,
+                'was_cancelled': result['was_cancelled'],
+                'task_id': result.get('task_id'),
+                'can_retry': True
+            })
+        else:
+            return Response({
+                'success': False,
+                'error': result['message']
+            }, status=500)
+        
+    except Exception as e:
+        logger.error(f"Failed to cancel processing for bill {bill_id}: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def admin_bill_reprocess(request, bill_id):
+    """
+    Enhanced reprocess endpoint (Phase 1 maintained + Phase 2 async support)
+    """
+    user = request.user
+    
+    if user.role != 'parliament_admin':
+        return Response({'error': 'Access denied'}, status=403)
+    
+    # This endpoint now delegates to the retry endpoint for consistency
+    return admin_retry_bill_processing(request, bill_id)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def admin_processing_overview(request):
+    """
+    Enhanced processing overview (Phase 1 maintained + Phase 2 async info)
+    """
+    user = request.user
+    
+    if user.role != 'parliament_admin':
+        return Response({'error': 'Access denied'}, status=403)
+    
+    try:
+        # Get summary statistics
+        total_bills = Bill.objects.filter(is_deleted=False).count()
+        
+        completed_bills = Bill.objects.filter(
+            is_deleted=False, 
+            processing_status='completed'
+        ).count() if hasattr(Bill._meta.get_field('processing_status'), 'choices') else 0
+        
+        failed_bills = Bill.objects.filter(
+            is_deleted=False,
+            processing_status='failed'
+        ).count() if hasattr(Bill._meta.get_field('processing_status'), 'choices') else 0
+        
+        processing_bills = Bill.objects.filter(
+            is_deleted=False,
+            processing_status='processing'
+        ).count() if hasattr(Bill._meta.get_field('processing_status'), 'choices') else 0
+        
+        pending_bills = Bill.objects.filter(
+            is_deleted=False,
+            processing_status='pending'
+        ).count() if hasattr(Bill._meta.get_field('processing_status'), 'choices') else 0
+        
+        # NEW Phase 2: Get active async sessions
+        active_sessions = get_all_active_processing_sessions()
+        
+        return Response({
+            'success': True,
+            'summary': {
+                'total_bills': total_bills,
+                'completed_bills': completed_bills,
+                'failed_bills': failed_bills,
+                'currently_processing': processing_bills,
+                'pending_processing': pending_bills,
+                # Phase 2 additions
+                'active_async_sessions': len(active_sessions),
+                'async_processing_available': True,
+                'websocket_support': True
+            },
+            'active_sessions': active_sessions,
+            'capabilities': {
+                'async_processing': True,
+                'real_time_updates': True,
+                'task_cancellation': True,
+                'retry_with_backoff': True,
+                'sync_fallback': True
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get processing overview: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+# @api_view(['GET', 'POST'])
+# @permission_classes([IsAuthenticated])
+# def admin_bills_list(request):
+#     """Get or create parliamentary bills"""
+#     user = request.user
+    
+#     if user.role != 'parliament_admin':
+#         return Response({'error': 'Access denied'}, status=403)
+    
+#     if request.method == 'GET':
+#         # Get all bills
+#         bills = Bill.objects.filter(is_deleted=False).select_related('created_by')
+        
+#         bills_data = [{
+#             'id': str(b.id),
+#             'title': b.title,
+#             'description': b.description,
+#             'sponsor': b.sponsor,
+#             'status': b.status,
+#             'status_display': b.get_status_display(),
+#             'participation_deadline': b.participation_deadline,
+#             'document': b.document.url if b.document else None,
+#             'summary': b.summary,
+#             'created_by': b.created_by.name if b.created_by else 'System',
+#             'created_at': b.created_at
+#         } for b in bills]
+        
+#         return Response({
+#             'success': True,
+#             'data': bills_data
+#         })
+    
+#     elif request.method == 'POST':
+#         data = request.data
+
+#         uploaded_doc = request.FILES.get('document')
+#         summary = None
+
+#         if uploaded_doc:
+#             summary = summarize_bill_document(uploaded_doc)
+
+        
+#         try:
+#             bill = Bill.objects.create(
+#                 title=data.get('title'),
+#                 description=data.get('description'),
+#                 sponsor=data.get('sponsor'),
+#                 status=data.get('status', 'draft'),
+#                 participation_deadline=data.get('participation_deadline'),
+#                 document=request.FILES.get('document'),
+#                 summary=summary or '',
+#                 created_by=user
+#             )
+            
+#             return Response({
+#                 'success': True,
+#                 'message': 'Parliamentary bill created successfully',
+#                 'bill_id': str(bill.id),
+#                 'summary_generated': summary is not None and "AI summarization failed" not in summary
+#             })
+            
+#         except Exception as e:
+#             return Response({'error': str(e)}, status=400)
