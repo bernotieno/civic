@@ -10,7 +10,6 @@ from django.utils import timezone
 from django.core.cache import cache
 from django.db.models import Count, Avg, Q
 
-from .llm_client import llm_client, quick_analyze
 from .prompt_templates import ResponsePrompts, ContextualPrompts
 from apps.feedback.models import Feedback
 
@@ -31,10 +30,20 @@ class LLMResponseGenerator:
     """
     
     def __init__(self):
-        self.llm_client = llm_client
+        self.llm_client = None
         self.prompts = ResponsePrompts()
         self.contextual_prompts = ContextualPrompts()
         self.cache_ttl = 7200  # 2 hours cache for response suggestions
+        self._initialize_llm_client()
+    
+    def _initialize_llm_client(self):
+        """Initialize LLM client with error handling"""
+        try:
+            from .llm_client import llm_client
+            self.llm_client = llm_client
+        except Exception as e:
+            logger.warning(f"LLM client initialization failed: {e}")
+            self.llm_client = None
     
     async def generate_response_suggestions(self, feedback, official_user) -> List[Dict]:
         """
@@ -206,7 +215,16 @@ class LLMResponseGenerator:
                 prompt = self.prompts.get_response_generation_prompt(response_type)
             
             # Generate response content
-            response_content = await quick_analyze(prompt, context_data)
+            if not self.llm_client:
+                logger.warning("LLM client not available, using fallback response generation")
+                return None
+            
+            try:
+                from .llm_client import quick_analyze
+                response_content = await quick_analyze(prompt, context_data)
+            except ImportError:
+                logger.warning("LLM client functions not available, using fallback response generation")
+                return None
             
             if not response_content:
                 return None

@@ -73,29 +73,62 @@ class LLMClient:
     
     def _initialize_clients(self):
         """Initialize OpenAI and Claude clients if API keys are available"""
-        # Initialize OpenAI
-        openai_key = getattr(settings, 'OPENAI_API_KEY', '')
-        if openai_key and openai:
-            try:
-                self.openai_client = openai.OpenAI(
-                    api_key=openai_key,
-                    timeout=self.timeout
-                )   
-                logger.info("OpenAI client initialized successfully")
-            except Exception as e:
-                logger.error(f"Failed to initialize OpenAI client: {e}")
+        # Temporarily disable experimental proxy support that causes issues
+        import os
+        original_proxy_support = os.environ.get('EXPERIMENTAL_HTTP_PROXY_SUPPORT')
+        if original_proxy_support:
+            os.environ.pop('EXPERIMENTAL_HTTP_PROXY_SUPPORT', None)
+            logger.debug("Temporarily disabled EXPERIMENTAL_HTTP_PROXY_SUPPORT for OpenAI client initialization")
         
-        # Initialize Claude
-        claude_key = getattr(settings, 'CLAUDE_API_KEY', '')
-        if claude_key and anthropic:
-            try:
-                self.claude_client = anthropic.Anthropic(api_key=claude_key)
-                logger.info("Claude client initialized successfully")
-            except Exception as e:
-                logger.error(f"Failed to initialize Claude client: {e}")
-        
-        if not self.openai_client and not self.claude_client:
-            logger.error("No LLM clients available - check API keys")
+        try:
+            # Initialize OpenAI
+            openai_key = getattr(settings, 'OPENAI_API_KEY', '')
+            if openai_key and openai:
+                try:
+                    # Only pass supported parameters to avoid 'proxies' error
+                    client_params = {
+                        'api_key': openai_key,
+                        'timeout': self.timeout
+                    }
+                    
+                    self.openai_client = openai.OpenAI(**client_params)
+                    logger.info("OpenAI client initialized successfully")
+                except TypeError as e:
+                    if "proxies" in str(e):
+                        # Handle the specific proxies parameter error
+                        logger.warning(f"OpenAI client initialization failed due to proxy configuration: {e}")
+                        logger.info("Attempting to initialize OpenAI client without proxy support...")
+                        try:
+                            # Try with minimal parameters
+                            self.openai_client = openai.OpenAI(api_key=openai_key)
+                            logger.info("OpenAI client initialized successfully without proxy support")
+                        except Exception as retry_e:
+                            logger.error(f"Failed to initialize OpenAI client even without proxy support: {retry_e}")
+                            self.openai_client = None
+                    else:
+                        logger.error(f"Failed to initialize OpenAI client: {e}")
+                        self.openai_client = None
+                except Exception as e:
+                    logger.error(f"Failed to initialize OpenAI client: {e}")
+                    self.openai_client = None
+            
+            # Initialize Claude
+            claude_key = getattr(settings, 'CLAUDE_API_KEY', '')
+            if claude_key and anthropic:
+                try:
+                    self.claude_client = anthropic.Anthropic(api_key=claude_key)
+                    logger.info("Claude client initialized successfully")
+                except Exception as e:
+                    logger.error(f"Failed to initialize Claude client: {e}")
+            
+            if not self.openai_client and not self.claude_client:
+                logger.error("No LLM clients available - check API keys")
+                
+        finally:
+            # Restore the original environment variable if it was set
+            if original_proxy_support:
+                os.environ['EXPERIMENTAL_HTTP_PROXY_SUPPORT'] = original_proxy_support
+                logger.debug("Restored EXPERIMENTAL_HTTP_PROXY_SUPPORT environment variable")
     
     async def analyze_with_context(
         self, 

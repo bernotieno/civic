@@ -11,7 +11,6 @@ from django.core.cache import cache
 from django.db.models import Count, Avg
 from django.apps import apps
 
-from .llm_client import llm_client, get_json_response
 from .prompt_templates import SentimentPrompts
 
 logger = logging.getLogger('apps.ai.services')
@@ -35,9 +34,19 @@ class LLMSentimentAnalyzer:
     """
     
     def __init__(self):
-        self.llm_client = llm_client
+        self.llm_client = None
         self.prompts = SentimentPrompts()
         self.cache_ttl = 3600  # 1 hour cache for sentiment analysis
+        self._initialize_llm_client()
+    
+    def _initialize_llm_client(self):
+        """Initialize LLM client with error handling"""
+        try:
+            from .llm_client import llm_client
+            self.llm_client = llm_client
+        except Exception as e:
+            logger.warning(f"LLM client initialization failed: {e}")
+            self.llm_client = None
     
     async def analyze_feedback_sentiment(self, feedback) -> Dict:
         """
@@ -61,8 +70,18 @@ class LLMSentimentAnalyzer:
             context_data = await self._gather_sentiment_context(feedback)
             
             # Get AI sentiment analysis
+            if not self.llm_client:
+                logger.warning("LLM client not available, using fallback analysis")
+                return await self._fallback_sentiment_analysis(feedback)
+            
             prompt = self.prompts.get_sentiment_analysis_prompt()
-            llm_response = await get_json_response(prompt, context_data)
+            
+            try:
+                from .llm_client import get_json_response
+                llm_response = await get_json_response(prompt, context_data)
+            except ImportError:
+                logger.warning("LLM client functions not available, using fallback analysis")
+                return await self._fallback_sentiment_analysis(feedback)
             
             if not llm_response:
                 # Fallback to basic analysis

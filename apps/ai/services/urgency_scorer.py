@@ -10,7 +10,6 @@ from django.utils import timezone
 from django.core.cache import cache
 from django.db.models import Count, Avg, Q
 
-from .llm_client import llm_client, get_json_response
 from .prompt_templates import UrgencyPrompts
 from apps.feedback.models import Feedback
 
@@ -32,9 +31,19 @@ class LLMUrgencyScorer:
     """
     
     def __init__(self):
-        self.llm_client = llm_client
+        self.llm_client = None
         self.prompts = UrgencyPrompts()
         self.cache_ttl = 1800  # 30 minutes cache for urgency scoring
+        self._initialize_llm_client()
+    
+    def _initialize_llm_client(self):
+        """Initialize LLM client with error handling"""
+        try:
+            from .llm_client import llm_client
+            self.llm_client = llm_client
+        except Exception as e:
+            logger.warning(f"LLM client initialization failed: {e}")
+            self.llm_client = None
     
     async def calculate_intelligent_urgency(self, feedback) -> Dict:
         """
@@ -58,8 +67,18 @@ class LLMUrgencyScorer:
             context_data = await self._gather_urgency_context(feedback)
             
             # Get AI urgency analysis
+            if not self.llm_client:
+                logger.warning("LLM client not available, using fallback urgency scoring")
+                return await self._fallback_urgency_scoring(feedback, context_data)
+            
             prompt = self.prompts.get_urgency_scoring_prompt()
-            llm_response = await get_json_response(prompt, context_data)
+            
+            try:
+                from .llm_client import get_json_response
+                llm_response = await get_json_response(prompt, context_data)
+            except ImportError:
+                logger.warning("LLM client functions not available, using fallback urgency scoring")
+                return await self._fallback_urgency_scoring(feedback, context_data)
             
             if not llm_response:
                 # Fallback to rule-based urgency scoring

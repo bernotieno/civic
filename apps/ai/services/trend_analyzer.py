@@ -11,7 +11,6 @@ from django.core.cache import cache
 from django.db.models import Count, Avg, Q, Max, Min
 from django.db.models.functions import TruncDate, TruncWeek, TruncMonth
 
-from .llm_client import llm_client, get_json_response
 from .prompt_templates import TrendAnalysisPrompts
 from apps.feedback.models import Feedback
 from apps.users.models import County
@@ -33,9 +32,19 @@ class LLMTrendAnalyzer:
     """
     
     def __init__(self):
-        self.llm_client = llm_client
+        self.llm_client = None
         self.prompts = TrendAnalysisPrompts()
         self.cache_ttl = 3600  # 1 hour cache for trend analysis
+        self._initialize_llm_client()
+    
+    def _initialize_llm_client(self):
+        """Initialize LLM client with error handling"""
+        try:
+            from .llm_client import llm_client
+            self.llm_client = llm_client
+        except Exception as e:
+            logger.warning(f"LLM client initialization failed: {e}")
+            self.llm_client = None
     
     async def analyze_county_trends(
         self, 
@@ -523,8 +532,18 @@ class LLMTrendAnalyzer:
             }
             
             # Get AI analysis
+            if not self.llm_client:
+                logger.warning("LLM client not available, using fallback trend analysis")
+                return self._fallback_insights(trend_data)
+            
             prompt = self.prompts.get_trend_analysis_prompt()
-            ai_response = await get_json_response(prompt, context)
+            
+            try:
+                from .llm_client import get_json_response
+                ai_response = await get_json_response(prompt, context)
+            except ImportError:
+                logger.warning("LLM client functions not available, using fallback trend analysis")
+                return self._fallback_insights(trend_data)
             
             if ai_response:
                 return self._process_ai_insights(ai_response)
@@ -601,8 +620,18 @@ class LLMTrendAnalyzer:
                 'upcoming_events': self._get_upcoming_events(),
             }
             
+            if not self.llm_client:
+                logger.warning("LLM client not available, using fallback predictions")
+                return self._fallback_predictions(trend_data)
+            
             prompt = self.prompts.get_prediction_prompt()
-            prediction_response = await get_json_response(prompt, prediction_context)
+            
+            try:
+                from .llm_client import get_json_response
+                prediction_response = await get_json_response(prompt, prediction_context)
+            except ImportError:
+                logger.warning("LLM client functions not available, using fallback predictions")
+                return self._fallback_predictions(trend_data)
             
             if prediction_response:
                 return prediction_response

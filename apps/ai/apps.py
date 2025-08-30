@@ -33,25 +33,22 @@ class AIConfig(AppConfig):
     def _initialize_ai_services(self):
         """Initialize AI services safely after Django startup"""
         try:
-            # Temporarily disabled to fix OpenAI client conflict
-            # The issue is multiple OpenAI client initializations causing proxy parameter errors
             import logging
             logger = logging.getLogger('apps.ai')
-            logger.info("ℹ️ AI services initialization temporarily disabled")
-            return
             
-            # Original code commented out:
-            # from .services.llm_client import llm_client
-            # from django.conf import settings
-            # ai_enabled = getattr(settings, 'AI_PROCESSING_ASYNC', True)
-            # if ai_enabled:
-            #     health = llm_client.get_usage_stats()
-            #     if health.get('openai_available') or health.get('claude_available'):
-            #         logger.info("✅ AI services initialized successfully")
-            #     else:
-            #         logger.warning("⚠️ No AI providers available - check API keys")
-            # else:
-            #     logger.info("ℹ️ AI processing disabled in settings")
+            # Re-enabled after fixing OpenAI client proxy parameter error
+            from .services.llm_client import llm_client
+            from django.conf import settings
+            ai_enabled = getattr(settings, 'AI_PROCESSING_ASYNC', True)
+            if ai_enabled:
+                health = llm_client.get_usage_stats()
+                if health.get('openai_available') or health.get('claude_available'):
+                    logger.info("✅ AI services initialized successfully")
+                else:
+                    logger.warning("⚠️ No AI providers available - check API keys")
+            else:
+                logger.info("ℹ️ AI processing disabled in settings")
+
                 
         except Exception as e:
             logger = logging.getLogger('apps.ai')
