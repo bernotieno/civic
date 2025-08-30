@@ -1,3 +1,4 @@
+#  apps/projects/models.py
 from django.db import models
 from apps.users.models import SoftDeleteModel, ActiveManager
 import uuid
@@ -40,6 +41,14 @@ PROJECT_TYPES = [
     ('governance', 'Governance & Reform'),
 ]
 
+# Processing Status Choices
+PROCESSING_STATUS_CHOICES = [
+    ('pending', 'Pending'),
+    ('processing', 'Processing'),
+    ('completed', 'Completed'),
+    ('failed', 'Failed'),
+]
+
 class Bill(SoftDeleteModel):
     """Parliamentary Bills for public engagement"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -66,6 +75,37 @@ class Bill(SoftDeleteModel):
     # Auto-generated fields
     summary = models.TextField(blank=True, help_text="Auto-generated summary from document")
     
+    # NEW: Enhanced processing fields (Phase 1)
+    summary_html = models.TextField(blank=True, help_text="HTML formatted summary")
+    processing_status = models.CharField(
+        max_length=20, 
+        choices=PROCESSING_STATUS_CHOICES,
+        default='pending',
+        help_text="Current processing status"
+    )
+    processing_progress = models.IntegerField(
+        default=0, 
+        help_text="Processing progress percentage (0-100)"
+    )
+    processing_message = models.CharField(
+        max_length=200, 
+        blank=True,
+        help_text="Current processing stage message"
+    )
+    estimated_time_remaining = models.IntegerField(
+        null=True, 
+        blank=True,
+        help_text="Estimated time remaining in seconds"
+    )
+    is_chunked = models.BooleanField(
+        default=False,
+        help_text="Whether bill has been chunked for chat"
+    )
+    total_chunks = models.IntegerField(
+        default=0,
+        help_text="Total number of chunks created"
+    )
+    
     # Admin
     created_by = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE)
     
@@ -76,11 +116,64 @@ class Bill(SoftDeleteModel):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['participation_deadline']),
+            models.Index(fields=['processing_status']),
+            models.Index(fields=['status']),
         ]
     
     def __str__(self):
         return self.title
+    
+    def get_processing_status_display(self):
+        """Get human-readable processing status"""
+        return dict(PROCESSING_STATUS_CHOICES).get(self.processing_status, self.processing_status)
 
+class BillChunk(SoftDeleteModel):
+    """
+    Text chunks of bills for chat functionality and search
+    Prepared for Phase 2 async processing and Phase 3 citizen chat
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    bill = models.ForeignKey(Bill, on_delete=models.CASCADE, related_name='chunks')
+    
+    # Chunk identification
+    chunk_index = models.IntegerField(help_text="Order of chunk in bill (0-based)")
+    section_title = models.CharField(max_length=200, blank=True, help_text="Section title if applicable")
+    
+    # Content
+    content = models.TextField(help_text="Raw text content of chunk")
+    processed_content = models.TextField(blank=True, help_text="AI-processed content")
+    
+    # Metadata for search and retrieval
+    character_count = models.IntegerField(default=0)
+    word_count = models.IntegerField(default=0)
+    start_position = models.IntegerField(default=0, help_text="Character position in original document")
+    end_position = models.IntegerField(default=0, help_text="End character position in original document")
+    
+    # Processing tracking
+    is_processed = models.BooleanField(default=False)
+    processing_error = models.TextField(blank=True)
+    
+    objects = ActiveManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        ordering = ['bill', 'chunk_index']
+        unique_together = [['bill', 'chunk_index']]
+        indexes = [
+            models.Index(fields=['bill', 'chunk_index']),
+            models.Index(fields=['bill', 'is_processed']),
+        ]
+    
+    def __str__(self):
+        section = f" - {self.section_title}" if self.section_title else ""
+        return f"{self.bill.title} Chunk {self.chunk_index}{section}"
+    
+    def save(self, *args, **kwargs):
+        """Auto-calculate word and character counts on save"""
+        if self.content:
+            self.character_count = len(self.content)
+            self.word_count = len(self.content.split())
+        super().save(*args, **kwargs)
 
 class Project(SoftDeleteModel):
     """National Projects for public engagement"""

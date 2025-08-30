@@ -9,7 +9,9 @@ from apps.ai import views as ai_views
 from .admin_views import (
     admin_dashboard_stats, admin_users_list, admin_feedback_list,
     respond_to_feedback, admin_projects_list, update_project_status, admin_project_detail,
-    public_projects_list, admin_bills_list, admin_bill_detail, public_bills_list
+    public_projects_list, admin_bills_list, admin_bill_detail, public_bills_list, admin_bill_progress,
+    admin_bill_reprocess, admin_processing_overview, admin_bill_processing_status, admin_retry_bill_processing,
+    admin_cancel_bill_processing, admin_bill_processing_status
 )
 
 app_name = 'api'
@@ -62,6 +64,28 @@ urlpatterns = [
     path('admin/bills/', admin_bills_list, name='admin-bills'),
 
     path('admin/bills/<uuid:bill_id>/', admin_bill_detail, name='admin-bill-detail'),
+
+    # path('admin/bills/', admin_views.admin_bills_list, name='admin_bills_list'),
+    
+    # NEW: Enhanced progress tracking endpoints for Phase 1
+    path('admin/bills/<uuid:bill_id>/progress/', admin_bill_progress, name='admin_bill_progress'),
+    path('admin/bills/<uuid:bill_id>/reprocess/', admin_bill_reprocess, name='admin_bill_reprocess'),
+    path('admin/processing-overview/', admin_processing_overview, name='admin_processing_overview'),
+
+    # NEW Phase 2 URLs - Async Processing & Real-time Updates
+    # Detailed async processing status
+    path('admin/bills/<uuid:bill_id>/status/', 
+         admin_bill_processing_status, 
+         name='admin_bill_processing_status'),
+    
+    # Async processing control
+    path('admin/bills/<uuid:bill_id>/retry/', 
+        admin_retry_bill_processing, 
+         name='admin_retry_bill_processing'),
+    
+    path('admin/bills/<uuid:bill_id>/cancel/', 
+         admin_cancel_bill_processing, 
+         name='admin_cancel_bill_processing'),
     
     # Public endpoints
     path('public/projects/', public_projects_list, name='public-projects'),

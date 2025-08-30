@@ -1,11 +1,12 @@
 # =============================================================================
-# FILE: civicAI/settings/base.py
+# FILE: civicAI/settings/base.py - PHASE 2 INTEGRATION
 # =============================================================================
 import os
 from pathlib import Path
 from datetime import timedelta
 from decouple import config
 import dj_database_url
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -29,7 +30,8 @@ THIRD_PARTY_APPS = [
     'corsheaders',
     'django_filters',
     'drf_spectacular',  # 🚀 SWAGGER/OpenAPI Documentation
-    # 'django_extensions',  # Commented out for now
+    'channels',  # 🚀 PHASE 2: For WebSocket support
+    'django_extensions',  # 🚀 PHASE 2: For monitoring and debugging
 ]
 
 LOCAL_APPS = [
@@ -56,6 +58,7 @@ MIDDLEWARE = [
     'apps.core.middleware.InvisibleBoundaryMiddleware',  # ADD THIS LINE
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'apps.api.middleware.BillProcessingMiddleware',  # 🚀 PHASE 2: Custom middleware
 ]
 
 # 🚀 SWAGGER/OpenAPI Configuration
@@ -157,7 +160,7 @@ Authorization: Bearer <your-jwt-token>
     ],
 }
 
-# Django REST Framework Configuration (ENHANCED)
+# Django REST Framework Configuration (ENHANCED FOR PHASE 2)
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -193,6 +196,9 @@ REST_FRAMEWORK = {
         'user': '1000/hour',
         'auth': '5/min',  # For auth endpoints
         'feedback': '20/hour',  # For feedback endpoints
+        'bill_upload': '10/hour',      # 🚀 PHASE 2: Limited bill uploads
+        'bill_processing': '5/hour',   # 🚀 PHASE 2: Limited processing requests
+        'progress_check': '120/hour',  # 🚀 PHASE 2: Progress checks
     }
 }
 
@@ -217,7 +223,7 @@ SIMPLE_JWT = {
     'TOKEN_REFRESH_SERIALIZER': 'rest_framework_simplejwt.serializers.TokenRefreshSerializer',
 }
 
-# CORS Settings (ENHANCED for Development & Production)
+# CORS Settings (ENHANCED for Development & Production + PHASE 2 WebSocket)
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",    # React dev server
     "http://127.0.0.1:3000",
@@ -250,6 +256,11 @@ CORS_ALLOWED_HEADERS = [
     'x-session-id',  # For anonymous sessions
 ]
 
+# 🚀 PHASE 2: WebSocket CORS support
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.yourdomain\.com$",  # Allow subdomains
+]
+
 # Additional CORS settings for Swagger UI
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -266,11 +277,12 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:8000",
 ]
 
-# Database
+# Database (ENHANCED FOR PHASE 2 - Connection Pooling)
 DATABASES = {
     'default': dj_database_url.config(
         default=config('DATABASE_URL'),
-        conn_max_age=600
+        conn_max_age=3600,  # Keep connections alive for 1 hour
+        conn_health_checks=True,
     )
 }
 
@@ -303,6 +315,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'civicAI.wsgi.application'
 
+# 🚀 PHASE 2: ASGI APPLICATION (WebSocket Support)
+ASGI_APPLICATION = 'civicAI.asgi.application'
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -322,16 +337,24 @@ AUTH_PASSWORD_VALIDATORS = [
 # Cache TTL settings (in seconds)
 AI_CACHE_TTL = 60 * 60 * 24  # 24 hours
 
-# Cache configuration
+# 🚀 PHASE 2: ENHANCED CACHE CONFIGURATION
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/1'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'SERIALIZER': 'django_redis.serializers.json.JSONSerializer',
+        },
+        'TIMEOUT': 7200,  # 2 hours default timeout
+        'KEY_PREFIX': 'civicai',
     },
     'ai_cache': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/2'),
         'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'SERIALIZER': 'django_redis.serializers.json.JSONSerializer',
             'CONNECTION_POOL_KWARGS': {
                 'max_connections': 50,
                 'retry_on_timeout': True,
@@ -340,8 +363,36 @@ CACHES = {
         'TIMEOUT': AI_CACHE_TTL,
         'KEY_PREFIX': 'civicai_ai',
         'VERSION': 1,
+    },
+    # 🚀 PHASE 2: Separate cache for async sessions
+    'async_sessions': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/3'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'SERIALIZER': 'django_redis.serializers.json.JSONSerializer',
+        },
+        'TIMEOUT': 7200,  # 2 hours for async sessions
+        'KEY_PREFIX': 'civicai_async',
     }
 }
+
+# 🚀 PHASE 2: CHANNEL LAYERS (WebSocket Configuration)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [config('REDIS_URL', default='redis://127.0.0.1:6379/0')],
+            'capacity': 1500,      # Maximum number of messages per channel
+            'expiry': 60,          # Message expiry time
+            'group_expiry': 86400, # Group expiry time (24 hours)
+            'symmetric_encryption_keys': [SECRET_KEY],  # For message encryption
+        },
+    },
+}
+
+# Use async_sessions cache for bill processing
+CIVICAI_CACHE_ALIAS = 'async_sessions'
 
 # Session configuration for anonymous users
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
@@ -386,8 +437,16 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 
+# 🚀 PHASE 2: FILE UPLOAD SECURITY
+FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB
+
+# 🚀 PHASE 2: CHANNEL SECURITY
+CHANNELS_WS_PROTOCOLS = ["websocket"]
+CHANNELS_HTTP_TIMEOUT = 86400  # 24 hours
+
 # =============================================================================
-# 🚀 CELERY CONFIGURATION FOR AI PROCESSING
+# 🚀 CELERY CONFIGURATION FOR AI PROCESSING (ENHANCED PHASE 2)
 # =============================================================================
 
 # Celery settings
@@ -411,7 +470,11 @@ CELERY_WORKER_DISABLE_RATE_LIMITS = config('CELERY_WORKER_DISABLE_RATE_LIMITS', 
 CELERY_RESULT_BACKEND_DB_SHORT_LIVED_SESSIONS = True
 CELERY_RESULT_EXTENDED = True
 
-# Configure different queues for different types of AI tasks
+# 🚀 PHASE 2: MONITORING
+CELERY_SEND_TASK_EVENTS = True
+CELERY_TASK_SEND_SENT_EVENT = True
+
+# 🚀 PHASE 2: ENHANCED CELERY TASK ROUTING (Bill Processing + AI Tasks)
 CELERY_TASK_ROUTES = {
     # High priority AI processing (real-time feedback analysis)
     'apps.ai.tasks.process_feedback_ai_complete': {'queue': 'ai_realtime'},
@@ -431,9 +494,37 @@ CELERY_TASK_ROUTES = {
     # Critical alerts (highest priority)
     'apps.ai.tasks.send_urgent_alert': {'queue': 'urgent_alerts'},
     'apps.ai.tasks.handle_critical_feedback': {'queue': 'urgent_alerts'},
+    
+    # 🚀 PHASE 2: CivicAI Bill Processing Tasks
+    'apps.api.tasks.process_bill_async': {
+        'queue': 'ai_responses',  # Medium priority for main processing
+        'routing_key': 'ai_responses',
+    },
+    'apps.api.tasks.create_bill_chunks_async': {
+        'queue': 'ai_batch',  # Low priority for chunking
+        'routing_key': 'ai_batch',
+    },
+    'apps.api.tasks.generate_bill_embeddings_async': {
+        'queue': 'ai_batch',  # Background task
+        'routing_key': 'ai_batch',
+    },
+    'apps.api.tasks.cleanup_failed_bill_processing': {
+        'queue': 'ai_analytics',  # Cleanup tasks
+        'routing_key': 'ai_analytics',
+    },
+    'apps.api.tasks.get_async_task_status': {
+        'queue': 'default',  # Fast status checks
+        'routing_key': 'default',
+    },
+    
+    # Urgent processing (small bills or priority processing)
+    'apps.api.tasks.process_bill_urgent': {  # Future: priority processing
+        'queue': 'ai_realtime',
+        'routing_key': 'ai_realtime',
+    },
 }
 
-# Queue priority levels
+# Queue priority levels (ENHANCED FOR PHASE 2)
 CELERY_TASK_DEFAULT_QUEUE = 'default'
 CELERY_TASK_QUEUES = {
     'urgent_alerts': {'routing_key': 'urgent_alerts', 'priority': 10},
@@ -443,6 +534,27 @@ CELERY_TASK_QUEUES = {
     'ai_batch': {'routing_key': 'ai_batch', 'priority': 2},
     'ai_analytics': {'routing_key': 'ai_analytics', 'priority': 1},
     'default': {'routing_key': 'default', 'priority': 5},
+}
+
+# 🚀 PHASE 2: CELERY BEAT SCHEDULE (Periodic Tasks)
+CELERY_BEAT_SCHEDULE = {
+    # Clean up temp files daily at 2 AM
+    'cleanup-temp-files': {
+        'task': 'apps.api.tasks.cleanup_temp_files_periodic',
+        'schedule': crontab(hour=2, minute=0),
+    },
+    
+    # Clean up old async sessions daily at 3 AM  
+    'cleanup-async-sessions': {
+        'task': 'apps.api.tasks.cleanup_old_async_sessions',
+        'schedule': crontab(hour=3, minute=0),
+    },
+    
+    # Monitor stuck processing tasks every 30 minutes
+    'monitor-stuck-tasks': {
+        'task': 'apps.api.tasks.monitor_stuck_processing',
+        'schedule': crontab(minute='*/30'),
+    },
 }
 
 # =============================================================================
@@ -485,8 +597,13 @@ AI_DEMO_MODE = config('AI_DEMO_MODE', default=True, cast=bool)
 AI_LOG_LEVEL = config('AI_LOG_LEVEL', default='INFO')
 AI_ENABLE_DETAILED_LOGGING = config('AI_ENABLE_DETAILED_LOGGING', default=True, cast=bool)
 
-# CivicAI Specific Settings
+# =============================================================================
+# 🚀 PHASE 2: CIVICAI ENHANCED SETTINGS
+# =============================================================================
+
+# CivicAI Specific Settings (ENHANCED FOR PHASE 2)
 CIVICAI_SETTINGS = {
+    # Original settings
     'ANONYMOUS_SESSION_TIMEOUT': 86400,  # 24 hours
     'MAX_ANONYMOUS_SUBMISSIONS_PER_SESSION': 5,
     'ENABLE_ANONYMOUS_FEEDBACK': True,
@@ -496,6 +613,30 @@ CIVICAI_SETTINGS = {
     'BATCH_PROCESSING_SIZE': AI_BATCH_SIZE,
     'MAX_RETRY_ATTEMPTS': AI_RETRY_ATTEMPTS,
     'PROCESSING_TIMEOUT': AI_TIMEOUT_SECONDS,
+    
+    # 🚀 PHASE 2: File handling
+    'MAX_FILE_SIZE': 50 * 1024 * 1024,  # 50MB max file size
+    'TEMP_FILE_RETENTION': 3600 * 24,   # Keep temp files for 24 hours
+    'TEMP_DIR': 'bills/temp/',           # Temp directory for async processing
+    
+    # 🚀 PHASE 2: Processing timeouts
+    'ASYNC_TASK_TIMEOUT': 3600,         # 1 hour max processing time
+    'PROGRESS_UPDATE_INTERVAL': 2,      # Update progress every 2 seconds
+    'WEBSOCKET_TIMEOUT': 7200,          # 2 hours WebSocket connection timeout
+    
+    # 🚀 PHASE 2: Retry configuration
+    'MAX_RETRIES': 3,                   # Maximum retry attempts
+    'RETRY_BACKOFF_BASE': 60,           # Base retry delay (seconds)
+    'RETRY_BACKOFF_MAX': 600,           # Maximum retry delay (seconds)
+    
+    # 🚀 PHASE 2: Performance settings
+    'CONCURRENT_BILL_PROCESSING': 5,    # Max concurrent bill processing tasks
+    'CHUNK_SIZE': 2000,                 # Characters per chunk for Phase 3
+    'SECTIONS_BATCH_SIZE': 10,          # Process sections in batches
+    
+    # 🚀 PHASE 2: WebSocket settings
+    'WEBSOCKET_HEARTBEAT': 30,          # Heartbeat interval (seconds)
+    'MAX_WEBSOCKET_CONNECTIONS': 100,   # Per bill WebSocket connection limit
     
     # Feature Toggles
     'FEATURES': {
@@ -526,10 +667,43 @@ CIVICAI_SETTINGS = {
     'DETAILED_LOGGING': AI_ENABLE_DETAILED_LOGGING,
 }
 
+# 🚀 PHASE 2: CUSTOM THROTTLE CLASSES FOR CIVICAI
+CIVICAI_THROTTLE_RATES = {
+    'bill_creation': '10/hour',
+    'async_processing': '5/hour', 
+    'progress_polling': '120/hour',
+    'websocket_connections': '20/hour',
+}
+
+# 🚀 PHASE 2: FEATURE FLAGS
+CIVICAI_FEATURES = {
+    'ASYNC_PROCESSING_ENABLED': config('CIVICAI_ASYNC_ENABLED', default='true').lower() == 'true',
+    'WEBSOCKET_ENABLED': config('CIVICAI_WEBSOCKET_ENABLED', default='true').lower() == 'true',
+    'ENHANCED_PROCESSING_DEFAULT': True,  # Phase 1 feature
+    'REAL_TIME_PROGRESS': config('CIVICAI_REALTIME_ENABLED', default='true').lower() == 'true',
+    'AUTO_RETRY_ENABLED': True,
+    'BACKGROUND_EMBEDDINGS': True,  # Preparation for Phase 3
+}
+
+# 🚀 PHASE 2: HEALTH CHECKS
+HEALTH_CHECKS = {
+    'database': 'django.db.backends.postgresql',
+    'redis': config('REDIS_URL', default='redis://127.0.0.1:6379/0'),
+    'celery': 'apps.api.health.celery_health_check',
+    'websocket': 'apps.api.health.websocket_health_check',
+}
+
+# Custom health check endpoint settings
+HEALTH_CHECK = {
+    'DISK_USAGE_MAX': 90,  # Maximum disk usage percentage
+    'MEMORY_MIN': 100,     # Minimum available memory (MB)
+}
+
 # Logging - Create logs directory if it doesn't exist
 LOGS_DIR = BASE_DIR / 'logs'
 LOGS_DIR.mkdir(exist_ok=True)
 
+# 🚀 PHASE 2: ENHANCED LOGGING CONFIGURATION
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -542,12 +716,19 @@ LOGGING = {
             'format': '{levelname} {message}',
             'style': '{',
         },
+        'civicai': {
+            'format': '{asctime} [{levelname}] CivicAI-{module}: {message}',
+            'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
     },
     'handlers': {
         'file': {
             'level': 'INFO',
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.RotatingFileHandler',
             'filename': LOGS_DIR / 'django.log',
+            'maxBytes': 1024*1024*10,  # 10MB
+            'backupCount': 5,
             'formatter': 'verbose',
         },
         'console': {
@@ -557,15 +738,41 @@ LOGGING = {
         },
         'users_file': {
             'level': 'INFO',
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.RotatingFileHandler',
             'filename': LOGS_DIR / 'users.log',
+            'maxBytes': 1024*1024*10,  # 10MB
+            'backupCount': 5,
             'formatter': 'verbose',
         },
         'ai_file': {
             'level': 'INFO',
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.RotatingFileHandler',
             'filename': LOGS_DIR / 'ai.log',
+            'maxBytes': 1024*1024*10,  # 10MB
+            'backupCount': 5,
             'formatter': 'verbose',
+        },
+        # 🚀 PHASE 2: CivicAI specific log files
+        'civicai_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'civicai.log',
+            'maxBytes': 1024*1024*10,  # 10MB
+            'backupCount': 5,
+            'formatter': 'civicai',
+        },
+        'async_processing': {
+            'class': 'logging.handlers.RotatingFileHandler', 
+            'filename': LOGS_DIR / 'civicai_async.log',
+            'maxBytes': 1024*1024*10,  # 10MB
+            'backupCount': 5,
+            'formatter': 'civicai',
+        },
+        'websocket_handler': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'civicai_websocket.log',
+            'maxBytes': 1024*1024*5,  # 5MB
+            'backupCount': 3,
+            'formatter': 'civicai',
         },
     },
     'root': {
@@ -608,5 +815,129 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        # 🚀 PHASE 1: CivicAI specific loggers (maintained)
+        'apps.api.bill_processor': {
+            'handlers': ['civicai_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'apps.api.progress_tracker': {
+            'handlers': ['civicai_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        
+        # 🚀 PHASE 2: NEW CivicAI loggers
+        'apps.api.tasks': {
+            'handlers': ['async_processing', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'apps.api.async_progress_tracker': {
+            'handlers': ['async_processing', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'apps.api.websocket_handlers': {
+            'handlers': ['websocket_handler', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
+
+# =============================================================================
+# 🚀 PHASE 2: DEVELOPMENT VS PRODUCTION SETTINGS
+# =============================================================================
+
+# Development-specific settings
+DEBUG = config('DEBUG', default=False, cast=bool)
+
+if DEBUG:
+    # Enable detailed async logging
+    LOGGING['loggers']['apps.api.tasks']['level'] = 'DEBUG'
+    LOGGING['loggers']['apps.api.websocket_handlers']['level'] = 'DEBUG'
+    
+    # Shorter timeouts for testing
+    CIVICAI_SETTINGS['ASYNC_TASK_TIMEOUT'] = 600  # 10 minutes
+    CIVICAI_SETTINGS['WEBSOCKET_TIMEOUT'] = 1800  # 30 minutes
+
+# Production settings
+else:
+    # Stricter security
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    
+    # Disable CORS_ALLOW_ALL_ORIGINS in production
+    CORS_ALLOW_ALL_ORIGINS = False
+    
+    # Optimize for production
+    CIVICAI_SETTINGS['CONCURRENT_BILL_PROCESSING'] = 10  # More concurrent processing
+    
+    # Production logging
+    LOGGING['handlers']['console']['level'] = 'WARNING'
+    
+    # Production Redis with connection pooling
+    CELERY_REDIS_BACKEND_USE_SSL = {
+        'ssl_cert_reqs': None,
+        'ssl_ca_certs': None,
+        'ssl_certfile': None,
+        'ssl_keyfile': None,
+    }
+
+# =============================================================================
+# 🚀 PHASE 2: ENVIRONMENT VARIABLES DOCUMENTATION
+# =============================================================================
+
+"""
+Add these environment variables to your .env file:
+
+# Phase 2 Environment Variables
+CIVICAI_ASYNC_ENABLED=true
+CIVICAI_MAX_CONCURRENT_PROCESSING=5
+CIVICAI_WEBSOCKET_ENABLED=true
+
+# Redis Configuration  
+REDIS_URL=redis://localhost:6379
+REDIS_CHANNELS_DB=0
+REDIS_CACHE_DB=1
+REDIS_SESSIONS_DB=2
+
+# File Processing
+CIVICAI_TEMP_DIR=bills/temp/
+CIVICAI_MAX_FILE_SIZE=52428800
+CIVICAI_FILE_RETENTION_HOURS=24
+
+# Performance Tuning
+CIVICAI_CHUNK_SIZE=2000
+CIVICAI_BATCH_SIZE=10
+CIVICAI_PROGRESS_INTERVAL=2
+
+# WebSocket Settings
+CIVICAI_WS_HEARTBEAT=30
+CIVICAI_WS_TIMEOUT=7200
+CIVICAI_MAX_WS_CONNECTIONS=100
+
+# Retry Configuration
+CIVICAI_MAX_RETRIES=3
+CIVICAI_RETRY_BACKOFF_BASE=60
+CIVICAI_RETRY_BACKOFF_MAX=600
+
+# Monitoring
+CIVICAI_DEBUG_ASYNC=false
+CIVICAI_LOG_LEVEL=INFO
+"""
+
+# =============================================================================
+# 🚀 PHASE 2: STARTUP CONFIGURATION SUMMARY
+# =============================================================================
+
+print(f"🚀 CivicAI Phase 2 Configuration Loaded")
+print(f"   - Async Processing: {'✅' if CIVICAI_FEATURES['ASYNC_PROCESSING_ENABLED'] else '❌'}")
+print(f"   - WebSocket Support: {'✅' if CIVICAI_FEATURES['WEBSOCKET_ENABLED'] else '❌'}")
+print(f"   - Real-time Progress: {'✅' if CIVICAI_FEATURES['REAL_TIME_PROGRESS'] else '❌'}")
+print(f"   - Max Concurrent Tasks: {CIVICAI_SETTINGS['CONCURRENT_BILL_PROCESSING']}")
+print(f"   - File Size Limit: {CIVICAI_SETTINGS['MAX_FILE_SIZE'] // 1024 // 1024}MB")
+print(f"   - Debug Mode: {'✅' if DEBUG else '❌'}")
+print(f"   - AI Processing: {'✅' if AI_PROCESSING_ASYNC else '❌'}")
+print(f"   - Channel Layers: {'✅' if 'channels' in INSTALLED_APPS else '❌'}")

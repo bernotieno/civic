@@ -24,6 +24,12 @@ def main():
     email = 'admin@civicai.ke'
     
     try:
+        # Get first county for user location
+        first_county = County.objects.first()
+        if not first_county:
+            print("❌ No counties found. Please run: python manage.py setup_counties")
+            sys.exit(1)
+        
         # Get or create admin user
         admin_user, created = CustomUser.objects.get_or_create(
             email=email,
@@ -32,9 +38,10 @@ def main():
                 'is_superuser': True,
                 'is_staff': True,
                 'is_active': True,
-                'tenant': County.objects.first(),
-                'county': County.objects.first().location,
-                'home_county': County.objects.first(),
+                'role': 'parliament_admin',
+                'admin_level': 'super_admin',
+                'user_county': first_county,
+                'county': first_county.location,
             }
         )
         
@@ -49,6 +56,8 @@ def main():
         admin_user.is_superuser = True
         admin_user.is_staff = True
         admin_user.is_active = True
+        admin_user.role = 'parliament_admin'
+        admin_user.admin_level = 'super_admin'
         admin_user.save()
         
         print("\n✅ Admin credentials reset successfully!")
