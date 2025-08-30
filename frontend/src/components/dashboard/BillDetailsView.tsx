@@ -58,13 +58,12 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
         headers['Authorization'] = `Bearer ${token}`;
       }
       
-      const response = await fetch('http://127.0.0.1:8000/api/public/bills/', {
+      const response = await fetch(`http://127.0.0.1:8000/api/public/bills/${billId}/`, {
         headers
       });
       if (response.ok) {
         const data = await response.json();
-        const foundBill = data.data.find((b: Bill) => b.id === billId);
-        setBill(foundBill || null);
+        setBill(data.bill || null);
       }
     } catch (error) {
       console.error('Error fetching bill:', error);
@@ -282,11 +281,11 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
               <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Bill Description</h3>
               <div className="prose max-w-none">
                 <p className="text-gray-700 leading-relaxed mb-4 sm:mb-6 text-sm sm:text-base">{bill.description}</p>
-                {bill.document && (
+                {(bill.document || bill.document_url) && (
                   <div className="mt-4 sm:mt-6">
                     <h4 className="text-base sm:text-lg font-semibold mb-2">Bill Document</h4>
                     <a 
-                      href={`http://127.0.0.1:8000${bill.document}`}
+                      href={bill.document_url || `http://127.0.0.1:8000${bill.document}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm sm:text-base w-full sm:w-auto justify-center sm:justify-start"
@@ -302,9 +301,15 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
           {activeTab === 'summary' && (
             <div>
               <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">AI-Generated Summary</h3>
-              {bill.summary ? (
+              {(bill.summary || bill.summary_markdown || bill.summary_html) ? (
                 <div className="prose max-w-none">
-                  <p className="text-gray-700 leading-relaxed text-sm sm:text-base">{bill.summary}</p>
+                  <div className="text-gray-700 leading-relaxed text-sm sm:text-base whitespace-pre-wrap">
+                    {bill.summary_html ? (
+                      <div dangerouslySetInnerHTML={{ __html: bill.summary_html }} />
+                    ) : (
+                      bill.summary_markdown || bill.summary
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-6 sm:py-8">

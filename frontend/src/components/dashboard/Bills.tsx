@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Calendar, Search } from 'lucide-react';
 import { Bill } from '../../types';
+import { apiService } from '../../services/api';
 
 interface BillsProps {
   onFeedbackClick?: (billId?: string) => void;
@@ -23,20 +24,9 @@ const Bills: React.FC<BillsProps> = ({ onFeedbackClick, onBillExplore }) => {
   const fetchBills = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('access_token');
-      const headers: HeadersInit = {};
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const billsResponse = await fetch('http://127.0.0.1:8000/api/public/bills/', {
-        headers
-      });
-      
-      if (billsResponse.ok) {
-        const billsData = await billsResponse.json();
-        setBills(billsData.data || []);
+      const response = await apiService.getPublicBills();
+      if (response.success) {
+        setBills(response.bills || []);
       }
     } catch (error) {
       console.error('Error fetching bills:', error);

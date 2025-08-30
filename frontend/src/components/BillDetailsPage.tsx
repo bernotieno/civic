@@ -21,11 +21,11 @@ const BillDetailsPage: React.FC = () => {
   const fetchBillData = async (billId: string) => {
     try {
       setLoading(true);
-      const billResponse = await fetch('http://127.0.0.1:8000/api/public/bills/');
+      const billResponse = await fetch(`http://127.0.0.1:8000/api/public/bills/${billId}/`);
       
       if (billResponse.ok) {
         const data = await billResponse.json();
-        const foundBill = data.data.find((b: Bill) => b.id === billId);
+        const foundBill = data.bill;
         if (foundBill) {
           setBill(foundBill);
           if (foundBill.summary) {
@@ -88,11 +88,11 @@ const BillDetailsPage: React.FC = () => {
               <div className="whitespace-pre-wrap text-gray-700 mb-6">
                 {bill.description}
               </div>
-              {bill.document && (
+              {(bill.document || bill.document_url) && (
                 <div className="mt-6">
                   <h4 className="text-lg font-semibold mb-2">Bill Document</h4>
                   <a 
-                    href={`http://127.0.0.1:8000${bill.document}`}
+                    href={bill.document_url || `http://127.0.0.1:8000${bill.document}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
@@ -107,19 +107,15 @@ const BillDetailsPage: React.FC = () => {
           {activeTab === 'ai-summary' && (
             <div>
               <h3 className="text-xl font-semibold mb-4">Bill Summary</h3>
-              {billSummary ? (
+              {(bill.summary || bill.summary_markdown || bill.summary_html) ? (
                 <div>
-                  <p className="text-gray-700 mb-4">{billSummary.summary}</p>
-                  {billSummary.key_points.length > 0 && (
-                    <div>
-                      <h4 className="font-semibold mb-2">Key Points:</h4>
-                      <ul className="list-disc pl-6 space-y-1">
-                        {billSummary.key_points.map((point, index) => (
-                          <li key={index} className="text-gray-700">{point}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  <div className="text-gray-700 mb-4 whitespace-pre-wrap">
+                    {bill.summary_html ? (
+                      <div dangerouslySetInnerHTML={{ __html: bill.summary_html }} />
+                    ) : (
+                      bill.summary_markdown || bill.summary
+                    )}
+                  </div>
                 </div>
               ) : (
                 <p className="text-gray-500">Summary not available</p>

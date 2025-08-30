@@ -108,7 +108,7 @@ const BillsList: React.FC = () => {
       
       if (response.ok) {
         const data = await response.json();
-        const bills = data.data || [];
+        const bills = data.bills || [];
         
         setAllBills(bills);
         setFilteredBills(bills);

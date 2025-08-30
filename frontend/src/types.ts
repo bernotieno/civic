@@ -125,6 +125,8 @@ export interface Bill {
   title: string;
   description: string;
   summary?: string;
+  summary_html?: string;
+  summary_markdown?: string;
   sponsor: string;
   committee?: string;
   status: string;
@@ -135,6 +137,7 @@ export interface Bill {
   public_participation_open?: boolean;
   participation_deadline?: string;
   document?: string;
+  document_url?: string;
   image?: string;
   created_at: string;
 }

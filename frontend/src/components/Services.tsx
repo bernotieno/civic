@@ -61,7 +61,7 @@ const Bills: React.FC = () => {
         
         if (response.ok) {
           const data = await response.json();
-          const allBills = data.data || [];
+          const allBills = data.bills || [];
           // Get only the latest 3 bills
           setBills(allBills.slice(0, 3));
         } else {

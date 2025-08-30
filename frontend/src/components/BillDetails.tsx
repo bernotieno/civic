@@ -8,9 +8,12 @@ interface Bill {
   title: string;
   description: string;
   summary?: string;
+  summary_html?: string;
+  summary_markdown?: string;
   sponsor: string;
   participation_deadline?: string;
   document?: string;
+  document_url?: string;
   created_at: string;
 }
 
@@ -38,11 +41,10 @@ const BillDetails: React.FC = () => {
 
   const fetchBill = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/public/bills/');
+      const response = await fetch(`http://127.0.0.1:8000/api/public/bills/${id}/`);
       if (response.ok) {
         const data = await response.json();
-        const foundBill = data.data.find((b: Bill) => b.id === id);
-        setBill(foundBill || null);
+        setBill(data.bill || null);
       }
     } catch (error) {
       console.error('Error fetching bill:', error);
@@ -205,19 +207,25 @@ const BillDetails: React.FC = () => {
               <div className="mb-8">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">Bill Description</h2>
                 <p className="text-gray-700 leading-relaxed mb-4">{bill.description}</p>
-                {bill.summary && (
+                {(bill.summary || bill.summary_markdown || bill.summary_html) && (
                   <>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">AI-Generated Summary</h3>
-                    <p className="text-gray-700 leading-relaxed">{bill.summary}</p>
+                    <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                      {bill.summary_html ? (
+                        <div dangerouslySetInnerHTML={{ __html: bill.summary_html }} />
+                      ) : (
+                        bill.summary_markdown || bill.summary
+                      )}
+                    </div>
                   </>
                 )}
               </div>
 
-              {bill.document && (
+              {(bill.document || bill.document_url) && (
                 <div className="mb-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-4">Bill Document</h2>
                   <a 
-                    href={`http://127.0.0.1:8000${bill.document}`}
+                    href={bill.document_url || `http://127.0.0.1:8000${bill.document}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"

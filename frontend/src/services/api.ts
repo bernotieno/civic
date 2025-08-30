@@ -860,6 +860,70 @@ class CivicAIApiService {
   }
 
   // =============================================================================
+  // BILLS API METHODS
+  // =============================================================================
+
+  /**
+   * Get public bills for citizens
+   */
+  async getPublicBills(params?: {
+    page?: number;
+    page_size?: number;
+    status?: string;
+    search?: string;
+    sponsor?: string;
+    sort?: string;
+  }): Promise<{
+    success: boolean;
+    bills: any[];
+    pagination: any;
+    filters: any;
+    summary: any;
+  }> {
+    try {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.append('page', params.page.toString());
+      if (params?.page_size) searchParams.append('page_size', params.page_size.toString());
+      if (params?.status) searchParams.append('status', params.status);
+      if (params?.search) searchParams.append('search', params.search);
+      if (params?.sponsor) searchParams.append('sponsor', params.sponsor);
+      if (params?.sort) searchParams.append('sort', params.sort);
+
+      const response = await fetch(`${this.baseURL}/api/public/bills/?${searchParams}`, {
+        method: 'GET',
+        headers: this.getHeaders(false),
+      });
+
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching public bills:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get specific bill details for citizens
+   */
+  async getPublicBillDetail(billId: string): Promise<{
+    success: boolean;
+    bill: any;
+    capabilities: any;
+    citizen_features: any;
+  }> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/public/bills/${billId}/`, {
+        method: 'GET',
+        headers: this.getHeaders(false),
+      });
+
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching public bill detail:', error);
+      throw error;
+    }
+  }
+
+  // =============================================================================
   // DASHBOARD DATA METHODS
   // =============================================================================
 
