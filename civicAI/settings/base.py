@@ -1,5 +1,5 @@
 # =============================================================================
-# FILE: civicAI/settings/base.py - PHASE 2 INTEGRATION
+# FILE: civicAI/settings/base.py - PHASE 3 INTEGRATION
 # =============================================================================
 import os
 from pathlib import Path
@@ -160,7 +160,7 @@ Authorization: Bearer <your-jwt-token>
     ],
 }
 
-# Django REST Framework Configuration (ENHANCED FOR PHASE 2)
+# Django REST Framework Configuration (ENHANCED FOR PHASE 3)
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -199,6 +199,10 @@ REST_FRAMEWORK = {
         'bill_upload': '10/hour',      # 🚀 PHASE 2: Limited bill uploads
         'bill_processing': '5/hour',   # 🚀 PHASE 2: Limited processing requests
         'progress_check': '120/hour',  # 🚀 PHASE 2: Progress checks
+        # 🚀 PHASE 3: Citizen API rate limits
+        'citizen_api': '100/hour',        # General citizen API access
+        'citizen_chat': '20/hour',        # Chat requests (anonymous)
+        'citizen_chat_auth': '50/hour',   # Chat requests (authenticated)
     }
 }
 
@@ -337,7 +341,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Cache TTL settings (in seconds)
 AI_CACHE_TTL = 60 * 60 * 24  # 24 hours
 
-# 🚀 PHASE 2: ENHANCED CACHE CONFIGURATION
+# 🚀 PHASE 3: ENHANCED CACHE CONFIGURATION
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
@@ -346,7 +350,7 @@ CACHES = {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'SERIALIZER': 'django_redis.serializers.json.JSONSerializer',
         },
-        'TIMEOUT': 7200,  # 2 hours default timeout
+        'TIMEOUT': 3600,  # 1 hour default timeout (updated for Phase 3)
         'KEY_PREFIX': 'civicai',
     },
     'ai_cache': {
@@ -667,6 +671,34 @@ CIVICAI_SETTINGS = {
     'DETAILED_LOGGING': AI_ENABLE_DETAILED_LOGGING,
 }
 
+# 🚀 PHASE 3: CITIZEN API SETTINGS
+CIVICAI_PHASE3_SETTINGS = {
+    # Chat functionality
+    'CHAT_ENABLED': config('CIVICAI_CHAT_ENABLED', default=True, cast=bool),
+    'MAX_CHAT_QUESTIONS_PER_SESSION': config('CIVICAI_MAX_CHAT_QUESTIONS', default=5, cast=int),
+    'CHAT_SESSION_TIMEOUT': config('CIVICAI_CHAT_SESSION_TIMEOUT', default=3600, cast=int),  # 1 hour
+    'ENABLE_EMBEDDINGS': config('CIVICAI_ENABLE_EMBEDDINGS', default=True, cast=bool),  # Set to False if no OpenAI API
+    
+    # Search functionality  
+    'SEARCH_ENABLED': config('CIVICAI_SEARCH_ENABLED', default=True, cast=bool),
+    'MAX_SEARCH_RESULTS': config('CIVICAI_MAX_SEARCH_RESULTS', default=20, cast=int),
+    'SEARCH_MIN_QUERY_LENGTH': config('CIVICAI_SEARCH_MIN_LENGTH', default=3, cast=int),
+    
+    # Public access controls
+    'PUBLISHED_BILL_STATUSES': [
+        'first_reading', 'committee_stage', 'second_reading',
+        'third_reading', 'presidential_assent', 'enacted'
+    ],
+    'REQUIRE_COMPLETED_PROCESSING': config('CIVICAI_REQUIRE_COMPLETED_PROCESSING', default=True, cast=bool),
+    
+    # Performance settings
+    'ENABLE_RESPONSE_CACHING': config('CIVICAI_ENABLE_RESPONSE_CACHING', default=True, cast=bool),
+    'CACHE_TIMEOUT_BILLS_LIST': config('CIVICAI_CACHE_BILLS_LIST', default=600, cast=int),      # 10 minutes
+    'CACHE_TIMEOUT_BILL_DETAIL': config('CIVICAI_CACHE_BILL_DETAIL', default=1800, cast=int),    # 30 minutes  
+    'CACHE_TIMEOUT_SEARCH_RESULTS': config('CIVICAI_CACHE_SEARCH_RESULTS', default=900, cast=int),  # 15 minutes
+    'CACHE_TIMEOUT_CHAT_SUGGESTIONS': config('CIVICAI_CACHE_CHAT_SUGGESTIONS', default=7200, cast=int), # 2 hours
+}
+
 # 🚀 PHASE 2: CUSTOM THROTTLE CLASSES FOR CIVICAI
 CIVICAI_THROTTLE_RATES = {
     'bill_creation': '10/hour',
@@ -675,7 +707,7 @@ CIVICAI_THROTTLE_RATES = {
     'websocket_connections': '20/hour',
 }
 
-# 🚀 PHASE 2: FEATURE FLAGS
+# 🚀 PHASE 2: FEATURE FLAGS (ENHANCED FOR PHASE 3)
 CIVICAI_FEATURES = {
     'ASYNC_PROCESSING_ENABLED': config('CIVICAI_ASYNC_ENABLED', default='true').lower() == 'true',
     'WEBSOCKET_ENABLED': config('CIVICAI_WEBSOCKET_ENABLED', default='true').lower() == 'true',
@@ -683,6 +715,13 @@ CIVICAI_FEATURES = {
     'REAL_TIME_PROGRESS': config('CIVICAI_REALTIME_ENABLED', default='true').lower() == 'true',
     'AUTO_RETRY_ENABLED': True,
     'BACKGROUND_EMBEDDINGS': True,  # Preparation for Phase 3
+    
+    # 🚀 PHASE 3: New feature flags
+    'CITIZEN_API_ENABLED': config('CIVICAI_CITIZEN_API_ENABLED', default='true').lower() == 'true',
+    'PUBLIC_BILL_ACCESS': config('CIVICAI_PUBLIC_BILL_ACCESS', default='true').lower() == 'true',
+    'CHAT_FUNCTIONALITY': CIVICAI_PHASE3_SETTINGS['CHAT_ENABLED'],
+    'SEARCH_FUNCTIONALITY': CIVICAI_PHASE3_SETTINGS['SEARCH_ENABLED'],
+    'EMBEDDINGS_GENERATION': CIVICAI_PHASE3_SETTINGS['ENABLE_EMBEDDINGS'],
 }
 
 # 🚀 PHASE 2: HEALTH CHECKS
@@ -703,7 +742,7 @@ HEALTH_CHECK = {
 LOGS_DIR = BASE_DIR / 'logs'
 LOGS_DIR.mkdir(exist_ok=True)
 
-# 🚀 PHASE 2: ENHANCED LOGGING CONFIGURATION
+# 🚀 PHASE 3: ENHANCED LOGGING CONFIGURATION
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -827,7 +866,7 @@ LOGGING = {
             'propagate': False,
         },
         
-        # 🚀 PHASE 2: NEW CivicAI loggers
+        # 🚀 PHASE 2: CivicAI loggers (maintained)
         'apps.api.tasks': {
             'handlers': ['async_processing', 'console'],
             'level': 'INFO',
@@ -843,11 +882,33 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        
+        # 🚀 PHASE 3: NEW logging for citizen API features
+        'apps.api.citizen_views': {
+            'handlers': ['civicai_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'apps.api.chat_service': {
+            'handlers': ['civicai_file', 'console'],
+            'level': 'INFO', 
+            'propagate': False,
+        },
+        'apps.api.chat_views': {
+            'handlers': ['civicai_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'apps.api.embedding_service': {
+            'handlers': ['civicai_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
 
 # =============================================================================
-# 🚀 PHASE 2: DEVELOPMENT VS PRODUCTION SETTINGS
+# 🚀 PHASE 2: DEVELOPMENT VS PRODUCTION SETTINGS (ENHANCED FOR PHASE 3)
 # =============================================================================
 
 # Development-specific settings
@@ -858,9 +919,17 @@ if DEBUG:
     LOGGING['loggers']['apps.api.tasks']['level'] = 'DEBUG'
     LOGGING['loggers']['apps.api.websocket_handlers']['level'] = 'DEBUG'
     
+    # 🚀 PHASE 3: Enable detailed citizen API logging in development
+    LOGGING['loggers']['apps.api.chat_service']['level'] = 'DEBUG'
+    LOGGING['loggers']['apps.api.embedding_service']['level'] = 'DEBUG'
+    
     # Shorter timeouts for testing
     CIVICAI_SETTINGS['ASYNC_TASK_TIMEOUT'] = 600  # 10 minutes
     CIVICAI_SETTINGS['WEBSOCKET_TIMEOUT'] = 1800  # 30 minutes
+    
+    # 🚀 PHASE 3: Development chat settings
+    CIVICAI_PHASE3_SETTINGS['CHAT_SESSION_TIMEOUT'] = 1800  # 30 minutes for testing
+    CIVICAI_PHASE3_SETTINGS['MAX_CHAT_QUESTIONS_PER_SESSION'] = 10  # More questions in dev
 
 # Production settings
 else:
@@ -886,16 +955,39 @@ else:
     }
 
 # =============================================================================
-# 🚀 PHASE 2: ENVIRONMENT VARIABLES DOCUMENTATION
+# 🚀 PHASE 3: ENVIRONMENT VARIABLES DOCUMENTATION
 # =============================================================================
 
 """
 Add these environment variables to your .env file:
 
-# Phase 2 Environment Variables
+# Phase 2 Environment Variables (maintained)
 CIVICAI_ASYNC_ENABLED=true
 CIVICAI_MAX_CONCURRENT_PROCESSING=5
 CIVICAI_WEBSOCKET_ENABLED=true
+
+# Phase 3 Environment Variables (NEW)
+CIVICAI_CHAT_ENABLED=true
+CIVICAI_SEARCH_ENABLED=true
+CIVICAI_ENABLE_EMBEDDINGS=true
+CIVICAI_CITIZEN_API_ENABLED=true
+CIVICAI_PUBLIC_BILL_ACCESS=true
+
+# Chat Configuration
+CIVICAI_MAX_CHAT_QUESTIONS=5
+CIVICAI_CHAT_SESSION_TIMEOUT=3600
+CIVICAI_MAX_SEARCH_RESULTS=20
+CIVICAI_SEARCH_MIN_LENGTH=3
+
+# Caching Configuration
+CIVICAI_ENABLE_RESPONSE_CACHING=true
+CIVICAI_CACHE_BILLS_LIST=600
+CIVICAI_CACHE_BILL_DETAIL=1800
+CIVICAI_CACHE_SEARCH_RESULTS=900
+CIVICAI_CACHE_CHAT_SUGGESTIONS=7200
+
+# Processing Control
+CIVICAI_REQUIRE_COMPLETED_PROCESSING=true
 
 # Redis Configuration  
 REDIS_URL=redis://localhost:6379
@@ -903,41 +995,48 @@ REDIS_CHANNELS_DB=0
 REDIS_CACHE_DB=1
 REDIS_SESSIONS_DB=2
 
-# File Processing
+# File Processing (maintained)
 CIVICAI_TEMP_DIR=bills/temp/
 CIVICAI_MAX_FILE_SIZE=52428800
 CIVICAI_FILE_RETENTION_HOURS=24
 
-# Performance Tuning
+# Performance Tuning (maintained)
 CIVICAI_CHUNK_SIZE=2000
 CIVICAI_BATCH_SIZE=10
 CIVICAI_PROGRESS_INTERVAL=2
 
-# WebSocket Settings
+# WebSocket Settings (maintained)
 CIVICAI_WS_HEARTBEAT=30
 CIVICAI_WS_TIMEOUT=7200
 CIVICAI_MAX_WS_CONNECTIONS=100
 
-# Retry Configuration
+# Retry Configuration (maintained)
 CIVICAI_MAX_RETRIES=3
 CIVICAI_RETRY_BACKOFF_BASE=60
 CIVICAI_RETRY_BACKOFF_MAX=600
 
-# Monitoring
+# Monitoring (maintained)
 CIVICAI_DEBUG_ASYNC=false
 CIVICAI_LOG_LEVEL=INFO
 """
 
 # =============================================================================
-# 🚀 PHASE 2: STARTUP CONFIGURATION SUMMARY
+# 🚀 PHASE 3: STARTUP CONFIGURATION SUMMARY
 # =============================================================================
 
-print(f"🚀 CivicAI Phase 2 Configuration Loaded")
-print(f"   - Async Processing: {'✅' if CIVICAI_FEATURES['ASYNC_PROCESSING_ENABLED'] else '❌'}")
-print(f"   - WebSocket Support: {'✅' if CIVICAI_FEATURES['WEBSOCKET_ENABLED'] else '❌'}")
-print(f"   - Real-time Progress: {'✅' if CIVICAI_FEATURES['REAL_TIME_PROGRESS'] else '❌'}")
-print(f"   - Max Concurrent Tasks: {CIVICAI_SETTINGS['CONCURRENT_BILL_PROCESSING']}")
-print(f"   - File Size Limit: {CIVICAI_SETTINGS['MAX_FILE_SIZE'] // 1024 // 1024}MB")
-print(f"   - Debug Mode: {'✅' if DEBUG else '❌'}")
-print(f"   - AI Processing: {'✅' if AI_PROCESSING_ASYNC else '❌'}")
-print(f"   - Channel Layers: {'✅' if 'channels' in INSTALLED_APPS else '❌'}")
+if config('DEBUG', default=False, cast=bool):
+    print(f"🚀 CivicAI Phase 3 Configuration Loaded")
+    print(f"   - Async Processing: {'✅' if CIVICAI_FEATURES['ASYNC_PROCESSING_ENABLED'] else '❌'}")
+    print(f"   - WebSocket Support: {'✅' if CIVICAI_FEATURES['WEBSOCKET_ENABLED'] else '❌'}")
+    print(f"   - Real-time Progress: {'✅' if CIVICAI_FEATURES['REAL_TIME_PROGRESS'] else '❌'}")
+    print(f"   - Citizen API: {'✅' if CIVICAI_FEATURES['CITIZEN_API_ENABLED'] else '❌'}")
+    print(f"   - Chat Functionality: {'✅' if CIVICAI_FEATURES['CHAT_FUNCTIONALITY'] else '❌'}")
+    print(f"   - Search Functionality: {'✅' if CIVICAI_FEATURES['SEARCH_FUNCTIONALITY'] else '❌'}")
+    print(f"   - Public Bill Access: {'✅' if CIVICAI_FEATURES['PUBLIC_BILL_ACCESS'] else '❌'}")
+    print(f"   - Embeddings Generation: {'✅' if CIVICAI_FEATURES['EMBEDDINGS_GENERATION'] else '❌'}")
+    print(f"   - Max Concurrent Tasks: {CIVICAI_SETTINGS['CONCURRENT_BILL_PROCESSING']}")
+    print(f"   - File Size Limit: {CIVICAI_SETTINGS['MAX_FILE_SIZE'] // 1024 // 1024}MB")
+    print(f"   - Debug Mode: {'✅' if DEBUG else '❌'}")
+    print(f"   - AI Processing: {'✅' if AI_PROCESSING_ASYNC else '❌'}")
+    print(f"   - Channel Layers: {'✅' if 'channels' in INSTALLED_APPS else '❌'}")
+    print(f"   - Response Caching: {'✅' if CIVICAI_PHASE3_SETTINGS['ENABLE_RESPONSE_CACHING'] else '❌'}")
