@@ -26,7 +26,7 @@ def process_feedback_ai(sender, instance, created, **kwargs):
         # Check if AI processing is enabled
         ai_enabled = getattr(settings, 'AI_PROCESSING_ASYNC', True)
         if not ai_enabled:
-            logger.debug(f"AI processing disabled - skipping feedback {instance.tracking_id}")
+            logger.debug(f"AI processing disabled - skipping feedback {instance.id}")
             return
         
         # Import here to avoid circular imports
@@ -35,7 +35,7 @@ def process_feedback_ai(sender, instance, created, **kwargs):
         # Queue AI processing task
         process_feedback_ai_complete.delay(instance.id)
         
-        logger.info(f"✅ Queued AI processing for feedback {instance.tracking_id}")
+        logger.info(f"✅ Queued AI processing for feedback {instance.id}")
         
     except ImportError:
         # Tasks not available (probably because Celery is not set up)
@@ -56,15 +56,15 @@ def process_feedback_ai(sender, instance, created, **kwargs):
                 result = loop.run_until_complete(
                     sentiment_analyzer.analyze_feedback_sentiment(instance)
                 )
-                logger.info(f"✅ Processed feedback {instance.tracking_id} synchronously")
+                logger.info(f"✅ Processed feedback {instance.id} synchronously")
             finally:
                 loop.close()
                 
         except Exception as sync_error:
-            logger.error(f"❌ Failed to process feedback {instance.tracking_id}: {sync_error}")
+            logger.error(f"❌ Failed to process feedback {instance.id}: {sync_error}")
     
     except Exception as e:
-        logger.error(f"❌ Error queuing AI processing for feedback {instance.tracking_id}: {e}")
+        logger.error(f"❌ Error queuing AI processing for feedback {instance.id}: {e}")
 
 
 @receiver(post_save, sender='feedback.FeedbackResponse')
@@ -91,7 +91,7 @@ def analyze_response_quality(sender, instance, created, **kwargs):
         # Queue response analysis
         analyze_response_quality_task.delay(instance.id)
         
-        logger.info(f"✅ Queued response analysis for feedback {instance.feedback.tracking_id}")
+        logger.info(f"✅ Queued response analysis for feedback {instance.feedback.id}")
         
     except ImportError:
         logger.warning("⚠️ Response analysis tasks not available")

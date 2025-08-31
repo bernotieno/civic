@@ -98,7 +98,7 @@ def process_feedback_ai_complete(self, feedback_id: int) -> Dict:
             'user', 'county', 'sub_county', 'ward', 'village'
         ).get(id=feedback_id)
         
-        logger.info(f"Starting complete AI processing for feedback {feedback.tracking_id}")
+        logger.info(f"Starting complete AI processing for feedback {feedback.id}")
         
         # Check if AI processing is enabled
         if not getattr(settings, 'AI_PROCESSING_ASYNC', True):
@@ -111,7 +111,7 @@ def process_feedback_ai_complete(self, feedback_id: int) -> Dict:
         # Check if already processed
         existing_analysis = FeedbackAIAnalysis.objects.filter(feedback=feedback).first()
         if existing_analysis:
-            logger.info(f"Feedback {feedback.tracking_id} already has AI analysis")
+            logger.info(f"Feedback {feedback.id} already has AI analysis")
             log_entry.complete_processing(success=True, results={'reprocessed': False})
             return {'success': True, 'message': 'Already processed', 'reprocessed': False}
         
@@ -124,7 +124,7 @@ def process_feedback_ai_complete(self, feedback_id: int) -> Dict:
         # Complete processing log
         log_entry.complete_processing(success=True, results=results)
         
-        logger.info(f"AI processing completed for feedback {feedback.tracking_id}")
+        logger.info(f"AI processing completed for feedback {feedback.id}")
         return {'success': True, 'results': results}
         
     except Feedback.DoesNotExist:
@@ -249,7 +249,7 @@ async def _store_ai_analysis(feedback, sentiment_result: Dict, urgency_result: D
             }
         )
         
-        logger.info(f"AI analysis stored for feedback {feedback.tracking_id}")
+        logger.info(f"AI analysis stored for feedback {feedback.id}")
         return ai_analysis
         
     except Exception as e:
@@ -335,7 +335,7 @@ def send_urgent_alert(self, feedback_id: int, urgency_data: Dict) -> Dict:
         
         feedback = Feedback.objects.select_related('county', 'user').get(id=feedback_id)
         
-        logger.warning(f"URGENT ALERT: Critical feedback {feedback.tracking_id} requires immediate attention")
+        logger.warning(f"URGENT ALERT: Critical feedback {feedback.id} requires immediate attention")
         
         # Get relevant officials for immediate notification
         urgent_officials = CustomUser.objects.filter(
@@ -349,7 +349,7 @@ def send_urgent_alert(self, feedback_id: int, urgency_data: Dict) -> Dict:
         # For now, log and cache for dashboard alerts
         alert_data = {
             'feedback_id': feedback_id,
-            'tracking_id': feedback.tracking_id,
+            'tracking_id': str(feedback.id),
             'urgency_score': urgency_data.get('urgency_score'),
             'urgency_level': urgency_data.get('urgency_level'),
             'affected_population': urgency_data.get('affected_population_estimate'),
@@ -366,7 +366,7 @@ def send_urgent_alert(self, feedback_id: int, urgency_data: Dict) -> Dict:
         cache.set(cache_key, current_alerts, 86400)  # 24 hours
         
         # Log for audit trail
-        logger.critical(f"Urgent alert processed for feedback {feedback.tracking_id} - Urgency: {urgency_data.get('urgency_level')}")
+        logger.critical(f"Urgent alert processed for feedback {feedback.id} - Urgency: {urgency_data.get('urgency_level')}")
         
         return {
             'success': True,
@@ -398,7 +398,7 @@ def handle_critical_feedback(feedback_id: int) -> Dict:
         feedback = Feedback.objects.get(id=feedback_id)
         
         # Log critical handling
-        logger.critical(f"CRITICAL FEEDBACK HANDLING: {feedback.tracking_id}")
+        logger.critical(f"CRITICAL FEEDBACK HANDLING: {feedback.id}")
         
         # Escalate to senior officials
         senior_officials = CustomUser.objects.filter(
@@ -411,7 +411,7 @@ def handle_critical_feedback(feedback_id: int) -> Dict:
         critical_cache_key = f"critical_feedback_{feedback.county.id}"
         critical_data = {
             'feedback_id': feedback_id,
-            'tracking_id': feedback.tracking_id,
+            'tracking_id': str(feedback.id),
             'escalated_at': timezone.now().isoformat(),
             'status': 'requires_immediate_response'
         }
@@ -461,7 +461,7 @@ def process_pending_ai_analysis_batch() -> Dict:
                 task_result = process_feedback_ai_complete.delay(feedback.id)
                 results.append({
                     'feedback_id': feedback.id,
-                    'tracking_id': feedback.tracking_id,
+                    'tracking_id': str(feedback.id),
                     'task_id': task_result.id,
                     'status': 'scheduled'
                 })

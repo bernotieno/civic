@@ -1,6 +1,7 @@
 # =============================================================================
 # FILE: apps/api/views.py (ENHANCED WITH SWAGGER DOCUMENTATION)
 # =============================================================================
+import logging
 from rest_framework import status, generics, permissions
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.response import Response
@@ -20,6 +21,8 @@ from drf_spectacular.utils import (
     extend_schema_view
 )
 from drf_spectacular.types import OpenApiTypes
+
+logger = logging.getLogger(__name__)
 
 from apps.users.models import CustomUser, County, Location
 from apps.core.anonymous import AnonymousSessionManager

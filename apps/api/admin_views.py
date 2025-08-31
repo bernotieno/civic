@@ -202,7 +202,7 @@ def admin_feedback_list(request):
                     'priority_display': f.get_priority_display(),
                     'status': f.status,
                     'status_display': f.get_status_display(),
-                    'tracking_id': f.tracking_id,
+                    'tracking_id': str(f.id),
                     'county': f.user.user_county.name if f.user and f.user.user_county else 'Unknown',
                     'location_path': f.get_location_path(),
                     'created_at': f.created_at,
@@ -291,7 +291,7 @@ def respond_to_feedback(request, feedback_id):
                 ]
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        logger.info(f"💬 Parliament Admin {user.name} responding to feedback {feedback.tracking_id}")
+        logger.info(f"💬 Parliament Admin {user.name} responding to feedback {feedback.id}")
         
         # Create feedback response using the correct model
         from apps.feedback.models import FeedbackResponse
@@ -309,7 +309,7 @@ def respond_to_feedback(request, feedback_id):
         feedback.last_response_at = timezone.now()
         feedback.save(update_fields=['status', 'response_count', 'last_response_at'])
         
-        logger.info(f"✅ Parliament response created successfully for feedback {feedback.tracking_id}")
+        logger.info(f"✅ Parliament response created successfully for feedback {feedback.id}")
         
         return Response({
             'success': True,

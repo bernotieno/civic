@@ -7,48 +7,21 @@ import React, { useState } from 'react';
 import { CheckCircleIcon, ClipboardDocumentIcon, EyeIcon, ListBulletIcon } from '@heroicons/react/24/outline';
 
 interface FeedbackSuccessProps {
-  trackingId: string;
   submissionData: {
     feedback_id: string;
-    status: string;
     submitted_at: string;
     location_path: string;
   };
-  onTrackFeedback: (trackingId: string) => void;
-  onViewSubmissions: () => void;
+  onBackToDashboard: () => void;
   onSubmitAnother: () => void;
 }
 
 export const FeedbackSuccess: React.FC<FeedbackSuccessProps> = ({
-  trackingId,
   submissionData,
-  onTrackFeedback,
-  onViewSubmissions,
+  onBackToDashboard,
   onSubmitAnother,
 }) => {
-  const [copied, setCopied] = useState(false);
-
-  /**
-   * Copy tracking ID to clipboard
-   */
-  const copyTrackingId = async () => {
-    try {
-      await navigator.clipboard.writeText(trackingId);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy tracking ID:', error);
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = trackingId;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
+  // Tracking functionality removed
 
   /**
    * Format submission date
@@ -69,47 +42,7 @@ export const FeedbackSuccess: React.FC<FeedbackSuccessProps> = ({
     }
   };
 
-  /**
-   * Get status display information
-   */
-  const getStatusInfo = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return {
-          label: 'Pending Review',
-          color: 'text-yellow-700',
-          bgColor: 'bg-yellow-50',
-          borderColor: 'border-yellow-200',
-          description: 'Your feedback has been received and is awaiting initial review by the relevant department.'
-        };
-      case 'in_review':
-        return {
-          label: 'Under Review',
-          color: 'text-blue-700',
-          bgColor: 'bg-blue-50',
-          borderColor: 'border-blue-200',
-          description: 'Government officials are currently reviewing your feedback and assessing the situation.'
-        };
-      case 'responded':
-        return {
-          label: 'Response Provided',
-          color: 'text-green-700',
-          bgColor: 'bg-green-50',
-          borderColor: 'border-green-200',
-          description: 'The government has provided an official response to your feedback.'
-        };
-      default:
-        return {
-          label: 'Submitted',
-          color: 'text-gray-700',
-          bgColor: 'bg-gray-50',
-          borderColor: 'border-gray-200',
-          description: 'Your feedback has been successfully submitted to the government.'
-        };
-    }
-  };
-
-  const statusInfo = getStatusInfo(submissionData.status);
+  // Status functionality removed - feedback is simply submitted
 
   return (
     <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
@@ -126,44 +59,16 @@ export const FeedbackSuccess: React.FC<FeedbackSuccessProps> = ({
         </div>
       </div>
 
-      {/* Tracking Information */}
+      {/* Submission Confirmation */}
       <div className="px-6 py-6 space-y-6">
-        {/* Tracking ID Section */}
+        {/* Confirmation Message */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-blue-900 mb-1">Your Tracking ID</h3>
-              <p className="text-blue-700 text-sm mb-2">
-                Save this ID to track your feedback status and view responses
-              </p>
-              <div className="flex items-center space-x-2">
-                <code className="bg-white px-3 py-2 rounded border text-lg font-mono text-blue-900 select-all">
-                  {trackingId}
-                </code>
-                <button
-                  onClick={copyTrackingId}
-                  className="flex items-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                  title="Copy tracking ID"
-                >
-                  <ClipboardDocumentIcon className="h-4 w-4 mr-1" />
-                  {copied ? 'Copied!' : 'Copy'}
-                </button>
-              </div>
-            </div>
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-blue-900 mb-2">Feedback Received</h3>
+            <p className="text-blue-700 text-sm">
+              Your feedback has been successfully submitted to the appropriate government department for review and action.
+            </p>
           </div>
-        </div>
-
-        {/* Status Information */}
-        <div className={`${statusInfo.bgColor} border ${statusInfo.borderColor} rounded-lg p-4`}>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Current Status</h3>
-          <div className="flex items-center mb-2">
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.bgColor} ${statusInfo.color}`}>
-              {statusInfo.label}
-            </span>
-          </div>
-          <p className={`text-sm ${statusInfo.color}`}>
-            {statusInfo.description}
-          </p>
         </div>
 
         {/* Submission Details */}
@@ -211,19 +116,11 @@ export const FeedbackSuccess: React.FC<FeedbackSuccessProps> = ({
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3">
           <button
-            onClick={() => onTrackFeedback(trackingId)}
+            onClick={onBackToDashboard}
             className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
           >
-            <EyeIcon className="h-4 w-4 mr-2" />
-            Track This Feedback
-          </button>
-          
-          <button
-            onClick={onViewSubmissions}
-            className="flex items-center justify-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
-          >
             <ListBulletIcon className="h-4 w-4 mr-2" />
-            View All My Submissions
+            Back to Dashboard
           </button>
           
           <button
@@ -239,8 +136,8 @@ export const FeedbackSuccess: React.FC<FeedbackSuccessProps> = ({
           <div className="flex">
             <div className="ml-3">
               <p className="text-sm text-blue-700">
-                <strong>Important:</strong> Keep your tracking ID safe. You can use it to check the status of your feedback 
-                at any time, even without logging in. Government responses and updates will be linked to this tracking ID.
+                <strong>Thank you!</strong> Your feedback helps improve government services for all citizens. 
+                The relevant department will review your submission and take appropriate action.
               </p>
             </div>
           </div>

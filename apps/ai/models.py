@@ -185,7 +185,7 @@ class FeedbackAIAnalysis(SoftDeleteModel):
         ordering = ['-processed_at']
     
     def __str__(self):
-        return f"AI Analysis for {self.feedback.tracking_id}"
+        return f"AI Analysis for {self.feedback.id}"
     
     def get_overall_priority_score(self):
         """Calculate combined priority score from all AI factors"""
@@ -339,7 +339,7 @@ class AIResponseSuggestion(SoftDeleteModel):
         ordering = ['-effectiveness_rating', '-generated_at']
     
     def __str__(self):
-        return f"{self.response_type.title()} suggestion for {self.feedback.tracking_id}"
+        return f"{self.response_type.title()} suggestion for {self.feedback.id}"
     
     def get_overall_quality_score(self):
         """Calculate overall quality from individual metrics"""

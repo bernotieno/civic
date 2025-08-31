@@ -134,8 +134,7 @@ feedback_urlpatterns = [
     path('feedback/submit/', feedback_views.FeedbackSubmissionView.as_view(), name='submit'),
     path('feedback/anonymous/', feedback_views.AnonymousFeedbackView.as_view(), name='anonymous_submit'),
     
-    # Public feedback tracking - no auth required
-    path('feedback/track/<str:tracking_id>/', feedback_views.track_feedback, name='track'),
+    # Tracking functionality removed for scalability
     
     # Feedback metadata and categories
     path('feedback/categories/', feedback_views.feedback_categories, name='categories'),

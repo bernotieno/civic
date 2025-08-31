@@ -116,7 +116,7 @@ export interface NavItem {
 }
 
 // Dashboard View Types
-export type DashboardView = 'home' | 'submit-feedback' | 'my-feedback' | 'track-feedback' | 'bills-projects' | 'bill-details' | 'community-impact' | 'profile' | 'feedback-success' | 'feedback-error';
+export type DashboardView = 'home' | 'submit-feedback' | 'my-feedback' | 'bills-projects' | 'bill-details' | 'community-impact' | 'profile' | 'feedback-success' | 'feedback-error';
 
 // Bill Types
 export interface Bill {
@@ -280,17 +280,12 @@ export interface LoginFormErrors {
 export interface FeedbackItem {
   id: string;
   title: string;
-  status: 'pending' | 'in_review' | 'responded' | 'resolved' | 'closed';
-  tracking_id: string;
   created_at: string;
   updated_at: string;
   category: string;
   category_display: string;
   priority: string;
   priority_display: string;
-  status_display: string;
-  response_count: number;
-  last_response_at?: string;
   view_count: number;
   location_path: string;
   can_edit: boolean;
@@ -298,6 +293,9 @@ export interface FeedbackItem {
   edit_restriction_reason?: string;
   delete_restriction_reason?: string;
   is_anonymous: boolean;
+  status?: string;
+  tracking_id?: string;
+  content?: string;
 }
 
 export interface FeedbackStats {
@@ -382,23 +380,7 @@ export interface FeedbackSubmissionResponse {
   errors?: FeedbackFormErrors;
 }
 
-// Feedback Tracking Response
-export interface FeedbackTrackingResponse {
-  success: boolean;
-  data?: {
-    tracking_id: string;
-    title: string;
-    category: string;
-    category_display: string;
-    status: string;
-    status_display: string;
-    submitted_at: string;
-    location_path: string;
-    response_count: number;
-    last_response_at?: string;
-  };
-  message?: string;
-}
+// Feedback tracking removed for scalability
 
 // Rate Limit Information
 export interface RateLimitInfo {

@@ -32,8 +32,6 @@ import UserProfile from './UserProfile';
 
 interface SubmissionData {
   feedback_id: string;
-  tracking_id: string;
-  status: string;
   submitted_at: string;
   location_path: string;
 }
@@ -72,7 +70,7 @@ const CitizensDashboard: React.FC = () => {
   useEffect(() => {
     const viewParam = searchParams.get('view');
     const billIdParam = searchParams.get('billId');
-    if (viewParam && ['home', 'submit-feedback', 'my-feedback', 'track-feedback', 'bills-projects', 'bill-details', 'community-impact'].includes(viewParam)) {
+    if (viewParam && ['home', 'submit-feedback', 'my-feedback', 'bills-projects', 'bill-details', 'community-impact'].includes(viewParam)) {
       setCurrentView(viewParam as DashboardView);
       if (viewParam === 'bill-details' && billIdParam) {
         setSelectedBillId(billIdParam);
@@ -87,7 +85,7 @@ const CitizensDashboard: React.FC = () => {
   });
 
   // Feedback handling functions
-  const handleSubmissionSuccess = (trackingId: string, data: SubmissionData) => {
+  const handleSubmissionSuccess = (data: SubmissionData) => {
     setSubmissionData(data);
     setCurrentView('feedback-success');
     // Refresh dashboard data to show updated stats
@@ -158,16 +156,12 @@ const CitizensDashboard: React.FC = () => {
           {
             id: '1',
             title: 'Road maintenance needed on Uhuru Highway',
-            status: 'in_review',
-            tracking_id: 'FB-2024-001',
             created_at: '2024-01-15T10:30:00Z',
             updated_at: '2024-01-15T10:30:00Z',
             category: 'infrastructure',
             category_display: 'Infrastructure',
             priority: 'high',
             priority_display: 'High',
-            status_display: 'In Review',
-            response_count: 0,
             view_count: 5,
             location_path: 'Nairobi > Central > CBD',
             can_edit: true,
@@ -177,16 +171,12 @@ const CitizensDashboard: React.FC = () => {
           {
             id: '2',
             title: 'Water shortage in Kibera area',
-            status: 'pending',
-            tracking_id: 'FB-2024-002',
             created_at: '2024-01-14T14:20:00Z',
             updated_at: '2024-01-14T14:20:00Z',
             category: 'water_sanitation',
             category_display: 'Water & Sanitation',
             priority: 'urgent',
             priority_display: 'Urgent',
-            status_display: 'Pending',
-            response_count: 0,
             view_count: 3,
             location_path: 'Nairobi > Kibra > Kibera',
             can_edit: true,
@@ -196,17 +186,12 @@ const CitizensDashboard: React.FC = () => {
           {
             id: '3',
             title: 'Healthcare facility needs equipment',
-            status: 'resolved',
-            tracking_id: 'FB-2024-003',
             created_at: '2024-01-10T09:15:00Z',
             updated_at: '2024-01-12T16:45:00Z',
             category: 'healthcare',
             category_display: 'Healthcare',
             priority: 'medium',
             priority_display: 'Medium',
-            status_display: 'Resolved',
-            response_count: 2,
-            last_response_at: '2024-01-12T16:45:00Z',
             view_count: 12,
             location_path: 'Nairobi > Westlands > Parklands',
             can_edit: false,
@@ -312,9 +297,7 @@ const CitizensDashboard: React.FC = () => {
               <FeedbackHistory onBack={handleBackToHome} />
             )}
 
-            {currentView === 'track-feedback' && (
-              <FeedbackTracker onBack={handleBackToHome} />
-            )}
+
 
             {currentView === 'bills-projects' && (
               <Bills 

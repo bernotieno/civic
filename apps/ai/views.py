@@ -288,7 +288,7 @@ class CountyAIDashboardView(APIView):
             if feedback.ai_analysis:
                 priority_items.append({
                     'feedback_id': str(feedback.id),
-                    'tracking_id': feedback.tracking_id,
+                    'tracking_id': str(feedback.id),
                     'title': feedback.title,
                     'urgency_score': feedback.ai_analysis.urgency_score,
                     'urgency_level': feedback.ai_analysis.urgency_level,
@@ -588,7 +588,7 @@ def get_ai_response_suggestions(request, feedback_id):
             'success': True,
             'data': {
                 'feedback_id': str(feedback.id),
-                'feedback_tracking_id': feedback.tracking_id,
+                'feedback_tracking_id': str(feedback.id),
                 'response_suggestions': suggestion_data,
                 'total_suggestions': len(suggestion_data)
             }
@@ -876,7 +876,7 @@ def trigger_feedback_ai_processing(request, feedback_id):
             'success': True,
             'message': 'AI processing triggered',
             'task_id': task_id,
-            'feedback_tracking_id': feedback.tracking_id,
+            'feedback_tracking_id': str(feedback.id),
             'check_status_url': f'/api/ai/tasks/{task_id}/status/'
         }, status=status.HTTP_202_ACCEPTED)
         

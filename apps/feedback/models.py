@@ -7,7 +7,7 @@ import hashlib
 from django.db import models
 from django.utils import timezone
 from apps.users.models import SoftDeleteModel, CustomUser, County, Location
-from apps.feedback.utils import generate_tracking_id
+# Removed tracking ID generation
 
 # Feedback Categories for National Assembly Bills and Projects
 FEEDBACK_CATEGORIES = [
@@ -32,18 +32,20 @@ PRIORITY_CHOICES = [
     ('urgent', 'Urgent')
 ]
 
-STATUS_CHOICES = [
-    ('pending', 'Pending'),
-    ('in_review', 'In Review'),
-    ('responded', 'Responded'),
-    ('resolved', 'Resolved'),
-    ('closed', 'Closed')
-]
+
 
 SUBMISSION_METHODS = [
     ('web', 'Web'),
     ('mobile', 'Mobile'),
     ('api', 'API')
+]
+
+STATUS_CHOICES = [
+    ('pending', 'Pending Review'),
+    ('in_review', 'Under Review'),
+    ('responded', 'Responded'),
+    ('resolved', 'Resolved'),
+    ('closed', 'Closed')
 ]
 
 
@@ -59,7 +61,6 @@ class Feedback(SoftDeleteModel):
     content = models.TextField()
     category = models.CharField(max_length=20, choices=FEEDBACK_CATEGORIES, db_index=True)
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
-    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='pending', db_index=True)
     
     # User and national scope
     user = models.ForeignKey(
@@ -86,15 +87,15 @@ class Feedback(SoftDeleteModel):
         help_text="ID of related national project"
     )
     
-    # Tracking and metadata
-    tracking_id = models.CharField(max_length=16, unique=True, db_index=True)
+    # Metadata
     is_anonymous = models.BooleanField(default=False, db_index=True)
     submitted_via = models.CharField(max_length=10, choices=SUBMISSION_METHODS, default='web')
+    
+
     
     # Response tracking
     response_count = models.IntegerField(default=0)
     last_response_at = models.DateTimeField(null=True, blank=True)
-    resolved_at = models.DateTimeField(null=True, blank=True)
     
     # Analytics fields
     view_count = models.IntegerField(default=0)
@@ -108,32 +109,22 @@ class Feedback(SoftDeleteModel):
 
     class Meta:
         indexes = [
-            models.Index(fields=['user_county', 'status']),
+            models.Index(fields=['user_county', 'created_at']),
             models.Index(fields=['user', 'created_at']),
-            models.Index(fields=['tracking_id']),
             models.Index(fields=['category', 'priority']),
             models.Index(fields=['is_anonymous', 'user_county']),
-            models.Index(fields=['created_at', 'status']),
             models.Index(fields=['related_bill_id']),
             models.Index(fields=['related_project_id']),
         ]
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"{self.title} - {self.user_county.name} ({self.get_status_display()})"
+        return f"{self.title} - {self.user_county.name}"
     
     def save(self, *args, **kwargs):
-        # Generate tracking ID if not set
-        if not self.tracking_id:
-            self.tracking_id = generate_tracking_id()
-        
         # Set anonymous flag based on user role
         if self.user and self.user.role == 'anonymous':
             self.is_anonymous = True
-        
-        # Update resolved timestamp
-        if self.status == 'resolved' and not self.resolved_at:
-            self.resolved_at = timezone.now()
         
         super().save(*args, **kwargs)
     
@@ -165,11 +156,6 @@ class Feedback(SoftDeleteModel):
         if not self.can_edit:
             return False, "Editing disabled by administrator"
     
-        # Status restrictions
-        EDIT_ALLOWED_STATUSES = ['pending', 'in_review']
-        if self.status not in EDIT_ALLOWED_STATUSES:
-            return False, "Cannot edit feedback after official response"
-    
         # Edit count limit
         MAX_EDIT_COUNT = 3
         if self.edit_count >= MAX_EDIT_COUNT:
@@ -187,10 +173,6 @@ class Feedback(SoftDeleteModel):
         """Check if feedback can be deleted by owner"""
         if not self.can_delete:
             return False, "Deletion disabled by administrator"
-    
-        # Cannot delete if there are official responses
-        if self.response_count > 0:
-            return False, "Cannot delete feedback with official responses"
     
         return True, "OK"
     

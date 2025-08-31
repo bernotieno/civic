@@ -32,8 +32,7 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
   const [totalCount, setTotalCount] = useState(0);
   const [hasNext, setHasNext] = useState(false);
   const [hasPrevious, setHasPrevious] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+
   const [viewingFeedback, setViewingFeedback] = useState<FeedbackItem | null>(null);
 
   const itemsPerPage = 10;
@@ -91,8 +90,9 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
   /**
    * Get status configuration
    */
-  const getStatusConfig = (status: string) => {
-    switch (status.toLowerCase()) {
+  const getStatusConfig = (status: string | undefined) => {
+    const statusValue = status || 'pending';
+    switch (statusValue.toLowerCase()) {
       case 'submitted':
       case 'pending':
         return {
@@ -142,7 +142,7 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
           icon: ClockIcon,
           color: 'text-gray-600',
           bgColor: 'bg-gray-100',
-          label: status
+          label: statusValue
         };
     }
   };
@@ -188,14 +188,7 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
     return categoryMap[category] || category;
   };
 
-  /**
-   * Filter feedback list based on selected filters
-   */
-  const filteredFeedback = feedbackList.filter(item => {
-    const statusMatch = statusFilter === 'all' || item.status === statusFilter;
-    const categoryMatch = categoryFilter === 'all' || item.category === categoryFilter;
-    return statusMatch && categoryMatch;
-  });
+  const filteredFeedback = feedbackList;
 
   if (loading) {
     return (
@@ -242,41 +235,7 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
             </p>
           </div>
           
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
-            <div className="flex items-center">
-              <FunnelIcon className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
-              >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="under_review">Under Review</option>
-                <option value="in_progress">In Progress</option>
-                <option value="resolved">Resolved</option>
-                <option value="closed">Closed</option>
-              </select>
-            </div>
-            
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
-            >
-              <option value="all">All Categories</option>
-              <option value="infrastructure">Infrastructure</option>
-              <option value="healthcare">Healthcare</option>
-              <option value="education">Education</option>
-              <option value="water_sanitation">Water & Sanitation</option>
-              <option value="security">Security</option>
-              <option value="environment">Environment</option>
-              <option value="governance">Governance</option>
-              <option value="economic">Economic</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
+
         </div>
       </div>
 
@@ -295,7 +254,7 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
           </div>
         ) : (
           filteredFeedback.map((item) => {
-            const statusConfig = getStatusConfig(item.status);
+            const statusConfig = getStatusConfig(item.status || 'pending');
             const StatusIcon = statusConfig.icon;
             
             return (
@@ -312,32 +271,17 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
                             👤 Anonymous
                           </span>
                         )}
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig.bgColor} ${statusConfig.color}`}>
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {statusConfig.label}
-                        </span>
+
                       </div>
                     </div>
                     
                     <div className="flex flex-col sm:flex-row sm:items-center text-sm text-gray-500 gap-2 sm:gap-4">
-                      <span className="flex items-center">
-                        <span className="font-medium">ID:</span>
-                        <code className="ml-1 font-mono text-xs">{item.tracking_id}</code>
-                      </span>
                       <span className="text-xs sm:text-sm">{getCategoryDisplay(item.category)}</span>
                       <span className="text-xs sm:text-sm">{formatDate(item.created_at)}</span>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-2 sm:ml-4">
-                    {onTrackFeedback && (
-                      <button
-                        onClick={() => onTrackFeedback(item.tracking_id)}
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 rounded border border-blue-200 hover:bg-blue-50"
-                      >
-                        Track
-                      </button>
-                    )}
                     <button
                       onClick={() => setViewingFeedback(item)}
                       className="flex items-center text-gray-600 hover:text-gray-800 text-sm px-3 py-1 rounded border border-gray-200 hover:bg-gray-50"
@@ -432,19 +376,10 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
                   <label className="block text-sm font-medium text-gray-700">Category</label>
                   <p className="mt-1 text-sm text-gray-900">{getCategoryDisplay(viewingFeedback.category)}</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Status</label>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusConfig(viewingFeedback.status).bgColor} ${getStatusConfig(viewingFeedback.status).color}`}>
-                    {getStatusConfig(viewingFeedback.status).label}
-                  </span>
-                </div>
+
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Tracking ID</label>
-                  <p className="mt-1 text-gray-900 font-mono">{viewingFeedback.tracking_id}</p>
-                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Submission Date</label>
                   <p className="mt-1 text-gray-900">{new Date(viewingFeedback.created_at).toLocaleString()}</p>
@@ -461,17 +396,6 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
             </div>
             
             <div className="flex justify-end mt-6">
-              {onTrackFeedback && (
-                <button
-                  onClick={() => {
-                    onTrackFeedback(viewingFeedback.tracking_id);
-                    setViewingFeedback(null);
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 mr-3"
-                >
-                  Track This Feedback
-                </button>
-              )}
               <button
                 onClick={() => setViewingFeedback(null)}
                 className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"

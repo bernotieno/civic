@@ -21,11 +21,6 @@ def calculate_user_feedback_stats(user):
     
     stats = {
         'total_submissions': user_feedback.count(),
-        'pending_count': user_feedback.filter(status='pending').count(),
-        'in_review_count': user_feedback.filter(status='in_review').count(),
-        'responded_count': user_feedback.filter(status='responded').count(),
-        'resolved_count': user_feedback.filter(status='resolved').count(),
-        'closed_count': user_feedback.filter(status='closed').count(),
     }
     
     # Category breakdown
@@ -36,22 +31,7 @@ def calculate_user_feedback_stats(user):
     stats['category_breakdown'] = list(category_stats)
     stats['most_used_category'] = category_stats[0]['category'] if category_stats else None
     
-    # Response statistics
-    responded_feedback = user_feedback.filter(response_count__gt=0, last_response_at__isnull=False)
-    if responded_feedback.exists():
-        # Calculate average response time manually
-        response_times = []
-        for feedback in responded_feedback:
-            if feedback.last_response_at and feedback.created_at:
-                delta = feedback.last_response_at - feedback.created_at
-                response_times.append(delta.total_seconds() / 86400)  # Convert to days
-        
-        if response_times:
-            stats['average_response_time_days'] = sum(response_times) / len(response_times)
-        else:
-            stats['average_response_time_days'] = None
-    else:
-        stats['average_response_time_days'] = None
+    # Response statistics removed
     
     # Submission streak (consecutive days with submissions)
     recent_submissions = user_feedback.filter(

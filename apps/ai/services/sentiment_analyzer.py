@@ -93,7 +93,7 @@ class LLMSentimentAnalyzer:
             # Cache the result
             cache.set(cache_key, processed_result, self.cache_ttl)
             
-            logger.info(f"Sentiment analysis completed for feedback {feedback.tracking_id}: {processed_result['sentiment_label']} ({processed_result['sentiment_score']:.2f})")
+            logger.info(f"Sentiment analysis completed for feedback {feedback.id}: {processed_result['sentiment_label']} ({processed_result['sentiment_score']:.2f})")
             
             return processed_result
             

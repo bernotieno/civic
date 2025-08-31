@@ -10,7 +10,7 @@ from drf_spectacular.openapi import OpenApiExample
 from apps.users.models import County, Location
 from apps.users.anonymous import AnonymousUserHandler
 from apps.core.anonymous import AnonymousSessionManager
-from .models import Feedback, FeedbackEdit, FeedbackResponse, FEEDBACK_CATEGORIES, PRIORITY_CHOICES, STATUS_CHOICES
+from .models import Feedback, FeedbackEdit, FeedbackResponse, FEEDBACK_CATEGORIES, PRIORITY_CHOICES
 from .validators import validate_feedback_title, validate_feedback_content, validate_location_hierarchy
 from .utils import FeedbackRateLimit
 
@@ -239,10 +239,6 @@ class FeedbackSubmissionSerializer(serializers.ModelSerializer):
     )
     
     # Read-only response fields
-    tracking_id = serializers.CharField(
-        read_only=True,
-        help_text="🔍 **Unique Tracking ID** - Save this to check your feedback status later"
-    )
     submitted_at = serializers.DateTimeField(
         source='created_at', 
         read_only=True,
@@ -259,11 +255,8 @@ class FeedbackSubmissionSerializer(serializers.ModelSerializer):
         fields = [
             'title', 'content', 'category', 'priority', 'is_anonymous',
             'county_id', 'sub_county_id', 'ward_id', 'village_id',
-            'tracking_id', 'status', 'submitted_at', 'location_path'
+            'submitted_at', 'location_path'
         ]
-        extra_kwargs = {
-            'status': {'read_only': True, 'help_text': '📊 Current feedback status in the government review process'},
-        }
     
     def validate_title(self, value):
         if value and value.strip():
@@ -645,93 +638,7 @@ class FeedbackResponseSerializer(serializers.ModelSerializer):
         ]
 
 
-@extend_schema_serializer(
-    examples=[
-        OpenApiExample(
-            "Pending Feedback Tracking",
-            summary="Recently submitted feedback awaiting review",
-            description="Feedback submitted but not yet reviewed by government officials",
-            value={
-                "tracking_id": "FB240815KSM001",
-                "title": "Poor road conditions on Kisumu-Kakamega highway",
-                "category": "infrastructure",
-                "category_display": "Infrastructure & Roads",
-                "status": "pending",
-                "status_display": "Pending Review",
-                "submitted_at": "2024-08-15T10:30:00Z",
-                "location_path": "Kisumu > Kisumu East > Kondele",
-                "response_count": 0,
-                "last_response_at": None
-            }
-        ),
-        OpenApiExample(
-            "Active Feedback with Response",
-            summary="Feedback with government response",
-            description="Feedback that has received official government response",
-            value={
-                "tracking_id": "FB240815KSM002",
-                "title": "Water shortage in residential area",
-                "category": "water_sanitation", 
-                "category_display": "Water & Sanitation",
-                "status": "responded",
-                "status_display": "Official Response Provided",
-                "submitted_at": "2024-08-15T08:15:00Z",
-                "location_path": "Kisumu > Kisumu West > Central Kisumu",
-                "response_count": 2,
-                "last_response_at": "2024-08-16T14:22:00Z"
-            }
-        )
-    ]
-)
-class FeedbackTrackingSerializer(serializers.ModelSerializer):
-    """
-    🔍 **Public Feedback Status Tracking**
-    
-    Track any feedback status using the tracking ID - works for both authenticated and anonymous submissions.
-    Perfect for public transparency and citizen engagement tracking.
-    """
-    
-    submitted_at = serializers.DateTimeField(
-        source='created_at', 
-        read_only=True,
-        help_text="📅 **Submission Date** - When this feedback was originally submitted"
-    )
-    
-    location_path = serializers.CharField(
-        source='get_location_path', 
-        read_only=True,
-        help_text="📍 **Full Location** - Complete administrative path (County > Sub-County > Ward > Village)"
-    )
-    
-    category_display = serializers.CharField(
-        source='get_category_display', 
-        read_only=True,
-        help_text="🏷️ **Category Name** - Human-readable category description"
-    )
-    
-    status_display = serializers.CharField(
-        source='get_status_display', 
-        read_only=True,
-        help_text="📊 **Status Description** - Current stage in the government review workflow"
-    )
-    
-    responses = FeedbackResponseSerializer(many=True, read_only=True)
-    
-    class Meta:
-        model = Feedback
-        fields = [
-            'tracking_id', 'title', 'category', 'category_display',
-            'status', 'status_display', 'submitted_at', 
-            'location_path', 'response_count', 'last_response_at', 'responses'
-        ]
-        extra_kwargs = {
-            'tracking_id': {'help_text': '🔍 **Tracking ID** - Unique identifier for this feedback'},
-            'title': {'help_text': '📋 **Feedback Title** - Brief description of the issue'},
-            'category': {'help_text': '🏷️ **Category Key** - Technical category identifier'},
-            'status': {'help_text': '📊 **Status Key** - Technical status identifier'},
-            'response_count': {'help_text': '💬 **Response Count** - Number of official responses received'},
-            'last_response_at': {'help_text': '⏰ **Last Response** - When the most recent official response was added'}
-        }
+# Tracking functionality removed for scalability
 
 
 # =============================================================================
@@ -743,7 +650,6 @@ class UserFeedbackListSerializer(serializers.ModelSerializer):
     
     location_path = serializers.CharField(source='get_location_path', read_only=True)
     category_display = serializers.CharField(source='get_category_display', read_only=True)
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
     priority_display = serializers.CharField(source='get_priority_display', read_only=True)
     
     # Edit/delete permissions
@@ -775,11 +681,10 @@ class UserFeedbackListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feedback
         fields = [
-            'id', 'tracking_id', 'title', 'content', 'category', 'category_display',
-            'priority', 'priority_display', 'status', 'status_display',
+            'id', 'title', 'content', 'category', 'category_display',
+            'priority', 'priority_display',
             'created_at', 'updated_at', 'edited_at', 'edit_count',
-            'response_count', 'last_response_at', 'view_count',
-            'location_path', 'can_edit', 'can_delete',
+            'view_count', 'location_path', 'can_edit', 'can_delete',
             'edit_restriction_reason', 'delete_restriction_reason', 'is_anonymous'
         ]
     def get_can_edit(self, obj):
@@ -815,7 +720,6 @@ class UserFeedbackDetailSerializer(serializers.ModelSerializer):
     
     location_path = serializers.CharField(source='get_location_path', read_only=True)
     category_display = serializers.CharField(source='get_category_display', read_only=True)
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
     priority_display = serializers.CharField(source='get_priority_display', read_only=True)
     
     # Permissions
@@ -834,11 +738,10 @@ class UserFeedbackDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feedback
         fields = [
-            'id', 'tracking_id', 'title', 'content', 'category', 'category_display',
-            'priority', 'priority_display', 'status', 'status_display',
+            'id', 'title', 'content', 'category', 'category_display',
+            'priority', 'priority_display',
             'created_at', 'updated_at', 'edited_at', 'edit_count',
-            'response_count', 'last_response_at', 'view_count',
-            'location_path', 'can_edit', 'can_delete',
+            'view_count', 'location_path', 'can_edit', 'can_delete',
             'edit_restriction_reason', 'delete_restriction_reason',
             'edit_history', 'responses', 'timeline', 'is_anonymous'
         ]
@@ -877,20 +780,13 @@ class UserFeedbackDetailSerializer(serializers.ModelSerializer):
                 'description': f'Feedback edited (Edit #{obj.edit_history.filter(edited_at__lte=edit.edited_at).count()})'
             })
         
-        # Add status changes (simplified - could be enhanced with status history)
-        if obj.status != 'pending':
-            timeline.append({
-                'action': 'status_changed',
-                'timestamp': obj.updated_at.isoformat(),
-                'description': f'Status changed to {obj.get_status_display()}'
-            })
-        
-        # Add response events
-        if obj.last_response_at:
+        # Add response events (if any responses exist)
+        if obj.responses.exists():
+            latest_response = obj.responses.first()
             timeline.append({
                 'action': 'response_added',
-                'timestamp': obj.last_response_at.isoformat(),
-                'description': f'Official response added ({obj.response_count} responses total)'
+                'timestamp': latest_response.created_at.isoformat(),
+                'description': f'Official response added ({obj.responses.count()} responses total)'
             })
         
         # Sort by timestamp
@@ -956,8 +852,6 @@ class UserFeedbackUpdateSerializer(serializers.ModelSerializer):
 class FeedbackDataSerializer(serializers.Serializer):
     """📤 **Feedback Response Data** - Successful submission response structure"""
     feedback_id = serializers.UUIDField(help_text="🆔 **Unique Feedback ID** - Internal database identifier")
-    tracking_id = serializers.CharField(help_text="🔍 **Public Tracking ID** - Use this to check status later")
-    status = serializers.CharField(help_text="📊 **Current Status** - Initial status is 'pending'")
     submitted_at = serializers.DateTimeField(help_text="📅 **Submission Time** - When feedback was received")
     location_path = serializers.CharField(help_text="📍 **Location** - Full administrative path")
 
@@ -971,11 +865,9 @@ class FeedbackSubmissionResponseSerializer(serializers.Serializer):
 
 class AnonymousFeedbackDataSerializer(serializers.Serializer):
     """👤 **Anonymous Submission Data** - Anonymous feedback response structure"""
-    tracking_id = serializers.CharField(help_text="🔍 **Tracking ID** - Save this to check status anonymously")
-    status = serializers.CharField(help_text="📊 **Current Status** - Initial status")
     submitted_at = serializers.DateTimeField(help_text="📅 **Submission Time** - When received")
     location_path = serializers.CharField(help_text="📍 **Location** - Administrative path")
-    instructions = serializers.CharField(help_text="💡 **Instructions** - How to track your anonymous feedback")
+    message = serializers.CharField(help_text="💡 **Message** - Confirmation message for anonymous submission")
 
 
 class AnonymousFeedbackResponseSerializer(serializers.Serializer):
@@ -985,10 +877,7 @@ class AnonymousFeedbackResponseSerializer(serializers.Serializer):
     data = AnonymousFeedbackDataSerializer(help_text="📊 **Anonymous Feedback Details**")
 
 
-class FeedbackTrackingResponseSerializer(serializers.Serializer):
-    """🔍 **Tracking Response** - Public feedback status response"""
-    success = serializers.BooleanField(default=True, help_text="✅ **Success Flag** - Tracking successful")
-    data = FeedbackTrackingSerializer(help_text="📊 **Feedback Status** - Current status and details")
+# Tracking response serializer removed
 
 
 class FeedbackCategoriesResponseSerializer(serializers.Serializer):

@@ -19,62 +19,7 @@ interface RecentFeedbackStatusProps {
   recentFeedback: FeedbackItem[];
 }
 
-const StatusBadge: React.FC<{ status: FeedbackItem['status'] }> = ({ status }) => {
-  const statusConfig = {
-    submitted: {
-      label: 'Submitted',
-      icon: FileText,
-      bgColor: 'bg-gray-100',
-      textColor: 'text-gray-700',
-      iconColor: 'text-gray-500'
-    },
-    under_review: {
-      label: 'Under Review',
-      icon: Clock,
-      bgColor: 'bg-yellow-100',
-      textColor: 'text-yellow-800',
-      iconColor: 'text-yellow-600'
-    },
-    in_review: {
-      label: 'In Review',
-      icon: Clock,
-      bgColor: 'bg-yellow-100',
-      textColor: 'text-yellow-800',
-      iconColor: 'text-yellow-600'
-    },
-    pending: {
-      label: 'Pending',
-      icon: Clock,
-      bgColor: 'bg-gray-100',
-      textColor: 'text-gray-700',
-      iconColor: 'text-gray-500'
-    },
-    in_progress: {
-      label: 'In Progress',
-      icon: AlertCircle,
-      bgColor: 'bg-blue-100',
-      textColor: 'text-blue-800',
-      iconColor: 'text-blue-600'
-    },
-    resolved: {
-      label: 'Resolved',
-      icon: CheckCircle,
-      bgColor: 'bg-green-100',
-      textColor: 'text-green-800',
-      iconColor: 'text-green-600'
-    }
-  };
-
-  const config = statusConfig[status] || statusConfig.submitted;
-  const Icon = config.icon;
-
-  return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.bgColor} ${config.textColor}`}>
-      <Icon className={`h-4 w-4 mr-1.5 ${config.iconColor}`} />
-      {config.label}
-    </span>
-  );
-};
+// Status badge removed - no longer tracking feedback status
 
 const CategoryBadge: React.FC<{ category: string }> = ({ category }) => {
   const categoryConfig: Record<string, { label: string; color: string }> = {
@@ -124,7 +69,6 @@ const FeedbackCard: React.FC<{ feedback: FeedbackItem }> = ({ feedback }) => {
             {feedback.title}
           </h3>
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <StatusBadge status={feedback.status} />
             <CategoryBadge category={feedback.category} />
             {feedback.is_anonymous && (
               <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
@@ -141,9 +85,9 @@ const FeedbackCard: React.FC<{ feedback: FeedbackItem }> = ({ feedback }) => {
             <Calendar className="h-4 w-4 mr-1" />
             <span className="text-xs sm:text-sm">{formatDate(feedback.created_at)}</span>
           </div>
-          <div className="flex items-center font-mono">
+          <div className="flex items-center">
             <FileText className="h-4 w-4 mr-1" />
-            <span className="text-xs sm:text-sm">{feedback.tracking_id}</span>
+            <span className="text-xs sm:text-sm">ID: {feedback.id.slice(0, 8)}</span>
           </div>
         </div>
         

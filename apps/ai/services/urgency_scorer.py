@@ -90,7 +90,7 @@ class LLMUrgencyScorer:
             # Cache the result
             cache.set(cache_key, processed_result, self.cache_ttl)
             
-            logger.info(f"Urgency analysis completed for feedback {feedback.tracking_id}: {processed_result['urgency_level']} ({processed_result['urgency_score']:.1f}/10)")
+            logger.info(f"Urgency analysis completed for feedback {feedback.id}: {processed_result['urgency_level']} ({processed_result['urgency_score']:.1f}/10)")
             
             return processed_result
             

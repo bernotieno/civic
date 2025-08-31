@@ -10,11 +10,6 @@ from .models import Feedback, FEEDBACK_CATEGORIES
 class UserFeedbackFilter(django_filters.FilterSet):
     """Advanced filtering for user's feedback"""
     
-    # Status filtering
-    status = django_filters.ChoiceFilter(
-        choices=Feedback._meta.get_field('status').choices
-    )
-    
     # Category filtering
     category = django_filters.ChoiceFilter(choices=FEEDBACK_CATEGORIES)
     
@@ -27,12 +22,6 @@ class UserFeedbackFilter(django_filters.FilterSet):
     date_from = django_filters.DateFilter(field_name='created_at', lookup_expr='gte')
     date_to = django_filters.DateFilter(field_name='created_at', lookup_expr='lte')
     
-    # Response status filtering
-    has_response = django_filters.BooleanFilter(
-        method='filter_has_response',
-        label='Has Response'
-    )
-    
     # Search in title and content
     search = django_filters.CharFilter(method='filter_search', label='Search')
     
@@ -44,15 +33,9 @@ class UserFeedbackFilter(django_filters.FilterSet):
     
     class Meta:
         model = Feedback
-        fields = ['status', 'category', 'priority', 'date_from', 'date_to', 'has_response', 'search', 'has_edits']
+        fields = ['category', 'priority', 'date_from', 'date_to', 'search', 'has_edits']
     
-    def filter_has_response(self, queryset, name, value):
-        """Filter by response status"""
-        if value is True:
-            return queryset.filter(response_count__gt=0)
-        elif value is False:
-            return queryset.filter(response_count=0)
-        return queryset
+    # Response filtering removed
     
     def filter_search(self, queryset, name, value):
         """Search in title and content"""

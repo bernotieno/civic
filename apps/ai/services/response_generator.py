@@ -90,7 +90,7 @@ class LLMResponseGenerator:
             # Cache the results
             cache.set(cache_key, suggestions, self.cache_ttl)
             
-            logger.info(f"Generated {len(suggestions)} response suggestions for feedback {feedback.tracking_id}")
+            logger.info(f"Generated {len(suggestions)} response suggestions for feedback {feedback.id}")
             
             return suggestions
             
@@ -640,7 +640,7 @@ class LLMResponseGenerator:
                     category=feedback.category,
                     status__in=['pending', 'in_review'],
                     created_at__gte=timezone.now() - timedelta(days=30)
-                ).exclude(id=feedback.id).values('id', 'title', 'tracking_id')[:3])
+                ).exclude(id=feedback.id).values('id', 'title')[:3])
             )
             return similar
         except Exception:
@@ -684,7 +684,7 @@ class LLMResponseGenerator:
             acknowledgment = {
                 'response_type': 'acknowledgment',
                 'response_type_display': 'Quick Acknowledgment',
-                'suggested_content': f"Thank you for bringing this {feedback.get_category_display().lower()} matter to our attention. We have received your feedback regarding {feedback.title.lower()} and will review it promptly. You will receive an update within 2-3 working days. Your tracking ID is {feedback.tracking_id}.",
+                'suggested_content': f"Thank you for bringing this {feedback.get_category_display().lower()} matter to our attention. We have received your feedback regarding {feedback.title.lower()} and will review it promptly. You will receive an update within 2-3 working days. Your tracking ID is {feedback.id}.",
                 'empathy_score': 0.7,
                 'clarity_score': 0.8,
                 'actionability_score': 0.7,
@@ -718,7 +718,7 @@ class LLMResponseGenerator:
             logger.error(f"Fallback response generation failed: {e}")
             return [{
                 'response_type': 'acknowledgment',
-                'suggested_content': f"Thank you for your feedback. We are reviewing your concerns and will respond appropriately. Tracking ID: {feedback.tracking_id}",
+                'suggested_content': f"Thank you for your feedback. We are reviewing your concerns and will respond appropriately. Tracking ID: {feedback.id}",
                 'overall_quality_score': 0.5,
                 'fallback_used': True,
                 'error': str(e)
