@@ -241,29 +241,27 @@ def _create_summary(full_text: str) -> str:
                 bill_text = clean_text[:6000]
                 
                 # Enhanced prompt for better summaries
-                system_prompt = """You are CivicAI, a legal analyst specializing in Kenyan parliamentary bills. Your job is to create clear, accurate summaries for ordinary Kenyan citizens. Always format output as clean HTML with proper tags."""
+                system_prompt = """You are CivicAI, a legal analyst specializing in Kenyan parliamentary bills. Create clear, accurate summaries for ordinary Kenyan citizens using simple markdown format. Use ## for main headings, - for bullet points, and **bold** for emphasis. Keep language simple and avoid legal jargon."""
                 
-                user_prompt = f"""Analyze this Kenyan bill and create a comprehensive summary in HTML format. Structure it as follows:
+                user_prompt = f"""Analyze this Kenyan bill and create a comprehensive summary. Use simple, clear language for ordinary citizens. Structure it as follows:
 
-<h2>Bill Summary</h2>
-<p>Brief overview of what this bill does</p>
+## Bill Summary
+Brief overview of what this bill does in 2-3 sentences.
 
-<h3>Key Changes for Citizens</h3>
-<ul>
-<li>List specific impacts on citizens</li>
-<li>Include any new taxes, fees, or penalties</li>
-<li>Mention rights or services affected</li>
-</ul>
+## Key Changes for Citizens
+- List specific impacts on citizens
+- Include any new taxes, fees, or penalties with amounts
+- Mention rights or services affected
+- Use bullet points for clarity
 
-<h3>Who This Affects</h3>
-<p>Specify which groups of people are impacted</p>
+## Who This Affects
+Specify which groups of people are impacted (workers, businesses, students, etc.)
 
-<h3>Important Details</h3>
-<ul>
-<li>Key dates and deadlines</li>
-<li>Specific amounts, percentages, or numbers mentioned</li>
-<li>New requirements or procedures</li>
-</ul>
+## Important Details
+- Key dates and deadlines
+- Specific amounts, percentages, or numbers mentioned
+- New requirements or procedures
+- When changes take effect
 
 Bill text to analyze:
 {bill_text}"""
@@ -274,8 +272,8 @@ Bill text to analyze:
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_prompt}
                     ],
-                    "temperature": 0.2,
-                    "max_tokens": 1000
+                    "temperature": 0.3,
+                    "max_tokens": 1200
                 }
                 
                 req = urllib.request.Request(
@@ -356,25 +354,80 @@ Bill text to analyze:
 
 def _convert_to_html(text: str) -> str:
     """
-    Convert text to HTML - if already HTML, return as is
+    Convert text to HTML with proper styling classes
     """
     if not text:
         return ''
     
-    # If text already contains HTML tags, return as is
+    # If text already contains HTML tags, enhance with CSS classes
     if '<' in text and '>' in text:
-        return text
+        # Add CSS classes to existing HTML elements
+        html = text
+        html = html.replace('<h2>', '<h2 class="text-2xl font-bold text-gray-900 mb-4">')
+        html = html.replace('<h3>', '<h3 class="text-xl font-semibold text-gray-800 mb-3">')
+        html = html.replace('<h4>', '<h4 class="text-lg font-medium text-gray-700 mb-2">')
+        html = html.replace('<p>', '<p class="text-gray-700 mb-4 leading-relaxed">')
+        html = html.replace('<ul>', '<ul class="list-disc list-inside mb-4 space-y-2 text-gray-700">')
+        html = html.replace('<ol>', '<ol class="list-decimal list-inside mb-4 space-y-2 text-gray-700">')
+        html = html.replace('<li>', '<li class="ml-4">')
+        html = html.replace('<strong>', '<strong class="font-semibold text-gray-900">')
+        html = html.replace('<em>', '<em class="italic text-gray-600">')
+        return html
     
-    # Simple conversion: paragraphs and line breaks
-    html = text.replace('\n\n', '</p><p>')
-    html = html.replace('\n', '<br>')
-    html = f'<p>{html}</p>'
+    # Convert markdown-style text to styled HTML
+    lines = text.split('\n')
+    html_parts = []
     
-    # Clean up empty paragraphs
-    html = html.replace('<p></p>', '')
-    html = html.replace('<p><br></p>', '')
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+            
+        # Check for markdown headers
+        if line.startswith('## '):
+            header_text = line[3:].strip()
+            html_parts.append(f'<h2 class="text-2xl font-bold text-gray-900 mb-4 mt-6">{header_text}</h2>')
+        elif line.startswith('# '):
+            header_text = line[2:].strip()
+            html_parts.append(f'<h1 class="text-3xl font-bold text-gray-900 mb-4 mt-6">{header_text}</h1>')
+        elif line.startswith('### '):
+            header_text = line[4:].strip()
+            html_parts.append(f'<h3 class="text-xl font-semibold text-gray-800 mb-3 mt-4">{header_text}</h3>')
+        elif line.startswith('- ') or line.startswith('• '):
+            # List item
+            item_text = line[2:].strip()
+            # Handle bold text in markdown
+            item_text = item_text.replace('**', '<strong class="font-semibold">', 1).replace('**', '</strong>', 1)
+            html_parts.append(f'<li class="text-gray-700">{item_text}</li>')
+        elif line.endswith(':') and len(line) < 100:
+            html_parts.append(f'<h3 class="text-xl font-semibold text-gray-800 mb-3 mt-4">{line[:-1]}</h3>')
+        else:
+            # Regular paragraph - handle bold text
+            paragraph_text = line.replace('**', '<strong class="font-semibold">', 1).replace('**', '</strong>', 1)
+            html_parts.append(f'<p class="text-gray-700 mb-4 leading-relaxed">{paragraph_text}</p>')
     
-    return html
+    # Group consecutive list items and wrap in ul tags
+    result_parts = []
+    li_group = []
+    
+    for part in html_parts:
+        if part.strip().startswith('<li'):
+            li_group.append(part)
+        else:
+            # If we have accumulated list items, wrap them in ul
+            if li_group:
+                ul_content = '\n'.join(li_group)
+                result_parts.append(f'<ul class="list-disc list-inside mb-6 space-y-2 text-gray-700 ml-4">{ul_content}</ul>')
+                li_group = []
+            # Add the non-list item
+            result_parts.append(part)
+    
+    # Handle any remaining li items at the end
+    if li_group:
+        ul_content = '\n'.join(li_group)
+        result_parts.append(f'<ul class="list-disc list-inside mb-6 space-y-2 text-gray-700 ml-4">{ul_content}</ul>')
+    
+    return '\n'.join(result_parts)
 
 
 def create_bill_chunks(text: str, bill_instance) -> int:
