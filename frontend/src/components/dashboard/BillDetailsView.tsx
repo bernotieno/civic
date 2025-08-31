@@ -281,11 +281,11 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
               <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Bill Description</h3>
               <div className="prose max-w-none">
                 <p className="text-gray-700 leading-relaxed mb-4 sm:mb-6 text-sm sm:text-base">{bill.description}</p>
-                {(bill.document || bill.document_url) && (
+                {bill.document_url && (
                   <div className="mt-4 sm:mt-6">
                     <h4 className="text-base sm:text-lg font-semibold mb-2">Bill Document</h4>
                     <a 
-                      href={bill.document_url || `http://127.0.0.1:8000${bill.document}`}
+                      href={`http://127.0.0.1:8000${bill.document_url}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm sm:text-base w-full sm:w-auto justify-center sm:justify-start"

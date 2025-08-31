@@ -516,7 +516,15 @@ def admin_bills_list(request):
             bills_data = [{
                 'id': str(b.id),
                 'title': b.title,
+                'description': b.description,
+                'sponsor': b.sponsor,
                 'status': b.status,
+                'status_display': b.get_status_display(),
+                'participation_deadline': b.participation_deadline,
+                'document': b.document.url if b.document else None,
+                'summary': b.summary,
+                'processing_status': b.processing_status,
+                'processing_progress': b.processing_progress,
                 'created_at': b.created_at,
                 'updated_at': b.updated_at
             } for b in bills]
@@ -528,23 +536,87 @@ def admin_bills_list(request):
             })
         
         elif request.method == 'POST':
-            title = request.data.get('title')
+            title = request.data.get('title', '').strip()
+            description = request.data.get('description', '').strip()
+            sponsor = request.data.get('sponsor', '').strip()
+            status_value = request.data.get('status', 'draft')
+            participation_deadline = request.data.get('participation_deadline')
+            document = request.FILES.get('document')
+            
+            # Validate required fields
             if not title:
                 return Response({
                     'success': False,
                     'message': 'Title is required'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            bill = Bill.objects.create(
-                title=title,
-                status='draft'
-            )
+            if not description:
+                return Response({
+                    'success': False,
+                    'message': 'Description is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
             
-            return Response({
-                'success': True,
-                'data': {'id': str(bill.id), 'title': bill.title},
-                'message': 'Bill created successfully'
-            })
+            if not sponsor:
+                return Response({
+                    'success': False,
+                    'message': 'Sponsor is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                # Create bill with all fields
+                bill_data = {
+                    'title': title,
+                    'description': description,
+                    'sponsor': sponsor,
+                    'status': status_value,
+                    'created_by': user
+                }
+                
+                # Add optional fields if provided
+                if participation_deadline:
+                    bill_data['participation_deadline'] = participation_deadline
+                
+                if document:
+                    bill_data['document'] = document
+                
+                bill = Bill.objects.create(**bill_data)
+                
+                # If document is provided, trigger processing
+                if document:
+                    try:
+                        from .tasks import process_bill_document_complete
+                        # Start async processing
+                        bill.processing_status = 'processing'
+                        bill.processing_message = 'Starting document processing...'
+                        bill.save(update_fields=['processing_status', 'processing_message'])
+                        
+                        # Process document in background
+                        process_bill_document_complete.delay(str(bill.id))
+                        
+                        logger.info(f"✅ Bill created with document processing: {bill.id}")
+                    except Exception as e:
+                        logger.error(f"❌ Error starting bill processing: {e}")
+                        # Bill is still created, just processing failed
+                
+                return Response({
+                    'success': True,
+                    'data': {
+                        'id': str(bill.id), 
+                        'title': bill.title,
+                        'description': bill.description,
+                        'sponsor': bill.sponsor,
+                        'status': bill.status,
+                        'processing_status': bill.processing_status
+                    },
+                    'message': 'Bill created successfully'
+                })
+                
+            except Exception as e:
+                logger.error(f"❌ Error creating bill: {e}")
+                return Response({
+                    'success': False,
+                    'message': 'Failed to create bill. Please try again.'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
     except Exception as e:
         logger.error(f"❌ Bills list error: {e}")
@@ -553,10 +625,10 @@ def admin_bills_list(request):
             'message': 'Failed to process bills request'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['GET'])
+@api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def admin_bill_detail(request, bill_id):
-    """Get bill detail for admin"""
+    """Get, update, or delete bill detail for admin"""
     try:
         user = request.user
         
@@ -569,18 +641,82 @@ def admin_bill_detail(request, bill_id):
         
         bill = Bill.objects.get(id=bill_id, is_deleted=False)
         
-        bill_data = {
-            'id': str(bill.id),
-            'title': bill.title,
-            'status': bill.status,
-            'created_at': bill.created_at,
-            'updated_at': bill.updated_at
-        }
+        if request.method == 'GET':
+            bill_data = {
+                'id': str(bill.id),
+                'title': bill.title,
+                'description': bill.description,
+                'sponsor': bill.sponsor,
+                'status': bill.status,
+                'participation_deadline': bill.participation_deadline,
+                'document': bill.document.url if bill.document else None,
+                'summary': bill.summary,
+                'processing_status': bill.processing_status,
+                'created_at': bill.created_at,
+                'updated_at': bill.updated_at
+            }
+            
+            return Response({
+                'success': True,
+                'data': bill_data
+            })
         
-        return Response({
-            'success': True,
-            'data': bill_data
-        })
+        elif request.method == 'PUT':
+            # Update bill fields
+            title = request.data.get('title', '').strip()
+            description = request.data.get('description', '').strip()
+            sponsor = request.data.get('sponsor', '').strip()
+            status_value = request.data.get('status')
+            participation_deadline = request.data.get('participation_deadline')
+            document = request.FILES.get('document')
+            
+            # Validate required fields if provided
+            if title and not title:
+                return Response({
+                    'success': False,
+                    'message': 'Title cannot be empty'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Update fields
+            if title:
+                bill.title = title
+            if description:
+                bill.description = description
+            if sponsor:
+                bill.sponsor = sponsor
+            if status_value:
+                bill.status = status_value
+            if participation_deadline:
+                bill.participation_deadline = participation_deadline
+            if document:
+                bill.document = document
+                # Trigger reprocessing if new document uploaded
+                bill.processing_status = 'processing'
+                bill.processing_message = 'Reprocessing document...'
+            
+            bill.save()
+            
+            # Start document processing if new document
+            if document:
+                try:
+                    from .tasks import process_bill_document_complete
+                    process_bill_document_complete.delay(str(bill.id))
+                except Exception as e:
+                    logger.error(f"❌ Error starting bill reprocessing: {e}")
+            
+            return Response({
+                'success': True,
+                'message': 'Bill updated successfully'
+            })
+        
+        elif request.method == 'DELETE':
+            bill.is_deleted = True
+            bill.save()
+            
+            return Response({
+                'success': True,
+                'message': 'Bill deleted successfully'
+            })
         
     except Bill.DoesNotExist:
         return Response({
@@ -591,34 +727,88 @@ def admin_bill_detail(request, bill_id):
         logger.error(f"❌ Bill detail error: {e}")
         return Response({
             'success': False,
-            'message': 'Failed to get bill details'
+            'message': 'Failed to process bill request'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 @permission_classes([])
 def public_bills_list(request):
-    """Get public bills list"""
+    """Get public bills list for citizens"""
     try:
-        bills = Bill.objects.filter(is_deleted=False, status='published').order_by('-created_at')
+        # Get all bills that are not deleted (including drafts for public viewing)
+        bills = Bill.objects.filter(
+            is_deleted=False
+        ).select_related('created_by').order_by('-created_at')
         
-        bills_data = [{
-            'id': str(b.id),
-            'title': b.title,
-            'status': b.status,
-            'created_at': b.created_at
-        } for b in bills]
+        bills_data = []
+        for b in bills:
+            # Check if bill can support chat (has chunks)
+            can_chat = b.is_chunked and b.total_chunks > 0
+            
+            # Calculate estimated reading time
+            estimated_reading_time = 5  # Default minimum
+            if b.summary:
+                word_count = len(b.summary.split())
+                estimated_reading_time = max(5, word_count // 250)
+            
+            bill_data = {
+                'id': str(b.id),
+                'title': b.title,
+                'description': b.description,
+                'sponsor': b.sponsor,
+                'status': b.status,
+                'status_display': b.get_status_display(),
+                'participation_deadline': b.participation_deadline,
+                'created_at': b.created_at,
+                'summary_available': bool(b.summary_html and b.summary_html.strip()),
+                'can_chat': can_chat,
+                'total_chunks': b.total_chunks,
+                'estimated_reading_time': estimated_reading_time,
+                'has_document': bool(b.document),
+                'processing_status': b.processing_status
+            }
+            bills_data.append(bill_data)
+        
+        # Pagination info (simple version)
+        pagination_info = {
+            'current_page': 1,
+            'total_pages': 1,
+            'total_bills': len(bills_data),
+            'has_next': False,
+            'has_previous': False,
+            'page_size': len(bills_data)
+        }
         
         return Response({
             'success': True,
-            'data': bills_data,
-            'count': len(bills_data)
+            'bills': bills_data,
+            'pagination': pagination_info,
+            'filters': {
+                'available_statuses': [],
+                'available_sponsors': [],
+                'current_filters': {}
+            },
+            'summary': {
+                'total_published_bills': len(bills_data),
+                'chat_enabled_bills': len([b for b in bills_data if b['can_chat']]),
+                'recent_bills': len([b for b in bills_data if 
+                    (timezone.now() - b['created_at']).days <= 30])
+            }
         })
         
     except Exception as e:
         logger.error(f"❌ Public bills list error: {e}")
         return Response({
             'success': False,
-            'message': 'Failed to get bills list'
+            'message': 'Failed to get bills list',
+            'bills': [],
+            'pagination': {
+                'current_page': 1,
+                'total_pages': 0,
+                'total_bills': 0,
+                'has_next': False,
+                'has_previous': False
+            }
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])

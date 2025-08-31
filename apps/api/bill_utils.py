@@ -39,44 +39,126 @@ def process_bill_document_complete(uploaded_file: UploadedFile, bill_instance) -
         bill_instance.processing_message = 'Extracting text from PDF...'
         bill_instance.save(update_fields=['processing_status', 'processing_progress', 'processing_message'])
         
-        # Step 1: Extract text from PDF (reset file pointer first)
-        if PdfReader is None:
-            bill_instance.processing_status = 'failed'
-            bill_instance.processing_progress = 0
-            bill_instance.processing_message = 'PDF processing library not available'
-            bill_instance.save(update_fields=['processing_status', 'processing_progress', 'processing_message'])
-            return {
-                'success': False,
-                'summary_markdown': '',
-                'summary_html': '',
-                'chunks_created': 0,
-                'error': 'PDF processing library not available'
-            }
-        
-        # Reset file pointer to beginning
-        uploaded_file.seek(0)
-        
-        reader = PdfReader(uploaded_file)
+        # Step 1: Extract text from PDF with multiple methods
         full_text = ''
-        for page in reader.pages:
-            page_text = page.extract_text() or ''
-            if page_text.strip():  # Only add non-empty pages
-                full_text += page_text + '\n\n'
+        
+        # Method 1: Try PyPDF2 first
+        if PdfReader is not None:
+            try:
+                uploaded_file.seek(0)
+                reader = PdfReader(uploaded_file)
+                for page in reader.pages:
+                    page_text = page.extract_text() or ''
+                    if page_text.strip():
+                        full_text += page_text + '\n\n'
+                
+                if full_text.strip():
+                    logger.info(f"PyPDF2 successfully extracted {len(full_text)} characters")
+            except Exception as e:
+                logger.warning(f"PyPDF2 extraction failed: {e}")
+        
+        # Method 2: Try PyMuPDF if PyPDF2 failed
+        if not full_text.strip():
+            try:
+                import fitz
+                uploaded_file.seek(0)
+                
+                # Save to temporary file for PyMuPDF
+                import tempfile
+                with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_file:
+                    temp_file.write(uploaded_file.read())
+                    temp_path = temp_file.name
+                
+                try:
+                    doc = fitz.open(temp_path)
+                    for page_num in range(len(doc)):
+                        page = doc[page_num]
+                        page_text = page.get_text()
+                        if page_text.strip():
+                            full_text += page_text + '\n\n'
+                    doc.close()
+                    
+                    if full_text.strip():
+                        logger.info(f"PyMuPDF successfully extracted {len(full_text)} characters")
+                finally:
+                    os.unlink(temp_path)
+                    
+            except ImportError:
+                logger.warning("PyMuPDF not available")
+            except Exception as e:
+                logger.warning(f"PyMuPDF extraction failed: {e}")
         
         # Clean up the text
         full_text = full_text.strip()
         
+        # If still no text, create a placeholder summary
         if not full_text:
-            bill_instance.processing_status = 'failed'
-            bill_instance.processing_progress = 0
-            bill_instance.processing_message = 'No text could be extracted from PDF'
-            bill_instance.save(update_fields=['processing_status', 'processing_progress', 'processing_message'])
+            logger.warning("No text could be extracted from PDF - creating placeholder summary")
+            
+            # Create a basic summary indicating the document is available but text extraction failed
+            placeholder_summary = f"""## {bill_instance.title}
+
+**Document Status:** PDF document uploaded successfully
+
+**Processing Note:** This appears to be a scanned or image-based PDF document. While the full document is available for download, automatic text extraction was not possible.
+
+**What this means for citizens:**
+- The complete bill document is available for download and review
+- You can access the full PDF document through the document link
+- Manual review of the document is recommended for complete details
+
+**Document Information:**
+- Sponsor: {bill_instance.sponsor}
+- Status: {bill_instance.get_status_display()}
+- Upload Date: {bill_instance.created_at.strftime('%B %d, %Y')}
+
+**Next Steps:**
+- Download and review the complete PDF document
+- Participate in public consultation if the deadline is still open
+- Contact your local representative for clarification on specific provisions
+
+*Note: This summary was generated because automatic text extraction from the PDF was not possible. The full document remains available for download and contains all the detailed provisions of the bill.*"""
+            
+            # Update progress and create basic chunks
+            bill_instance.processing_progress = 80
+            bill_instance.processing_message = 'Creating document summary...'
+            bill_instance.save(update_fields=['processing_progress', 'processing_message'])
+            
+            # Create HTML version
+            placeholder_html = _convert_to_html(placeholder_summary)
+            
+            # Create a single chunk for the placeholder
+            chunks_created = 1
+            try:
+                from apps.projects.models import BillChunk
+                BillChunk.objects.filter(bill=bill_instance).delete()
+                BillChunk.objects.create(
+                    bill=bill_instance,
+                    chunk_index=0,
+                    section_title="Document Information",
+                    content=placeholder_summary,
+                    word_count=len(placeholder_summary.split())
+                )
+            except Exception as e:
+                logger.error(f"Failed to create placeholder chunk: {e}")
+                chunks_created = 0
+            
+            # Mark as completed with placeholder content
+            bill_instance.summary = placeholder_summary
+            bill_instance.summary_html = placeholder_html
+            bill_instance.is_chunked = True
+            bill_instance.total_chunks = chunks_created
+            bill_instance.processing_status = 'completed'
+            bill_instance.processing_progress = 100
+            bill_instance.processing_message = 'Processing complete (document available for download)'
+            bill_instance.save(update_fields=['summary', 'summary_html', 'is_chunked', 'total_chunks', 'processing_status', 'processing_progress', 'processing_message'])
+            
             return {
-                'success': False,
-                'summary_markdown': '',
-                'summary_html': '',
-                'chunks_created': 0,
-                'error': 'No text could be extracted from PDF'
+                'success': True,
+                'summary_markdown': placeholder_summary,
+                'summary_html': placeholder_html,
+                'chunks_created': chunks_created,
+                'error': None
             }
         
         # Update progress: Text extracted
@@ -154,47 +236,102 @@ def _create_summary(full_text: str) -> str:
         
         api_key = os.getenv("OPENAI_API_KEY")
         if api_key and clean_text:
-            # Take first 4000 chars to ensure we stay within limits
-            bill_text = clean_text[:4000]
-            
-            data = {
-                "model": "gpt-4o-mini",
-                "messages": [
-                    {"role": "system", "content": "You are summarizing ONE specific Kenyan bill. Only summarize the content provided. Do not reference other bills or documents."},
-                    {"role": "user", "content": f'''Summarize ONLY this specific bill in simple English for citizens. Focus on key impacts like taxes, penalties, rights, and services. Be concise and only discuss what is in this document:\n\n{bill_text}'''}
-                ],
-                "temperature": 0.3,  # Lower temperature for more focused output
-                "max_tokens": 400
-            }
-            
-            req = urllib.request.Request(
-                "https://api.openai.com/v1/chat/completions",
-                data=json.dumps(data).encode('utf-8'),
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
+            try:
+                # Take first 4000 chars to ensure we stay within limits
+                bill_text = clean_text[:4000]
+                
+                data = {
+                    "model": "gpt-4o-mini",
+                    "messages": [
+                        {"role": "system", "content": "You are summarizing ONE specific Kenyan bill. Generate HTML formatted output for web display. Use proper HTML tags like <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em> for formatting."},
+                        {"role": "user", "content": f'''Summarize ONLY this specific bill in simple English for citizens. Format the output as clean HTML with proper headings, paragraphs, and lists. Focus on key impacts like taxes, penalties, rights, and services. Structure it with clear sections:\n\n{bill_text}'''}
+                    ],
+                    "temperature": 0.3,
+                    "max_tokens": 600
                 }
-            )
-            
-            with urllib.request.urlopen(req, timeout=15) as response:
-                if response.status == 200:
-                    result = json.loads(response.read().decode('utf-8'))
-                    summary = result['choices'][0]['message']['content']
-                    return summary.strip()
+                
+                req = urllib.request.Request(
+                    "https://api.openai.com/v1/chat/completions",
+                    data=json.dumps(data).encode('utf-8'),
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json"
+                    }
+                )
+                
+                with urllib.request.urlopen(req, timeout=15) as response:
+                    if response.status == 200:
+                        result = json.loads(response.read().decode('utf-8'))
+                        summary = result['choices'][0]['message']['content']
+                        return summary.strip()
+            except Exception as api_error:
+                logger.warning(f"OpenAI API call failed: {api_error}")
+        else:
+            logger.info("No OpenAI API key found, using fallback summary")
     except Exception as e:
-        logger.warning(f"AI summarization failed: {e}")
+        logger.warning(f"AI summarization setup failed: {e}")
     
-    # Fallback: Basic summary from this document only
-    preview = clean_text[:800].strip()
-    return f"Document Summary: This bill contains {len(clean_text)} characters of legal text. Key content preview: {preview}... Note: AI summarization is currently unavailable."
+    # Enhanced fallback: Create a structured summary from the document
+    try:
+        # Extract key sections and create a basic summary
+        lines = clean_text.split('\n')
+        
+        # Look for common bill sections
+        sections = []
+        current_section = ""
+        
+        for line in lines[:100]:  # First 100 lines
+            line = line.strip()
+            if line and (line.isupper() or line.startswith('PART') or line.startswith('SECTION')):
+                if current_section:
+                    sections.append(current_section)
+                current_section = line
+            elif line and current_section:
+                current_section += f" {line}"
+        
+        if current_section:
+            sections.append(current_section)
+        
+        # Create structured HTML summary
+        summary_parts = [
+            "<h2>Bill Summary</h2>",
+            f"<p>This bill contains {len(clean_text)} characters of legal text.</p>",
+            "<h3>Key Sections:</h3>",
+            "<ul>"
+        ]
+        
+        for section in sections[:5]:  # Top 5 sections
+            summary_parts.append(f"<li>{section[:200]}...</li>")
+        
+        if len(sections) > 5:
+            summary_parts.append(f"<li><em>... and {len(sections) - 5} more sections</em></li>")
+        
+        summary_parts.extend([
+            "</ul>",
+            "<h3>Document Preview:</h3>",
+            f"<p>{clean_text[:500]}...</p>",
+            "<p><em>Note: AI summarization is currently unavailable. Please review the full document for complete details.</em></p>"
+        ])
+        
+        return "\n".join(summary_parts)
+        
+    except Exception as fallback_error:
+        logger.error(f"Fallback summary creation failed: {fallback_error}")
+        # Ultimate fallback
+        preview = clean_text[:800].strip()
+        return f"Document Summary: This bill contains {len(clean_text)} characters of legal text. Key content preview: {preview}... Note: AI summarization is currently unavailable."
 
 
 def _convert_to_html(text: str) -> str:
     """
-    Simple text to HTML conversion
+    Convert text to HTML - if already HTML, return as is
     """
     if not text:
         return ''
+    
+    # If text already contains HTML tags, return as is
+    if '<' in text and '>' in text:
+        return text
     
     # Simple conversion: paragraphs and line breaks
     html = text.replace('\n\n', '</p><p>')

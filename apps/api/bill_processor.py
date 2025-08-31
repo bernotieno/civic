@@ -236,7 +236,11 @@ def markdown_to_html(markdown_text: str) -> str:
     try:
         # Configure markdown with extensions for better formatting
         md = markdown.Markdown(
-            extensions=['markdown.extensions.tables', 'markdown.extensions.nl2br'],
+            extensions=[
+                'markdown.extensions.tables', 
+                'markdown.extensions.nl2br',
+                'markdown.extensions.fenced_code'
+            ],
             extension_configs={
                 'markdown.extensions.nl2br': {'newlines': True}
             }
@@ -245,20 +249,47 @@ def markdown_to_html(markdown_text: str) -> str:
         # Convert to HTML
         html_content = md.convert(markdown_text)
         
-        # Add basic styling classes for CivicAI formatting
-        html_content = html_content.replace('<h3>', '<h3 class="civicai-section-title">')
-        html_content = html_content.replace('<h4>', '<h4 class="civicai-subsection">')
-        html_content = html_content.replace('<ul>', '<ul class="civicai-list">')
-        html_content = html_content.replace('<ol>', '<ol class="civicai-numbered-list">')
-        html_content = html_content.replace('<p>', '<p class="civicai-paragraph">')
+        # Enhanced styling for better display
+        html_content = html_content.replace('<h1>', '<h1 class="text-2xl font-bold mb-4">')
+        html_content = html_content.replace('<h2>', '<h2 class="text-xl font-semibold mb-3">')
+        html_content = html_content.replace('<h3>', '<h3 class="text-lg font-medium mb-2">')
+        html_content = html_content.replace('<h4>', '<h4 class="text-base font-medium mb-2">')
+        html_content = html_content.replace('<ul>', '<ul class="list-disc ml-6 mb-4">')
+        html_content = html_content.replace('<ol>', '<ol class="list-decimal ml-6 mb-4">')
+        html_content = html_content.replace('<p>', '<p class="mb-3 leading-relaxed">')
+        html_content = html_content.replace('<strong>', '<strong class="font-semibold">')
+        html_content = html_content.replace('<em>', '<em class="italic">')
         
         return html_content
         
     except Exception as e:
-        # Fallback: basic HTML conversion
-        html_content = markdown_text.replace('\n\n', '</p><p>')
-        html_content = html_content.replace('###', '<h3>').replace('**', '<strong>').replace('*', '<em>')
-        return f'<p>{html_content}</p>'
+        # Enhanced fallback: better HTML conversion
+        html_content = markdown_text
+        
+        # Convert headers
+        html_content = re.sub(r'^### (.+)$', r'<h3 class="text-lg font-medium mb-2">\1</h3>', html_content, flags=re.MULTILINE)
+        html_content = re.sub(r'^## (.+)$', r'<h2 class="text-xl font-semibold mb-3">\1</h2>', html_content, flags=re.MULTILINE)
+        html_content = re.sub(r'^# (.+)$', r'<h1 class="text-2xl font-bold mb-4">\1</h1>', html_content, flags=re.MULTILINE)
+        
+        # Convert bold and italic
+        html_content = re.sub(r'\*\*(.+?)\*\*', r'<strong class="font-semibold">\1</strong>', html_content)
+        html_content = re.sub(r'\*(.+?)\*', r'<em class="italic">\1</em>', html_content)
+        
+        # Convert bullet points
+        html_content = re.sub(r'^\* (.+)$', r'<li>\1</li>', html_content, flags=re.MULTILINE)
+        html_content = re.sub(r'(<li>.*</li>)', r'<ul class="list-disc ml-6 mb-4">\1</ul>', html_content, flags=re.DOTALL)
+        
+        # Convert paragraphs
+        paragraphs = html_content.split('\n\n')
+        html_paragraphs = []
+        for para in paragraphs:
+            para = para.strip()
+            if para and not para.startswith('<'):
+                html_paragraphs.append(f'<p class="mb-3 leading-relaxed">{para}</p>')
+            else:
+                html_paragraphs.append(para)
+        
+        return '\n'.join(html_paragraphs)
 
 
 def combine_sections_to_final_summary(processed_sections: List[str]) -> Tuple[str, str]:

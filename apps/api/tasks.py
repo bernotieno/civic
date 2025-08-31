@@ -564,6 +564,62 @@ def generate_bill_embeddings_async(self, bill_id: str) -> Dict:
         }
 
 
+@app.task(bind=True, queue='ai_responses')
+def process_bill_document_complete(self, bill_id: str) -> Dict:
+    """
+    Complete bill processing task - processes document and creates summary and chunks
+    Args:
+        bill_id: Bill UUID string
+    Returns:
+        dict: Processing results
+    """
+    from apps.projects.models import Bill
+    from .bill_utils import process_bill_document_complete as sync_process
+    
+    try:
+        logger.info(f"Starting bill processing task for bill {bill_id}")
+        
+        # Get bill instance
+        bill = Bill.objects.get(id=bill_id, is_deleted=False)
+        
+        if not bill.document:
+            raise Exception("No document found for bill")
+        
+        # Process the document
+        result = sync_process(bill.document, bill)
+        
+        if result['success']:
+            # Update bill with results
+            bill.summary = result['summary_markdown']
+            bill.summary_html = result['summary_html']
+            bill.save(update_fields=['summary', 'summary_html'])
+            
+            logger.info(f"Bill processing completed successfully for {bill_id}")
+        else:
+            logger.error(f"Bill processing failed for {bill_id}: {result['error']}")
+        
+        return result
+        
+    except Exception as e:
+        error_msg = f"Bill processing task failed: {str(e)}"
+        logger.error(error_msg)
+        
+        # Update bill status
+        try:
+            bill = Bill.objects.get(id=bill_id, is_deleted=False)
+            bill.processing_status = 'failed'
+            bill.processing_message = error_msg
+            bill.save(update_fields=['processing_status', 'processing_message'])
+        except:
+            pass
+        
+        return {
+            'success': False,
+            'error': error_msg,
+            'bill_id': bill_id
+        }
+
+
 @app.task(queue='default')
 def get_async_task_status(task_id: str) -> Dict:
     """

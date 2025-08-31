@@ -276,6 +276,7 @@ def public_bill_detail(request, bill_id):
             'participation_deadline': bill.participation_deadline,
             'created_at': bill.created_at,
             'document_url': bill.document.url if bill.document else None,
+            'has_document': bool(bill.document),
             'can_chat': can_chat,
             'total_chunks': bill.total_chunks,
             'key_sections': key_sections,
