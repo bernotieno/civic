@@ -68,9 +68,8 @@ def process_bill_document_complete(uploaded_file: UploadedFile, bill_instance) -
         # Step 2: Create summary
         summary_markdown = _create_summary(full_text)
         
-        # Step 3: Convert to HTML
-        from .bill_processor import markdown_to_html
-        summary_html = markdown_to_html(summary_markdown)
+        # Step 3: Convert to HTML (simple conversion)
+        summary_html = _convert_to_html(summary_markdown)
         
         # Step 4: Create chunks for AI chat
         chunks_created = create_bill_chunks(full_text, bill_instance)
@@ -144,7 +143,26 @@ def _create_summary(full_text: str) -> str:
     
     # Fallback: Basic summary from this document only
     preview = clean_text[:800].strip()
-    return f"Document Summary:\n\nThis bill contains {len(clean_text)} characters of legal text.\n\nKey content preview:\n\n{preview}...\n\nNote: AI summarization is currently unavailable."
+    return f"Document Summary: This bill contains {len(clean_text)} characters of legal text. Key content preview: {preview}... Note: AI summarization is currently unavailable."
+
+
+def _convert_to_html(text: str) -> str:
+    """
+    Simple text to HTML conversion
+    """
+    if not text:
+        return ''
+    
+    # Simple conversion: paragraphs and line breaks
+    html = text.replace('\n\n', '</p><p>')
+    html = html.replace('\n', '<br>')
+    html = f'<p>{html}</p>'
+    
+    # Clean up empty paragraphs
+    html = html.replace('<p></p>', '')
+    html = html.replace('<p><br></p>', '')
+    
+    return html
 
 
 def create_bill_chunks(text: str, bill_instance) -> int:
