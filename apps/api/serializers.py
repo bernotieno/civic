@@ -54,48 +54,107 @@ class RegisterSerializer(serializers.Serializer):
     )
     
     def validate_national_id(self, value):
-        """Validate Kenyan National ID format"""
+        """Validate Kenyan National ID format with specific error messages"""
+        # Remove any spaces or special characters
+        cleaned_value = ''.join(filter(str.isdigit, str(value)))
+        
+        # Check length
+        if len(cleaned_value) != 8:
+            raise serializers.ValidationError(
+                "🇰🇪 National ID must be exactly 8 digits. Please enter your complete Kenyan National ID."
+            )
+        
+        # Check if all digits
+        if not cleaned_value.isdigit():
+            raise serializers.ValidationError(
+                "🔢 National ID must contain only numbers. Please remove any spaces or special characters."
+            )
+        
         try:
-            if not validate_kenyan_national_id(value):
-                raise serializers.ValidationError("Invalid National ID format")
+            # Validate format using utility function
+            if not validate_kenyan_national_id(cleaned_value):
+                raise serializers.ValidationError(
+                    "🇰🇪 Invalid Kenyan National ID format. Please enter a valid 8-digit National ID."
+                )
             
             # Check if already registered
-            existing_users = CustomUser.objects.all()
+            existing_users = CustomUser.objects.filter(is_deleted=False)
             for user in existing_users:
-                if verify_national_id(value, user.national_id_hash):
-                    raise serializers.ValidationError("User with this National ID already exists")
+                if verify_national_id(cleaned_value, user.national_id_hash):
+                    raise serializers.ValidationError(
+                        "👤 An account with this National ID already exists. Try logging in instead or contact support if you believe this is an error."
+                    )
             
-            return value
+            return cleaned_value
+            
+        except serializers.ValidationError:
+            raise
         except Exception as e:
-            raise serializers.ValidationError(f"National ID validation error: {str(e)}")
+            raise serializers.ValidationError(
+                f"❌ National ID validation failed: {str(e)}. Please try again or contact support."
+            )
 
     def validate_email(self, value):
-        """Check if email already exists"""
-        if CustomUser.objects.filter(email=value).exists():
-            raise serializers.ValidationError("User with this email already exists")
-        return value    
+        """Validate email with specific error messages"""
+        # Basic email format validation
+        if not value or '@' not in value or '.' not in value:
+            raise serializers.ValidationError(
+                "📧 Please enter a valid email address (e.g., john@example.com)."
+            )
+        
+        # Check if email already exists
+        if CustomUser.objects.filter(email=value, is_deleted=False).exists():
+            raise serializers.ValidationError(
+                "📧 An account with this email already exists. Try logging in instead or use a different email address."
+            )
+        
+        return value.lower().strip()    
     
     def validate_county_id(self, value):
-        """Validate county exists"""
+        """Validate county exists with specific error messages"""
+        if not value:
+            raise serializers.ValidationError(
+                "🏛️ Please select your county from the dropdown list."
+            )
+        
         try:
-            county = County.objects.get(id=value)
+            county = County.objects.get(id=value, is_active=True)
             return value
         except County.DoesNotExist:
-            raise serializers.ValidationError(f"County with ID {value} not found")
+            raise serializers.ValidationError(
+                f"🏛️ Selected county (ID: {value}) not found. Please choose a valid county from the list."
+            )
         except Exception as e:
-            raise serializers.ValidationError(f"County validation error: {str(e)}")
+            raise serializers.ValidationError(
+                f"❌ County validation failed: {str(e)}. Please try selecting your county again."
+            )
     
     def validate(self, attrs):
-        """Cross-field validation for location hierarchy"""
+        """Cross-field validation for location hierarchy with specific error messages"""
         county_id = attrs.get('county_id')
         sub_county_id = attrs.get('sub_county_id')
         ward_id = attrs.get('ward_id')
         village_id = attrs.get('village_id')
+        name = attrs.get('name', '').strip()
+        password = attrs.get('password', '')
+        
+        # Validate name
+        if not name or len(name) < 2:
+            raise serializers.ValidationError({
+                'name': ["👤 Please enter your full name (at least 2 characters)."]
+            })
+        
+        # Validate password strength
+        if len(password) < 6:
+            raise serializers.ValidationError({
+                'password': ["🔒 Password must be at least 6 characters long."]
+            })
         
         try:
-            county = County.objects.get(id=county_id)
+            county = County.objects.get(id=county_id, is_active=True)
             county_location = county.location
             
+            # Validate location hierarchy
             if sub_county_id:
                 try:
                     sub_county = Location.objects.get(
@@ -105,7 +164,9 @@ class RegisterSerializer(serializers.Serializer):
                     )
                     attrs['sub_county'] = sub_county
                 except Location.DoesNotExist:
-                    raise serializers.ValidationError(f"Sub-county with ID {sub_county_id} not found in {county.name}")
+                    raise serializers.ValidationError({
+                        'sub_county_id': [f"📍 Selected sub-county does not belong to {county.name}. Please select a valid sub-county."]
+                    })
                 
                 if ward_id:
                     try:
@@ -116,7 +177,9 @@ class RegisterSerializer(serializers.Serializer):
                         )
                         attrs['ward'] = ward
                     except Location.DoesNotExist:
-                        raise serializers.ValidationError(f"Ward with ID {ward_id} not found")
+                        raise serializers.ValidationError({
+                            'ward_id': [f"📍 Selected ward does not belong to the chosen sub-county. Please select a valid ward."]
+                        })
                     
                     if village_id:
                         try:
@@ -127,15 +190,23 @@ class RegisterSerializer(serializers.Serializer):
                             )
                             attrs['village'] = village
                         except Location.DoesNotExist:
-                            raise serializers.ValidationError(f"Village with ID {village_id} not found")
+                            raise serializers.ValidationError({
+                                'village_id': [f"📍 Selected village does not belong to the chosen ward. Please select a valid village."]
+                            })
             
             attrs['county'] = county
             attrs['county_location'] = county_location
             
         except County.DoesNotExist:
-            raise serializers.ValidationError(f"County with ID {county_id} not found")
+            raise serializers.ValidationError({
+                'county_id': [f"🏛️ County with ID {county_id} not found. Please select a valid county."]
+            })
+        except serializers.ValidationError:
+            raise
         except Exception as e:
-            raise serializers.ValidationError(f"Location validation error: {str(e)}")
+            raise serializers.ValidationError({
+                'non_field_errors': [f"❌ Registration validation failed: {str(e)}. Please try again."]
+            })
         
         return attrs
     
@@ -193,23 +264,55 @@ class LoginSerializer(serializers.Serializer):
         national_id = attrs.get('national_id')
         password = attrs.get('password')
         
-        if national_id and password:
+        if not national_id:
+            raise serializers.ValidationError({
+                'national_id': ["🇰🇪 Please enter your National ID."]
+            })
+        
+        if not password:
+            raise serializers.ValidationError({
+                'password': ["🔒 Please enter your password."]
+            })
+        
+        # Clean national ID
+        cleaned_national_id = ''.join(filter(str.isdigit, str(national_id)))
+        
+        if len(cleaned_national_id) != 8:
+            raise serializers.ValidationError({
+                'national_id': ["🇰🇪 National ID must be exactly 8 digits."]
+            })
+        
+        try:
             user = authenticate(
                 request=self.context.get('request'),
-                username=national_id,
+                username=cleaned_national_id,
                 password=password
             )
             
             if not user:
-                raise serializers.ValidationError('Invalid credentials')
+                raise serializers.ValidationError({
+                    'non_field_errors': ["🔐 Invalid National ID or password. Please check your credentials and try again."]
+                })
             
             if not user.is_active:
-                raise serializers.ValidationError('User account is disabled')
+                raise serializers.ValidationError({
+                    'non_field_errors': ["🚫 Your account has been deactivated. Please contact support for assistance."]
+                })
+            
+            if user.is_deleted:
+                raise serializers.ValidationError({
+                    'non_field_errors': ["❌ This account is no longer available. Please contact support if you believe this is an error."]
+                })
             
             attrs['user'] = user
             return attrs
-        else:
-            raise serializers.ValidationError('Must include national_id and password')
+            
+        except serializers.ValidationError:
+            raise
+        except Exception as e:
+            raise serializers.ValidationError({
+                'non_field_errors': [f"❌ Login failed: {str(e)}. Please try again or contact support."]
+            })
 
 
 class AnonymousSessionSerializer(serializers.Serializer):
@@ -224,20 +327,41 @@ class AnonymousSessionSerializer(serializers.Serializer):
     )
     
     def validate_county_id(self, value):
+        """Validate county for anonymous session"""
+        if not value:
+            raise serializers.ValidationError(
+                "🏛️ Please select a county for your anonymous session."
+            )
+        
         try:
-            County.objects.get(id=value)
+            County.objects.get(id=value, is_active=True)
             return value
         except County.DoesNotExist:
-            raise serializers.ValidationError("Invalid county")
+            raise serializers.ValidationError(
+                f"🏛️ Selected county (ID: {value}) not found. Please choose a valid county."
+            )
+        except Exception as e:
+            raise serializers.ValidationError(
+                f"❌ County validation failed: {str(e)}. Please try again."
+            )
     
     def create(self, validated_data):
-        """Create anonymous session"""
+        """Create anonymous session with error handling"""
         county_id = validated_data['county_id']
         request = self.context.get('request')
         request_meta = request.META if request else None
         
-        session_id = AnonymousSessionManager.create_session(county_id, request_meta)
-        return {'session_id': session_id}
+        try:
+            session_id = AnonymousSessionManager.create_session(county_id, request_meta)
+            if not session_id:
+                raise serializers.ValidationError(
+                    "❌ Failed to create anonymous session. Please try again."
+                )
+            return {'session_id': session_id}
+        except Exception as e:
+            raise serializers.ValidationError(
+                f"❌ Session creation failed: {str(e)}. Please try again."
+            )
 
 
 class TokenResponseSerializer(serializers.Serializer):

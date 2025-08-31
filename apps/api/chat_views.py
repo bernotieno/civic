@@ -71,8 +71,13 @@ def bill_chat(request, bill_id):
         if not question:
             return Response({
                 'success': False,
-                'error': 'Question is required',
-                'message': 'Please provide a question about the bill'
+                'message': '💬 Please ask a question about this bill to get started.',
+                'error_code': 'QUESTION_REQUIRED',
+                'suggestions': [
+                    'What is this bill about?',
+                    'How does this bill affect citizens?',
+                    'What are the main provisions of this bill?'
+                ]
             }, status=400)
         
         # Validate question
@@ -80,13 +85,14 @@ def bill_chat(request, bill_id):
         if not validation['valid']:
             return Response({
                 'success': False,
-                'error': validation['reason'],
+                'message': validation.get('user_message', '💬 Please ask a clear, meaningful question about this bill.'),
+                'error_code': 'INVALID_QUESTION',
+                'reason': validation['reason'],
                 'suggestions': validation.get('suggestions', [
                     'Ask about the main purpose of this bill',
                     'Inquire how this bill affects citizens',
                     'Ask about specific sections or provisions'
-                ]),
-                'message': validation.get('user_message', 'Please ask a clear question about this bill')
+                ])
             }, status=400)
         
         # Check if bill exists and is accessible
@@ -269,12 +275,13 @@ def bill_chat(request, bill_id):
         logger.error(f"Error in bill_chat for {bill_id}: {str(e)}")
         return Response({
             'success': False,
-            'error': 'Chat service temporarily unavailable',
-            'message': 'I am currently unable to process your question. Please try again in a few moments, or ask a different question about this bill.',
+            'message': '🔧 Chat service is temporarily unavailable. Please try again in a few moments.',
+            'error_code': 'CHAT_SYSTEM_ERROR',
             'suggestions': [
-                'Try refreshing the page and asking again',
-                'Ask a simpler question about the bill',
-                'Check if the bill is still being processed'
+                'Wait a few minutes and try asking again',
+                'Refresh the page and try a simpler question',
+                'Read the bill summary while the system recovers',
+                'Contact support if the problem persists'
             ]
         }, status=500)
 

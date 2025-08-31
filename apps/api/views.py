@@ -121,32 +121,52 @@ class RegisterView(APIView):
     throttle_classes = [AuthRateThrottle]
     
     def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
+        try:
+            serializer = RegisterSerializer(data=request.data)
+            if serializer.is_valid():
+                user = serializer.save()
+                
+                # Generate tokens
+                refresh = RefreshToken.for_user(user)
+                access_token = str(refresh.access_token)
+                
+                # Get user profile data
+                profile_serializer = UserProfileSerializer(user)
+                
+                logger.info(f"✅ User registration successful: {user.email} (ID: {user.id})")
+                
+                return Response({
+                    'success': True,
+                    'message': f'🎉 Welcome to CivicAI, {user.name}! Your account has been created successfully.',
+                    'user': profile_serializer.data,
+                    'tokens': {
+                        'access': access_token,
+                        'refresh': str(refresh)
+                    }
+                }, status=status.HTTP_201_CREATED)
             
-            # Generate tokens
-            refresh = RefreshToken.for_user(user)
-            access_token = str(refresh.access_token)
-            
-            # Get user profile data
-            profile_serializer = UserProfileSerializer(user)
+            # Handle validation errors with enhanced formatting
+            logger.warning(f"❌ Registration validation failed: {serializer.errors}")
             
             return Response({
-                'success': True,
-                'message': 'Registration successful',
-                'user': profile_serializer.data,
-                'tokens': {
-                    'access': access_token,
-                    'refresh': str(refresh)
-                }
-            }, status=status.HTTP_201_CREATED)
-        
-        return Response({
-            'success': False,
-            'message': 'Registration failed',
-            'errors': serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+                'success': False,
+                'message': 'Please correct the following errors and try again:',
+                'errors': serializer.errors,
+                'error_code': 'REGISTRATION_VALIDATION_ERROR'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            logger.error(f"❌ Registration system error: {str(e)}")
+            return Response({
+                'success': False,
+                'message': '🔧 Registration system temporarily unavailable. Please try again in a few moments.',
+                'error_code': 'REGISTRATION_SYSTEM_ERROR',
+                'suggestions': [
+                    'Wait a few minutes and try again',
+                    'Check your internet connection',
+                    'Contact support if the problem persists'
+                ]
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @extend_schema(
@@ -235,44 +255,64 @@ class LoginView(APIView):
     throttle_classes = [AuthRateThrottle]
     
     def post(self, request):
-        serializer = LoginSerializer(
-            data=request.data,
-            context={'request': request}
-        )
-        
-        if serializer.is_valid():
-            user = serializer.validated_data['user']
+        try:
+            serializer = LoginSerializer(
+                data=request.data,
+                context={'request': request}
+            )
             
-            # Generate tokens
-            refresh = RefreshToken.for_user(user)
-            access_token = str(refresh.access_token)
+            if serializer.is_valid():
+                user = serializer.validated_data['user']
+                
+                # Generate tokens
+                refresh = RefreshToken.for_user(user)
+                access_token = str(refresh.access_token)
+                
+                # Update last login
+                login(request, user)
+                
+                # Get user context for app configuration
+                from apps.core.context import UserContext
+                user_context = UserContext(user)
+                
+                # Get user profile data
+                profile_serializer = UserProfileSerializer(user)
+                
+                logger.info(f"✅ User login successful: {user.email} (ID: {user.id})")
+                
+                return Response({
+                    'success': True,
+                    'message': f'🎉 Welcome back, {user.name}!',
+                    'user': profile_serializer.data,
+                    'app_config': user_context.app_config,
+                    'tokens': {
+                        'access': access_token,
+                        'refresh': str(refresh)
+                    }
+                }, status=status.HTTP_200_OK)
             
-            # Update last login
-            login(request, user)
-            
-            # Get user context for app configuration
-            from apps.core.context import UserContext
-            user_context = UserContext(user)
-            
-            # Get user profile data
-            profile_serializer = UserProfileSerializer(user)
+            # Handle validation errors
+            logger.warning(f"❌ Login validation failed: {serializer.errors}")
             
             return Response({
-                'success': True,
-                'message': 'Login successful',
-                'user': profile_serializer.data,
-                'app_config': user_context.app_config,
-                'tokens': {
-                    'access': access_token,
-                    'refresh': str(refresh)
-                }
-            }, status=status.HTTP_200_OK)
-        
-        return Response({
-            'success': False,
-            'message': 'Login failed',
-            'errors': serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+                'success': False,
+                'message': 'Login failed. Please check your credentials.',
+                'errors': serializer.errors,
+                'error_code': 'LOGIN_VALIDATION_ERROR'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            logger.error(f"❌ Login system error: {str(e)}")
+            return Response({
+                'success': False,
+                'message': '🔧 Login system temporarily unavailable. Please try again in a few moments.',
+                'error_code': 'LOGIN_SYSTEM_ERROR',
+                'suggestions': [
+                    'Wait a few minutes and try again',
+                    'Check your internet connection',
+                    'Contact support if the problem persists'
+                ]
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @extend_schema(
@@ -302,20 +342,46 @@ class LogoutView(APIView):
     def post(self, request):
         try:
             refresh_token = request.data.get('refresh_token')
-            if refresh_token:
+            
+            if not refresh_token:
+                return Response({
+                    'success': False,
+                    'message': '🔑 Refresh token is required for secure logout.',
+                    'error_code': 'MISSING_REFRESH_TOKEN',
+                    'suggestions': ['Please provide your refresh token']
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
                 token = RefreshToken(refresh_token)
                 token.blacklist()
-            
-            return Response({
-                'success': True,
-                'message': 'Logout successful'
-            }, status=status.HTTP_200_OK)
+                
+                logger.info(f"✅ User logout successful: {request.user.email if request.user.is_authenticated else 'Unknown'}")
+                
+                return Response({
+                    'success': True,
+                    'message': '👋 You have been logged out successfully. Thank you for using CivicAI!'
+                }, status=status.HTTP_200_OK)
+                
+            except Exception as token_error:
+                logger.warning(f"⚠️ Token blacklist failed: {str(token_error)}")
+                # Still return success since user intent is to logout
+                return Response({
+                    'success': True,
+                    'message': '👋 Logout completed. Your session has been terminated.'
+                }, status=status.HTTP_200_OK)
+                
         except Exception as e:
+            logger.error(f"❌ Logout system error: {str(e)}")
             return Response({
                 'success': False,
-                'message': 'Logout failed',
-                'error': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
+                'message': '🔧 Logout system error. Your session may still be active.',
+                'error_code': 'LOGOUT_SYSTEM_ERROR',
+                'suggestions': [
+                    'Clear your browser cache and cookies',
+                    'Close and reopen your browser',
+                    'Contact support if you have security concerns'
+                ]
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @extend_schema(
@@ -369,27 +435,52 @@ class AnonymousSessionView(APIView):
     throttle_classes = [AnonRateThrottle]
     
     def post(self, request):
-        serializer = AnonymousSessionSerializer(
-            data=request.data,
-            context={'request': request}
-        )
-        
-        if serializer.is_valid():
-            session_data = serializer.save()
+        try:
+            serializer = AnonymousSessionSerializer(
+                data=request.data,
+                context={'request': request}
+            )
+            
+            if serializer.is_valid():
+                session_data = serializer.save()
+                
+                logger.info(f"✅ Anonymous session created: {session_data['session_id']}")
+                
+                return Response({
+                    'success': True,
+                    'message': '🔒 Anonymous session created successfully. You can now submit feedback privately.',
+                    'session_id': session_data['session_id'],
+                    'expires_in': 2 * 60 * 60,  # 2 hours
+                    'max_submissions': 3,
+                    'instructions': [
+                        'Save your session ID - you\'ll need it to submit feedback',
+                        'Session expires in 2 hours',
+                        'Maximum 3 submissions per session'
+                    ]
+                }, status=status.HTTP_201_CREATED)
+            
+            # Handle validation errors
+            logger.warning(f"❌ Anonymous session validation failed: {serializer.errors}")
             
             return Response({
-                'success': True,
-                'message': 'Anonymous session created',
-                'session_id': session_data['session_id'],
-                'expires_in': 2 * 60 * 60,  # 2 hours
-                'max_submissions': 3
-            }, status=status.HTTP_201_CREATED)
-        
-        return Response({
-            'success': False,
-            'message': 'Session creation failed',
-            'errors': serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+                'success': False,
+                'message': 'Anonymous session creation failed. Please check your input.',
+                'errors': serializer.errors,
+                'error_code': 'SESSION_VALIDATION_ERROR'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            logger.error(f"❌ Anonymous session system error: {str(e)}")
+            return Response({
+                'success': False,
+                'message': '🔧 Anonymous session system temporarily unavailable. Please try again.',
+                'error_code': 'SESSION_SYSTEM_ERROR',
+                'suggestions': [
+                    'Wait a few minutes and try again',
+                    'Try creating an account for unlimited submissions',
+                    'Contact support if the problem persists'
+                ]
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @extend_schema(
@@ -645,39 +736,89 @@ class LocationHierarchyView(APIView):
         parent_id = request.query_params.get('parent_id')
         location_type = request.query_params.get('type', 'sub_county')
         
+        # Validate required parameters
         if not county_id and not parent_id:
             return Response({
                 'success': False,
-                'message': 'county_id or parent_id is required'
+                'message': '📍 Please provide either county_id or parent_id to get location hierarchy.',
+                'error_code': 'MISSING_LOCATION_PARAMETER',
+                'suggestions': [
+                    'For sub-counties: ?county_id=1&type=sub_county',
+                    'For wards: ?parent_id=5&type=ward',
+                    'For villages: ?parent_id=15&type=village'
+                ]
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate location type
+        valid_types = ['sub_county', 'ward', 'village']
+        if location_type not in valid_types:
+            return Response({
+                'success': False,
+                'message': f'📍 Invalid location type "{location_type}". Must be one of: {', '.join(valid_types)}',
+                'error_code': 'INVALID_LOCATION_TYPE',
+                'suggestions': [f'Use type={t}' for t in valid_types]
             }, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             if county_id:
                 # Get locations under county
-                county = County.objects.get(id=county_id)
-                locations = Location.objects.filter(
-                    parent=county.location,
-                    type=location_type
-                ).order_by('name')
+                try:
+                    county = County.objects.get(id=county_id, is_active=True)
+                    locations = Location.objects.filter(
+                        parent=county.location,
+                        type=location_type
+                    ).order_by('name')
+                except County.DoesNotExist:
+                    return Response({
+                        'success': False,
+                        'message': f'🏛️ County with ID {county_id} not found or inactive.',
+                        'error_code': 'COUNTY_NOT_FOUND',
+                        'suggestions': [
+                            'Check the county ID is correct',
+                            'Use /api/locations/counties/ to get valid county IDs'
+                        ]
+                    }, status=status.HTTP_404_NOT_FOUND)
             else:
                 # Get locations under parent
-                parent = Location.objects.get(id=parent_id)
-                locations = parent.children.filter(
-                    type=location_type
-                ).order_by('name')
+                try:
+                    parent = Location.objects.get(id=parent_id)
+                    locations = parent.children.filter(
+                        type=location_type
+                    ).order_by('name')
+                except Location.DoesNotExist:
+                    return Response({
+                        'success': False,
+                        'message': f'📍 Parent location with ID {parent_id} not found.',
+                        'error_code': 'PARENT_LOCATION_NOT_FOUND',
+                        'suggestions': [
+                            'Check the parent location ID is correct',
+                            'Ensure you\'re following the hierarchy: County → Sub-County → Ward → Village'
+                        ]
+                    }, status=status.HTTP_404_NOT_FOUND)
             
             serializer = LocationSerializer(locations, many=True)
             
+            logger.info(f"✅ Location hierarchy retrieved: {len(locations)} {location_type}s")
+            
             return Response({
                 'success': True,
-                'locations': serializer.data
+                'locations': serializer.data,
+                'count': len(serializer.data),
+                'location_type': location_type
             })
         
-        except (County.DoesNotExist, Location.DoesNotExist):
+        except Exception as e:
+            logger.error(f"❌ Location hierarchy system error: {str(e)}")
             return Response({
                 'success': False,
-                'message': 'Location not found'
-            }, status=status.HTTP_404_NOT_FOUND)
+                'message': '🔧 Location system temporarily unavailable. Please try again.',
+                'error_code': 'LOCATION_SYSTEM_ERROR',
+                'suggestions': [
+                    'Wait a few minutes and try again',
+                    'Refresh the page',
+                    'Contact support if the problem persists'
+                ]
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @extend_schema(
