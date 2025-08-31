@@ -252,14 +252,6 @@ const AdminFeedbackManagement: React.FC = () => {
                     >
                       View
                     </button>
-                    {item.response_count === 0 && (
-                      <button
-                        onClick={() => setSelectedFeedback(item)}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        Respond
-                      </button>
-                    )}
                     {item.response_count > 0 && (
                       <span className="text-green-600">
                         Responded ({item.response_count})
@@ -305,20 +297,11 @@ const AdminFeedbackManagement: React.FC = () => {
                 View Full
               </button>
               <div>
-                {item.response_count === 0 && (
-                  <button
-                    onClick={() => setSelectedFeedback(item)}
-                    className="px-3 py-1 text-sm text-blue-600 hover:text-blue-900 border border-blue-300 rounded"
-                  >
-                    Respond
-                  </button>
-                )}
                 {item.response_count > 0 && (
                   <span className="text-sm text-green-600">
                     Responded ({item.response_count})
                   </span>
                 )}
-
               </div>
             </div>
           </div>
@@ -396,17 +379,6 @@ const AdminFeedbackManagement: React.FC = () => {
             </div>
             
             <div className="flex justify-end mt-6">
-              {viewingFeedback.response_count === 0 && (
-                <button
-                  onClick={() => {
-                    setSelectedFeedback(viewingFeedback);
-                    setViewingFeedback(null);
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 mr-3"
-                >
-                  Respond to This Feedback
-                </button>
-              )}
               <button
                 onClick={() => setViewingFeedback(null)}
                 className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
