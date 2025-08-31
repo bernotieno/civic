@@ -7,13 +7,13 @@ from django.db.models import Count, Q, Case, When, IntegerField
 from django.utils import timezone
 from apps.users.models import CustomUser, County
 from apps.feedback.models import Feedback
-from apps.api.utils import summarize_bill_document
-from apps.api.utils import summarize_bill_document
+# from apps.api.utils import summarize_bill_document  # Commented out - function not available
 from apps.projects.models import Project, Bill, AdminFeedbackResponse
-from .utils import (
+from .bill_utils import (
     summarize_bill_document, 
     process_bill_with_enhanced_features, 
-    validate_pdf_file
+    validate_pdf_file,
+    process_bill_document_complete
 )
 from .progress_tracker import (
     get_bill_progress, 
@@ -610,33 +610,34 @@ def admin_bills_list(request):
                     use_async = False
             
             if uploaded_doc and (not use_async or force_sync):
-                # Phase 1: Sync processing path (maintained for backward compatibility)
+                # Phase 1: Sync processing path - Complete processing (summary + chunks)
                 try:
-                    logger.info(f"Starting sync processing for bill {bill.id}")
+                    logger.info(f"Starting complete processing for bill {bill.id}")
                     
-                    # Use simple fast processing
-                    summary = summarize_bill_document(uploaded_doc)
+                    # Use complete processing function that does both summary and chunking
+                    result = process_bill_document_complete(uploaded_doc, bill)
                     
-                    # Convert to HTML using simple conversion
-                    from .bill_processor import markdown_to_html
-                    summary_html = markdown_to_html(summary)
-                    
-                    # Update bill
-                    bill.summary = summary
-                    bill.summary_html = summary_html
-                    bill.processing_status = 'completed'
-                    bill.processing_progress = 100
-                    bill.processing_message = 'Processing complete'
-                    bill.save()
-                    
-                    return Response({
-                        'success': True,
-                        'message': 'Bill created and processed successfully',
-                        'bill_id': str(bill.id),
-                        'processing_async': False,
-                        'summary_generated': True,
-                        'processing_method': 'fast'
-                    })
+                    if result['success']:
+                        # Update bill with results
+                        bill.summary = result['summary_markdown']
+                        bill.summary_html = result['summary_html']
+                        bill.processing_status = 'completed'
+                        bill.processing_progress = 100
+                        bill.processing_message = 'Processing complete'
+                        bill.save()
+                        
+                        return Response({
+                            'success': True,
+                            'message': 'Bill created and processed successfully',
+                            'bill_id': str(bill.id),
+                            'processing_async': False,
+                            'summary_generated': True,
+                            'chunks_created': result['chunks_created'],
+                            'can_chat': result['chunks_created'] > 0,
+                            'processing_method': 'complete'
+                        })
+                    else:
+                        raise Exception(result['error'])
                 
                 except Exception as e:
                     # Sync processing failed, update bill status

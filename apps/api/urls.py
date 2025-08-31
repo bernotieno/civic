@@ -50,7 +50,7 @@ from .admin_views import (
     admin_cancel_bill_processing
 )
 # Phase 3 imports for public citizen access and chat
-from . import admin_views, citizen_views, chat_views, embedding_service
+from . import citizen_views, chat_views, embedding_service
 
 app_name = 'api'
 

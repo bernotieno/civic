@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 class CitizenChatThrottle(AnonRateThrottle):
     """Stricter throttle for chat endpoints to prevent abuse"""
     scope = 'citizen_chat'
-    rate = '20/hour'  # 20 chat requests per hour for anonymous users
+    rate = '100/hour'  # Increased for testing
 
 
 class CitizenChatAuthenticatedThrottle(AnonRateThrottle):
@@ -90,9 +90,8 @@ def bill_chat(request, bill_id):
             bill = Bill.objects.get(
                 id=bill_id,
                 is_deleted=False,
-                processing_status='completed',
                 status__in=[
-                    'first_reading', 'committee_stage', 'second_reading',
+                    'draft', 'first_reading', 'committee_stage', 'second_reading',
                     'third_reading', 'presidential_assent', 'enacted'
                 ]
             )
@@ -116,7 +115,7 @@ def bill_chat(request, bill_id):
         
         # Check if too many requests from this session
         now = timezone.now()
-        if session_data['count'] >= 5:  # Max 5 questions per session per hour
+        if session_data['count'] >= 10:  # Increased limit for testing
             last_request = session_data.get('last_request')
             if last_request:
                 time_diff = (now - last_request).total_seconds()
@@ -128,19 +127,35 @@ def bill_chat(request, bill_id):
                         'retry_after': int(3600 - time_diff)
                     }, status=429)
         
-        # Find relevant chunks using hybrid search if embeddings enabled
+        # Enhanced chunk search
         try:
             if use_embeddings:
-                relevant_chunks = hybrid_search(bill_id, question, limit=5)
+                relevant_chunks = hybrid_search(bill_id, question, limit=8)
                 search_method = 'hybrid'
             else:
-                relevant_chunks = find_relevant_chunks(bill_id, question, limit=5)
+                relevant_chunks = find_relevant_chunks(bill_id, question, limit=8)
                 search_method = 'keyword_only'
         except Exception as e:
             logger.error(f"Error finding relevant chunks: {str(e)}")
-            # Fallback to basic search
-            relevant_chunks = find_relevant_chunks(bill_id, question, limit=5)
+            relevant_chunks = find_relevant_chunks(bill_id, question, limit=8)
             search_method = 'fallback'
+        
+        # Broader search if needed
+        if len(relevant_chunks) < 3:
+            try:
+                import re
+                keywords = re.findall(r'\b\w{4,}\b', question.lower())
+                if keywords:
+                    broader_query = ' '.join(keywords[:3])
+                    additional_chunks = find_relevant_chunks(bill_id, broader_query, limit=6)
+                    seen_ids = {chunk['chunk_id'] for chunk in relevant_chunks}
+                    for chunk in additional_chunks:
+                        if chunk['chunk_id'] not in seen_ids:
+                            relevant_chunks.append(chunk)
+                            if len(relevant_chunks) >= 6:
+                                break
+            except Exception:
+                pass
         
         if not relevant_chunks:
             return Response({
@@ -209,7 +224,7 @@ def bill_chat(request, bill_id):
             'processing_info': {
                 'chunks_analyzed': len(relevant_chunks),
                 'search_method': search_method,
-                'avg_relevance': round(sum(c['similarity_score'] for c in relevant_chunks) / len(relevant_chunks), 2) if relevant_chunks else 0,
+                'avg_relevance': round(sum(c.get('similarity_score', c.get('relevance_score', 0)) for c in relevant_chunks) / len(relevant_chunks), 2) if relevant_chunks else 0,
                 'context_analysis': context_analysis,
                 'response_time': timezone.now().isoformat(),
                 'bill_title': bill.title,
@@ -497,9 +512,8 @@ def bill_chat_context(request, bill_id):
             bill = Bill.objects.get(
                 id=bill_id,
                 is_deleted=False,
-                processing_status='completed',
                 status__in=[
-                    'first_reading', 'committee_stage', 'second_reading',
+                    'draft', 'first_reading', 'committee_stage', 'second_reading',
                     'third_reading', 'presidential_assent', 'enacted'
                 ]
             )
@@ -556,9 +570,7 @@ def bill_chat_context(request, bill_id):
             'supports_context': True,
             'supports_followups': True,
             'supports_search': bill.is_chunked,
-            'embedding_enabled': bill.is_chunked and any(
-                chunk.embedding for chunk in BillChunk.objects.filter(bill=bill)[:5]
-            ),
+            'embedding_enabled': False,  # Simplified for now
             'max_questions_per_session': 5,
             'response_languages': ['English']  # Could be extended
         }

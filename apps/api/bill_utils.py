@@ -15,88 +15,209 @@ from .progress_tracker import create_progress_callback, mark_bill_processing_com
 load_dotenv()  # Load from .env
 logger = logging.getLogger(__name__)
 
-def summarize_bill_document(uploaded_file: UploadedFile) -> str:
+def process_bill_document_complete(uploaded_file: UploadedFile, bill_instance) -> dict:
     """
-    ORIGINAL FUNCTION - MAINTAINED FOR BACKWARD COMPATIBILITY
+    Complete bill processing: Summary + Chunking for AI chat
     
-    Legacy bill document summarization function
-    This function MUST continue working exactly as before to maintain
-    backward compatibility with existing admin upload flow.
+    This function does BOTH:
+    1. Creates summary (markdown + HTML)
+    2. Creates chunks for AI chat
     
-    Args:
-        uploaded_file: Django UploadedFile object
     Returns:
-        str: Summary text (markdown format)
+        dict: {
+            'success': bool,
+            'summary_markdown': str,
+            'summary_html': str,
+            'chunks_created': int,
+            'error': str (if failed)
+        }
     """
     try:
-        # Try OpenAI API with urllib
-        try:
-            import urllib.request
-            import urllib.parse
-            import json
-            
-            api_key = os.getenv("OPENAI_API_KEY")
-            if api_key:
-                print(f"🤖 Attempting OpenAI summarization with direct API call...")
-                
-                if PdfReader is None:
-                    raise ImportError("PyPDF2 not available")
-                reader = PdfReader(uploaded_file)
-                text = ''
-                for page in reader.pages:
-                    text += page.extract_text() or ''
-                
-                bill_text = text[:5000]  # Reduced for faster processing
-                print(f"📄 Extracted {len(bill_text)} characters for summarization")
-                
-                data = {
-                    "model": "gpt-4o-mini",
-                    "messages": [
-                        {"role": "user", "content": f'''Summarize this Kenyan bill in simple English for citizens. Focus on key impacts like taxes, penalties, rights, and services. Be concise:\n\n{bill_text}'''}
-                    ],
-                    "temperature": 0.7,
-                    "max_tokens": 500
-                }
-                
-                req = urllib.request.Request(
-                    "https://api.openai.com/v1/chat/completions",
-                    data=json.dumps(data).encode('utf-8'),
-                    headers={
-                        "Authorization": f"Bearer {api_key}",
-                        "Content-Type": "application/json"
-                    }
-                )
-                
-                with urllib.request.urlopen(req, timeout=10) as response:
-                    if response.status == 200:
-                        result = json.loads(response.read().decode('utf-8'))
-                        print("🎉 OpenAI summarization completed successfully")
-                        return result['choices'][0]['message']['content']
-                    else:
-                        print(f"❌ OpenAI API error: {response.status}")
-                    
-        except Exception as e:
-            print(f"❌ OpenAI summarization failed: {str(e)}")
-            pass
-            
-        # Fallback: Extract and format text
+        # Step 1: Extract text from PDF (reset file pointer first)
         if PdfReader is None:
-            return "PDF processing library not available. Please install PyPDF2."
+            return {
+                'success': False,
+                'summary_markdown': '',
+                'summary_html': '',
+                'chunks_created': 0,
+                'error': 'PDF processing library not available'
+            }
+        
+        # Reset file pointer to beginning
+        uploaded_file.seek(0)
+        
+        reader = PdfReader(uploaded_file)
+        full_text = ''
+        for page in reader.pages:
+            page_text = page.extract_text() or ''
+            if page_text.strip():  # Only add non-empty pages
+                full_text += page_text + '\n\n'
+        
+        # Clean up the text
+        full_text = full_text.strip()
+        
+        if not full_text:
+            return {
+                'success': False,
+                'summary_markdown': '',
+                'summary_html': '',
+                'chunks_created': 0,
+                'error': 'No text could be extracted from PDF'
+            }
+        
+        # Step 2: Create summary
+        summary_markdown = _create_summary(full_text)
+        
+        # Step 3: Convert to HTML
+        from .bill_processor import markdown_to_html
+        summary_html = markdown_to_html(summary_markdown)
+        
+        # Step 4: Create chunks for AI chat
+        chunks_created = create_bill_chunks(full_text, bill_instance)
+        
+        # Step 5: Update bill with chunking info
+        bill_instance.is_chunked = True
+        bill_instance.total_chunks = chunks_created
+        bill_instance.save(update_fields=['is_chunked', 'total_chunks'])
+        
+        return {
+            'success': True,
+            'summary_markdown': summary_markdown,
+            'summary_html': summary_html,
+            'chunks_created': chunks_created,
+            'error': None
+        }
+        
+    except Exception as e:
+        return {
+            'success': False,
+            'summary_markdown': '',
+            'summary_html': '',
+            'chunks_created': 0,
+            'error': str(e)
+        }
+
+
+def _create_summary(full_text: str) -> str:
+    """
+    Create summary from extracted text - ONLY for this specific bill
+    """
+    try:
+        # Clean and limit text to avoid cross-contamination
+        clean_text = full_text.strip()
+        
+        # Try OpenAI API
+        import urllib.request
+        import json
+        
+        api_key = os.getenv("OPENAI_API_KEY")
+        if api_key and clean_text:
+            # Take first 4000 chars to ensure we stay within limits
+            bill_text = clean_text[:4000]
+            
+            data = {
+                "model": "gpt-4o-mini",
+                "messages": [
+                    {"role": "system", "content": "You are summarizing ONE specific Kenyan bill. Only summarize the content provided. Do not reference other bills or documents."},
+                    {"role": "user", "content": f'''Summarize ONLY this specific bill in simple English for citizens. Focus on key impacts like taxes, penalties, rights, and services. Be concise and only discuss what is in this document:\n\n{bill_text}'''}
+                ],
+                "temperature": 0.3,  # Lower temperature for more focused output
+                "max_tokens": 400
+            }
+            
+            req = urllib.request.Request(
+                "https://api.openai.com/v1/chat/completions",
+                data=json.dumps(data).encode('utf-8'),
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                }
+            )
+            
+            with urllib.request.urlopen(req, timeout=15) as response:
+                if response.status == 200:
+                    result = json.loads(response.read().decode('utf-8'))
+                    summary = result['choices'][0]['message']['content']
+                    return summary.strip()
+    except Exception as e:
+        logger.warning(f"AI summarization failed: {e}")
+    
+    # Fallback: Basic summary from this document only
+    preview = clean_text[:800].strip()
+    return f"Document Summary:\n\nThis bill contains {len(clean_text)} characters of legal text.\n\nKey content preview:\n\n{preview}...\n\nNote: AI summarization is currently unavailable."
+
+
+def create_bill_chunks(text: str, bill_instance) -> int:
+    """
+    Create chunks for AI chat from bill text
+    
+    Args:
+        text: Full bill text
+        bill_instance: Bill model instance
+    
+    Returns:
+        int: Number of chunks created
+    """
+    try:
+        from apps.projects.models import BillChunk
+        
+        # Clear existing chunks
+        BillChunk.objects.filter(bill=bill_instance).delete()
+        
+        # Clean text first
+        clean_text = text.strip()
+        
+        # Simple chunking: split by paragraphs, max 1000 chars per chunk
+        paragraphs = [p.strip() for p in clean_text.split('\n\n') if p.strip()]
+        chunks = []
+        current_chunk = ''
+        
+        for paragraph in paragraphs:
+            if len(current_chunk) + len(paragraph) > 1000 and current_chunk:
+                chunks.append(current_chunk.strip())
+                current_chunk = paragraph
+            else:
+                current_chunk += '\n\n' + paragraph if current_chunk else paragraph
+        
+        if current_chunk.strip():
+            chunks.append(current_chunk.strip())
+        
+        # Create chunk objects
+        chunk_objects = []
+        for i, chunk_text in enumerate(chunks):
+            if chunk_text.strip():  # Only create non-empty chunks
+                chunk_objects.append(BillChunk(
+                    bill=bill_instance,
+                    chunk_index=i,
+                    content=chunk_text,
+                    word_count=len(chunk_text.split())
+                ))
+        
+        BillChunk.objects.bulk_create(chunk_objects)
+        return len(chunk_objects)
+        
+    except Exception as e:
+        logger.error(f"Failed to create chunks for bill {bill_instance.id}: {e}")
+        return 0
+
+
+def summarize_bill_document(uploaded_file: UploadedFile) -> str:
+    """
+    LEGACY FUNCTION - For backward compatibility only
+    """
+    try:
+        if PdfReader is None:
+            return "PDF processing library not available."
+        
         reader = PdfReader(uploaded_file)
         text = ''
-        page_count = len(reader.pages)
+        for page in reader.pages:
+            text += page.extract_text() or ''
         
-        for i, page in enumerate(reader.pages):
-            page_text = page.extract_text() or ''
-            text += page_text
-            
-        # If no text extracted, provide file info
         if not text.strip():
-            return f"Document uploaded successfully.\n\nFile info: {page_count} pages detected.\n\nNote: This PDF may contain images or scanned text that requires OCR processing. AI summarization is currently unavailable. Please review the document manually."
+            return "No text could be extracted from PDF."
         
-        # Create basic summary from extracted text
-        preview = text[:1000].strip()
-        return f"Document Summary:\n\nThis bill contains {len(text)} characters of legal text across {page_count} pages.\n\nKey content preview:\n\n{preview}...\n\nNote: AI summarization is currently unavailable. Please review the full document for complete details."
+        return _create_summary(text)
         
     except Exception as e:
         return f"Document processing failed: {str(e)}"

@@ -373,8 +373,7 @@ def find_similar_chunks_by_embedding(bill_id: str, query_embedding: List[float],
         # Get chunks with embeddings for the bill
         chunks = BillChunk.objects.filter(
             bill_id=bill_id,
-            is_deleted=False,
-            embedding__isnull=False
+            is_deleted=False
         ).order_by('chunk_index')
         
         if not chunks.exists():
@@ -385,6 +384,10 @@ def find_similar_chunks_by_embedding(bill_id: str, query_embedding: List[float],
         
         for chunk in chunks:
             try:
+                # Skip chunks without embeddings for now
+                if not hasattr(chunk, 'embedding') or not chunk.embedding:
+                    continue
+                    
                 # Extract embedding vector from stored data
                 chunk_embedding = chunk.embedding.get('vector', [])
                 

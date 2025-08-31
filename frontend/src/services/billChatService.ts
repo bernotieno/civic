@@ -1,93 +1,184 @@
 /**
  * Bill-Specific AI Chat Service
- * Provides AI responses specific to individual bills
+ * Connects to backend API for real AI responses about bills
  */
 
 interface BillChatRequest {
   billId: string;
   question: string;
   billTitle?: string;
-  billContent?: string;
+  conversationContext?: any[];
+  sessionId?: string;
 }
 
 interface BillChatResponse {
   id: string;
   response: string;
   timestamp: string;
+  sources?: string[];
+  confidence?: number;
+  followUpQuestions?: string[];
+  conversationId?: string;
+}
+
+interface ChatSuggestion {
+  question: string;
+  category: string;
+  complexity: string;
+  topic_area: string;
+}
+
+interface BillChatContext {
+  title: string;
+  sponsor: string;
+  status: string;
+  complexity_level: string;
+  estimated_reading_time: number;
+  key_sections: string[];
+  chat_capabilities: {
+    can_chat: boolean;
+    supports_context: boolean;
+    supports_followups: boolean;
+    max_questions_per_session: number;
+  };
 }
 
 class BillChatService {
-  private billResponses: Record<string, string[]> = {
-    // General bill analysis responses
-    general: [
-      "I can help you understand this bill better. I can explain specific sections, summarize key points, clarify legal language, or discuss potential impacts. What would you like to know?",
-      
-      "This bill contains several important provisions. I can break down any section you're interested in, explain the implications, or help you understand how it might affect different groups. What specific aspect would you like me to explain?",
-      
-      "I'm here to help you navigate this legislation. I can explain complex legal terms, summarize sections, discuss the bill's objectives, or help you understand the legislative process. What questions do you have?"
-    ],
+  private baseUrl = 'http://127.0.0.1:8000/api';
+  private sessionId: string | null = null;
 
-    // Responses about bill structure and content
-    structure: [
-      "This bill is structured in several parts:\n\n📋 **Preamble**: Sets out the purpose and justification\n📝 **Main Provisions**: The core legal changes\n⚖️ **Implementation**: How the law will be enforced\n📅 **Commencement**: When it takes effect\n\nWhich section would you like me to explain in detail?",
-      
-      "The bill follows standard legislative format:\n\n• **Title and Number**: Official identification\n• **Objectives**: What the bill aims to achieve\n• **Definitions**: Key terms used throughout\n• **Substantive Provisions**: The actual legal changes\n• **Penalties**: Consequences for non-compliance\n• **Transitional Provisions**: How to move from old to new law\n\nWhat specific part interests you most?"
-    ],
-
-    // Responses about bill impact and implications
-    impact: [
-      "This bill could have several impacts:\n\n👥 **Citizens**: Changes to rights, obligations, or services\n🏛️ **Government**: New powers, responsibilities, or procedures\n💼 **Businesses**: Compliance requirements or opportunities\n🌍 **Society**: Broader social or economic effects\n\nWhich group's impact would you like me to analyze?",
-      
-      "The potential effects of this bill include:\n\n✅ **Positive Impacts**: Benefits and improvements\n⚠️ **Challenges**: Potential difficulties or costs\n🔄 **Changes**: What will be different\n📊 **Implementation**: How changes will happen\n\nWhat aspect of the impact concerns you most?"
-    ],
-
-    // Responses about legal language and interpretation
-    legal: [
-      "Legal language can be complex. I can help by:\n\n📖 **Plain English**: Translating legal terms\n🔍 **Context**: Explaining what provisions mean in practice\n📋 **Examples**: Showing how the law would apply\n⚖️ **Precedents**: Relating to existing laws\n\nWhich legal concept would you like me to clarify?",
-      
-      "I can break down the legal language in this bill:\n\n• **'Shall'** = Mandatory requirement\n• **'May'** = Optional or discretionary\n• **'Notwithstanding'** = Despite other laws\n• **'Subject to'** = With certain conditions\n\nWhich specific clause or term needs explanation?"
-    ]
-  };
-
-  private categorizeQuestion(question: string): string {
-    const lowerQuestion = question.toLowerCase();
-    
-    if (lowerQuestion.includes('structure') || lowerQuestion.includes('section') || lowerQuestion.includes('part')) {
-      return 'structure';
+  private generateSessionId(): string {
+    if (!this.sessionId) {
+      this.sessionId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
     }
-    if (lowerQuestion.includes('impact') || lowerQuestion.includes('effect') || lowerQuestion.includes('affect')) {
-      return 'impact';
-    }
-    if (lowerQuestion.includes('mean') || lowerQuestion.includes('legal') || lowerQuestion.includes('define')) {
-      return 'legal';
-    }
-    
-    return 'general';
-  }
-
-  private getRandomResponse(category: string): string {
-    const categoryResponses = this.billResponses[category] || this.billResponses.general;
-    return categoryResponses[Math.floor(Math.random() * categoryResponses.length)];
+    return this.sessionId;
   }
 
   async sendMessage(request: BillChatRequest): Promise<BillChatResponse> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 1200));
+    try {
+      const response = await fetch(`${this.baseUrl}/public/bills/${request.billId}/chat/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: request.question,
+          conversation_context: request.conversationContext || [],
+          session_id: request.sessionId || this.generateSessionId(),
+          use_embeddings: true
+        })
+      });
 
-    const category = this.categorizeQuestion(request.question);
-    let response = this.getRandomResponse(category);
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        // Handle specific error cases
+        if (data.error === 'Chat is not available for this bill') {
+          throw new Error('This bill has not been processed for AI chat yet. Please try reading the summary or document instead.');
+        }
+        throw new Error(data.message || data.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
 
-    // Add bill-specific context to the response
-    if (request.billTitle) {
-      response = `Regarding "${request.billTitle}":\n\n${response}`;
+      return {
+        id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
+        response: data.response,
+        timestamp: new Date().toISOString(),
+        sources: data.sources || [],
+        confidence: data.confidence || 0,
+        followUpQuestions: data.follow_up_questions || [],
+        conversationId: data.conversation_id
+      };
+    } catch (error) {
+      console.error('Error sending chat message:', error);
+      throw new Error('Failed to send message. Please try again.');
     }
+  }
 
-    return {
-      id: Date.now().toString(),
-      response,
-      timestamp: new Date().toISOString()
-    };
+  async getSuggestions(billId: string, category?: string, limit?: number): Promise<ChatSuggestion[]> {
+    try {
+      const params = new URLSearchParams();
+      if (category) params.append('category', category);
+      if (limit) params.append('limit', limit.toString());
+
+      const response = await fetch(
+        `${this.baseUrl}/public/bills/${billId}/chat/suggestions/?${params}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            category: category || 'all',
+            limit: limit || 6
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to get suggestions');
+      }
+
+      return data.suggestions || [];
+    } catch (error) {
+      console.error('Error getting chat suggestions:', error);
+      return [];
+    }
+  }
+
+  async getBillContext(billId: string): Promise<BillChatContext | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/public/bills/${billId}/chat/context/`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to get bill context');
+      }
+
+      return data.bill_context;
+    } catch (error) {
+      console.error('Error getting bill context:', error);
+      return null;
+    }
+  }
+
+  async getChatHistory(billId: string, sessionId?: string, limit?: number): Promise<any[]> {
+    try {
+      const params = new URLSearchParams();
+      if (sessionId) params.append('session_id', sessionId);
+      if (limit) params.append('limit', limit.toString());
+
+      const response = await fetch(
+        `${this.baseUrl}/public/bills/${billId}/chat/history/?${params}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        return [];
+      }
+
+      return data.conversation_history || [];
+    } catch (error) {
+      console.error('Error getting chat history:', error);
+      return [];
+    }
   }
 }
 
 export const billChatService = new BillChatService();
+export type { BillChatRequest, BillChatResponse, ChatSuggestion, BillChatContext };

@@ -55,17 +55,19 @@ class RegisterSerializer(serializers.Serializer):
     
     def validate_national_id(self, value):
         """Validate Kenyan National ID format"""
-        if not validate_kenyan_national_id(value):
-            raise serializers.ValidationError("Invalid National ID format")
-        
-        
-        # Check if already registered
-        existing_users = CustomUser.objects.all()
-        for user in existing_users:
-            if verify_national_id(value, user.national_id_hash):
-                raise serializers.ValidationError("User with this National ID already exists")
-        
-        return value
+        try:
+            if not validate_kenyan_national_id(value):
+                raise serializers.ValidationError("Invalid National ID format")
+            
+            # Check if already registered
+            existing_users = CustomUser.objects.all()
+            for user in existing_users:
+                if verify_national_id(value, user.national_id_hash):
+                    raise serializers.ValidationError("User with this National ID already exists")
+            
+            return value
+        except Exception as e:
+            raise serializers.ValidationError(f"National ID validation error: {str(e)}")
 
     def validate_email(self, value):
         """Check if email already exists"""
@@ -76,10 +78,12 @@ class RegisterSerializer(serializers.Serializer):
     def validate_county_id(self, value):
         """Validate county exists"""
         try:
-            County.objects.get(id=value)
+            county = County.objects.get(id=value)
             return value
         except County.DoesNotExist:
-            raise serializers.ValidationError("Invalid county")
+            raise serializers.ValidationError(f"County with ID {value} not found")
+        except Exception as e:
+            raise serializers.ValidationError(f"County validation error: {str(e)}")
     
     def validate(self, attrs):
         """Cross-field validation for location hierarchy"""
@@ -93,34 +97,45 @@ class RegisterSerializer(serializers.Serializer):
             county_location = county.location
             
             if sub_county_id:
-                sub_county = Location.objects.get(
-                    id=sub_county_id, 
-                    type='sub_county', 
-                    parent=county_location
-                )
-                attrs['sub_county'] = sub_county
+                try:
+                    sub_county = Location.objects.get(
+                        id=sub_county_id, 
+                        type='sub_county', 
+                        parent=county_location
+                    )
+                    attrs['sub_county'] = sub_county
+                except Location.DoesNotExist:
+                    raise serializers.ValidationError(f"Sub-county with ID {sub_county_id} not found in {county.name}")
                 
                 if ward_id:
-                    ward = Location.objects.get(
-                        id=ward_id, 
-                        type='ward', 
-                        parent=sub_county
-                    )
-                    attrs['ward'] = ward
+                    try:
+                        ward = Location.objects.get(
+                            id=ward_id, 
+                            type='ward', 
+                            parent=sub_county
+                        )
+                        attrs['ward'] = ward
+                    except Location.DoesNotExist:
+                        raise serializers.ValidationError(f"Ward with ID {ward_id} not found")
                     
                     if village_id:
-                        village = Location.objects.get(
-                            id=village_id, 
-                            type='village', 
-                            parent=ward
-                        )
-                        attrs['village'] = village
+                        try:
+                            village = Location.objects.get(
+                                id=village_id, 
+                                type='village', 
+                                parent=ward
+                            )
+                            attrs['village'] = village
+                        except Location.DoesNotExist:
+                            raise serializers.ValidationError(f"Village with ID {village_id} not found")
             
             attrs['county'] = county
             attrs['county_location'] = county_location
             
-        except Location.DoesNotExist:
-            raise serializers.ValidationError("Invalid location hierarchy")
+        except County.DoesNotExist:
+            raise serializers.ValidationError(f"County with ID {county_id} not found")
+        except Exception as e:
+            raise serializers.ValidationError(f"Location validation error: {str(e)}")
         
         return attrs
     

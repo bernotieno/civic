@@ -368,9 +368,9 @@ def summarize_bill_document_enhanced(uploaded_file: UploadedFile, bill_id: Optio
         }
 
 
-def create_bill_chunks(text: str, bill_instance, max_chunk_size: int = 2000) -> int:
+def create_bill_chunks(text: str, bill_instance, max_chunk_size: int = 1500) -> int:
     """
-    Create BillChunk objects for future chat functionality
+    Create comprehensive BillChunk objects covering entire document
     Args:
         text: Full bill text
         bill_instance: Bill model instance
@@ -383,60 +383,127 @@ def create_bill_chunks(text: str, bill_instance, max_chunk_size: int = 2000) -> 
     # Clear existing chunks
     BillChunk.objects.filter(bill=bill_instance).delete()
     
-    # Detect sections first
+    # First, try section-based chunking
     sections = detect_bill_sections(text)
     chunks_created = 0
+    total_text_processed = 0
     
     for section in sections:
-        section_content = section['content']
+        section_content = section['content'].strip()
+        if not section_content:
+            continue
+            
         section_title = section['title']
         
-        # If section is small enough, create one chunk
+        # Process section content completely
         if len(section_content) <= max_chunk_size:
+            # Small section - one chunk
             BillChunk.objects.create(
                 bill=bill_instance,
                 chunk_index=chunks_created,
                 section_title=section_title,
                 content=section_content,
                 start_position=section['start_pos'],
-                end_position=section['end_pos']
+                end_position=section['end_pos'],
+                character_count=len(section_content),
+                word_count=len(section_content.split())
             )
             chunks_created += 1
+            total_text_processed += len(section_content)
         else:
-            # Split large sections into multiple chunks
-            words = section_content.split()
+            # Large section - split into overlapping chunks
+            sentences = re.split(r'(?<=[.!?])\s+', section_content)
             current_chunk = ''
             chunk_start_pos = section['start_pos']
+            sentence_buffer = []
             
-            for word in words:
-                if len(current_chunk + word) > max_chunk_size and current_chunk:
-                    # Create chunk
+            for sentence in sentences:
+                sentence = sentence.strip()
+                if not sentence:
+                    continue
+                    
+                # Check if adding this sentence exceeds limit
+                test_chunk = current_chunk + ' ' + sentence if current_chunk else sentence
+                
+                if len(test_chunk) > max_chunk_size and current_chunk:
+                    # Create chunk with current content
                     chunk_end_pos = chunk_start_pos + len(current_chunk)
+                    part_num = (chunks_created - sum(1 for s in sections[:sections.index(section)] if len(s['content']) <= max_chunk_size)) + 1
+                    
                     BillChunk.objects.create(
                         bill=bill_instance,
                         chunk_index=chunks_created,
-                        section_title=f"{section_title} (Part {chunks_created + 1})",
+                        section_title=f"{section_title} (Part {part_num})",
                         content=current_chunk.strip(),
                         start_position=chunk_start_pos,
-                        end_position=chunk_end_pos
+                        end_position=chunk_end_pos,
+                        character_count=len(current_chunk),
+                        word_count=len(current_chunk.split())
                     )
                     chunks_created += 1
-                    chunk_start_pos = chunk_end_pos
-                    current_chunk = word + ' '
+                    total_text_processed += len(current_chunk)
+                    
+                    # Start new chunk with overlap (keep last sentence)
+                    if sentence_buffer:
+                        current_chunk = sentence_buffer[-1] + ' ' + sentence
+                        chunk_start_pos = chunk_end_pos - len(sentence_buffer[-1])
+                    else:
+                        current_chunk = sentence
+                        chunk_start_pos = chunk_end_pos
+                    sentence_buffer = [sentence]
                 else:
-                    current_chunk += word + ' '
+                    current_chunk = test_chunk
+                    sentence_buffer.append(sentence)
             
-            # Create final chunk if remaining content
+            # Create final chunk for remaining content
             if current_chunk.strip():
+                part_num = (chunks_created - sum(1 for s in sections[:sections.index(section)] if len(s['content']) <= max_chunk_size)) + 1
                 BillChunk.objects.create(
                     bill=bill_instance,
                     chunk_index=chunks_created,
-                    section_title=f"{section_title} (Part {chunks_created + 1})",
+                    section_title=f"{section_title} (Part {part_num})",
                     content=current_chunk.strip(),
                     start_position=chunk_start_pos,
-                    end_position=section['end_pos']
+                    end_position=section['end_pos'],
+                    character_count=len(current_chunk),
+                    word_count=len(current_chunk.split())
                 )
                 chunks_created += 1
+                total_text_processed += len(current_chunk)
+    
+    # Fallback: If sections didn't cover entire document, chunk remaining text
+    if total_text_processed < len(text) * 0.8:  # Less than 80% processed
+        # Create sliding window chunks for complete coverage
+        remaining_text = text
+        position = 0
+        fallback_chunks = 0
+        
+        while position < len(remaining_text):
+            chunk_end = min(position + max_chunk_size, len(remaining_text))
+            chunk_content = remaining_text[position:chunk_end]
+            
+            # Try to end at sentence boundary
+            if chunk_end < len(remaining_text):
+                last_period = chunk_content.rfind('.')
+                if last_period > max_chunk_size * 0.7:  # At least 70% of chunk
+                    chunk_end = position + last_period + 1
+                    chunk_content = remaining_text[position:chunk_end]
+            
+            BillChunk.objects.create(
+                bill=bill_instance,
+                chunk_index=chunks_created,
+                section_title=f"Document Section {fallback_chunks + 1}",
+                content=chunk_content.strip(),
+                start_position=position,
+                end_position=chunk_end,
+                character_count=len(chunk_content),
+                word_count=len(chunk_content.split())
+            )
+            chunks_created += 1
+            fallback_chunks += 1
+            
+            # Move position with overlap
+            position = chunk_end - 100 if chunk_end < len(remaining_text) else chunk_end
     
     return chunks_created
 

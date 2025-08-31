@@ -1,18 +1,18 @@
 # apps/api/chat_service.py
 import re
-import urllib.request
-import urllib.parse
-import json
-import os
+import asyncio
 from typing import List, Dict, Tuple, Optional
 from django.db.models import Q
 from django.core.cache import cache
 from django.utils import timezone
+from django.conf import settings
 from apps.projects.models import Bill, BillChunk
+from apps.ai.services.llm_client import llm_client
 from .citizen_chat_prompts import (
     CITIZEN_CHAT_SYSTEM_PROMPT,
     create_citizen_chat_prompt,
-    create_follow_up_prompt
+    create_follow_up_prompt,
+    get_appropriate_disclaimer
 )
 import logging
 
@@ -353,74 +353,100 @@ def generate_citizen_chat_response(bill_id: str, user_question: str, relevant_ch
             conversation_context=conversation_context
         )
         
-        # Try to get AI response using OpenAI
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            # Fallback response when AI is not available
-            return create_fallback_response(user_question, relevant_chunks, bill.title)
+        # Prepare context data for LLM client
+        context_data = {
+            'bill_title': bill.title,
+            'bill_id': str(bill_id),
+            'user_question': user_question,
+            'relevant_sections': [chunk['section_title'] for chunk in relevant_chunks],
+            'conversation_length': len(conversation_context) if conversation_context else 0,
+            'bill_status': bill.status,
+            'chunks_count': len(relevant_chunks)
+        }
         
+        # Use the LLM client for AI response
         try:
-            data = {
-                "model": "gpt-4o-mini",
-                "messages": [
-                    {"role": "system", "content": CITIZEN_CHAT_SYSTEM_PROMPT},
-                    {"role": "user", "content": prompt}
-                ],
-                "temperature": 0.3,  # Lower temperature for more consistent answers
-                "max_tokens": 800
-            }
-            
-            req = urllib.request.Request(
-                "https://api.openai.com/v1/chat/completions",
-                data=json.dumps(data).encode('utf-8'),
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                }
-            )
-            
-            with urllib.request.urlopen(req, timeout=30) as response:
-                if response.status == 200:
-                    result = json.loads(response.read().decode('utf-8'))
-                    ai_response = result['choices'][0]['message']['content']
-                    
-                    # Extract sources from relevant chunks
-                    sources = list(set([chunk['section_title'] for chunk in relevant_chunks 
-                                      if chunk['section_title'].strip()]))
-                    
-                    # Calculate confidence based on relevance scores
-                    avg_relevance = sum(chunk['relevance_score'] for chunk in relevant_chunks) / len(relevant_chunks)
-                    confidence = min(0.95, max(0.3, avg_relevance / 10.0))  # Scale to 0.3-0.95 range
-                    
-                    # Generate follow-up suggestions
-                    follow_ups = generate_follow_up_questions(
-                        bill_id, 
-                        user_question + " " + ai_response
+            # Run async function in sync context
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                llm_response = loop.run_until_complete(
+                    llm_client.analyze_with_context(
+                        prompt=prompt,
+                        context_data=context_data,
+                        response_format="text",
+                        use_cache=True,
+                        preferred_model="openai"
                     )
-                    
-                    disclaimer = "This information is based solely on the bill text and is for educational purposes only. For legal advice, consult a qualified professional."
-                    
-                    logger.info(f"Generated AI response for bill {bill_id} question")
-                    
-                    return {
-                        'success': True,
-                        'response': ai_response,
-                        'sources': sources[:5],  # Limit to 5 sources
-                        'confidence': round(confidence, 2),
-                        'disclaimer': disclaimer,
-                        'follow_up_suggestions': follow_ups,
-                        'processing_info': {
-                            'chunks_used': len(relevant_chunks),
-                            'avg_relevance': round(avg_relevance, 2),
-                            'bill_title': bill.title
-                        }
-                    }
+                )
+            finally:
+                loop.close()
+            
+            if llm_response.success:
+                ai_response = llm_response.content
+                
+                # Extract sources from relevant chunks
+                sources = list(set([chunk['section_title'] for chunk in relevant_chunks 
+                                  if chunk['section_title'].strip()]))
+                
+                # Calculate confidence based on relevance scores and LLM confidence
+                avg_relevance = sum(chunk.get('similarity_score', chunk.get('relevance_score', 0)) 
+                                  for chunk in relevant_chunks) / len(relevant_chunks)
+                
+                # Enhanced confidence calculation
+                base_confidence = min(0.95, max(0.7, avg_relevance / 2.0))
+                
+                # Boost for multiple chunks
+                if len(relevant_chunks) >= 5:
+                    base_confidence = min(0.95, base_confidence + 0.2)
+                elif len(relevant_chunks) >= 3:
+                    base_confidence = min(0.85, base_confidence + 0.15)
+                elif len(relevant_chunks) >= 2:
+                    base_confidence = min(0.8, base_confidence + 0.1)
+                
+                # Boost for comprehensive responses
+                if len(ai_response) > 300:
+                    base_confidence = min(0.9, base_confidence + 0.05)
+                
+                # Adjust confidence based on LLM response quality
+                if llm_response.confidence_score:
+                    confidence = (base_confidence + llm_response.confidence_score) / 2
                 else:
-                    logger.warning(f"OpenAI API returned status {response.status}")
-                    return create_fallback_response(user_question, relevant_chunks, bill.title)
-                    
+                    confidence = base_confidence
+                
+                # Generate appropriate disclaimer
+                disclaimer = get_appropriate_disclaimer(ai_response, user_question)
+                
+                # Generate follow-up suggestions
+                follow_ups = generate_follow_up_questions(
+                    bill_id, 
+                    user_question + " " + ai_response
+                )
+                
+                logger.info(f"Generated AI response for bill {bill_id} using {llm_response.model_used}")
+                
+                return {
+                    'success': True,
+                    'response': ai_response,
+                    'sources': sources[:5],  # Limit to 5 sources
+                    'confidence': round(confidence, 2),
+                    'disclaimer': disclaimer,
+                    'follow_up_suggestions': follow_ups,
+                    'processing_info': {
+                        'chunks_used': len(relevant_chunks),
+                        'avg_relevance': round(avg_relevance, 2),
+                        'bill_title': bill.title,
+                        'model_used': llm_response.model_used,
+                        'tokens_used': llm_response.tokens_used,
+                        'processing_time': llm_response.processing_time
+                    }
+                }
+            else:
+                logger.warning(f"LLM client failed: {llm_response.error_message}")
+                return create_fallback_response(user_question, relevant_chunks, bill.title)
+                
         except Exception as e:
-            logger.error(f"OpenAI API call failed: {str(e)}")
+            logger.error(f"LLM client error: {str(e)}")
             return create_fallback_response(user_question, relevant_chunks, bill.title)
             
     except Exception as e:
@@ -504,7 +530,7 @@ def create_fallback_response(user_question: str, relevant_chunks: List[Dict], bi
 
 def generate_follow_up_questions(bill_id: str, current_context: str) -> List[str]:
     """
-    Generate suggested follow-up questions based on conversation context
+    Generate AI-powered follow-up questions based on conversation context
     
     Args:
         bill_id: Bill UUID string
@@ -523,7 +549,7 @@ def generate_follow_up_questions(bill_id: str, current_context: str) -> List[str
         try:
             bill = Bill.objects.get(id=bill_id, is_deleted=False)
         except Bill.DoesNotExist:
-            return []
+            return _get_fallback_followup_questions()
         
         # Get some chunk titles for context-specific suggestions
         chunk_sections = BillChunk.objects.filter(
@@ -531,77 +557,142 @@ def generate_follow_up_questions(bill_id: str, current_context: str) -> List[str
             is_deleted=False
         ).values_list('section_title', flat=True).distinct()[:10]
         
-        # Base follow-up questions that work for most bills
-        base_questions = [
-            "How will this bill affect ordinary citizens?",
-            "What are the main changes this bill introduces?", 
-            "When will this bill take effect?",
-            "What penalties are mentioned in this bill?",
-            "How does this bill impact businesses?",
-            "What rights does this bill give to citizens?",
-            "What obligations does this bill place on citizens?",
-            "How will this bill be implemented?",
-            "What government agencies are involved in this bill?",
-            "What fees or costs are mentioned in this bill?"
-        ]
+        # Try to use AI for intelligent follow-up generation
+        try:
+            follow_up_prompt = create_follow_up_prompt(
+                conversation_history=[{'question': '', 'answer': current_context}],
+                bill_context={
+                    'title': bill.title,
+                    'complexity_level': 'advanced' if bill.total_chunks > 20 else 'basic',
+                    'key_sections': list(chunk_sections)[:5]
+                }
+            )
+            
+            context_data = {
+                'bill_title': bill.title,
+                'bill_id': str(bill_id),
+                'conversation_context': current_context[:500],  # Limit context size
+                'key_sections': list(chunk_sections)[:5]
+            }
+            
+            # Use LLM client for follow-up generation
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                llm_response = loop.run_until_complete(
+                    llm_client.analyze_with_context(
+                        prompt=follow_up_prompt,
+                        context_data=context_data,
+                        response_format="text",
+                        use_cache=True,
+                        preferred_model="openai"
+                    )
+                )
+            finally:
+                loop.close()
+            
+            if llm_response.success:
+                # Parse AI-generated questions
+                ai_questions = []
+                lines = llm_response.content.strip().split('\n')
+                for line in lines:
+                    line = line.strip()
+                    if line and ('?' in line or line.endswith('?')):
+                        # Clean up the question
+                        question = line.strip('- •123456789. ').strip()
+                        if len(question) > 10 and len(question) < 200:
+                            ai_questions.append(question)
+                
+                if len(ai_questions) >= 3:
+                    selected_questions = ai_questions[:4]
+                    cache.set(cache_key, selected_questions, timeout=1800)
+                    return selected_questions
+                    
+        except Exception as e:
+            logger.warning(f"AI follow-up generation failed: {str(e)}")
         
-        # Context-specific questions based on current conversation
-        context_lower = current_context.lower()
-        context_questions = []
-        
-        if 'tax' in context_lower:
-            context_questions.extend([
-                "What are the tax rates mentioned?",
-                "Who is exempt from these taxes?",
-                "When are tax payments due?"
-            ])
-        
-        if 'penalty' in context_lower or 'fine' in context_lower:
-            context_questions.extend([
-                "What are the maximum penalties?",
-                "How are penalties calculated?",
-                "Can penalties be appealed?"
-            ])
-        
-        if 'business' in context_lower or 'company' in context_lower:
-            context_questions.extend([
-                "What licenses are required?",
-                "What are the compliance requirements?",
-                "How does this affect small businesses?"
-            ])
-        
-        if 'citizen' in context_lower or 'mwananchi' in context_lower:
-            context_questions.extend([
-                "What services will citizens receive?",
-                "How can citizens participate?",
-                "What support is available for citizens?"
-            ])
-        
-        # Section-specific questions
-        section_questions = []
-        for section in chunk_sections[:3]:  # Top 3 sections
-            if section and section.strip():
-                section_questions.append(f"Tell me more about the '{section}' section")
-        
-        # Combine and select diverse questions
-        all_questions = base_questions + context_questions + section_questions
-        
-        # Remove duplicates and select up to 4 diverse questions
-        unique_questions = list(dict.fromkeys(all_questions))  # Preserves order
-        selected_questions = unique_questions[:4]
+        # Fallback to rule-based generation
+        fallback_questions = _generate_rule_based_followups(current_context, chunk_sections)
         
         # Cache for 30 minutes
-        cache.set(cache_key, selected_questions, timeout=1800)
-        
-        return selected_questions
+        cache.set(cache_key, fallback_questions, timeout=1800)
+        return fallback_questions
         
     except Exception as e:
         logger.error(f"Error generating follow-up questions: {str(e)}")
-        return [
-            "How will this bill affect citizens?",
-            "What are the main provisions?",
-            "When does this take effect?"
-        ]
+        return _get_fallback_followup_questions()
+
+
+def _generate_rule_based_followups(current_context: str, chunk_sections) -> List[str]:
+    """Generate follow-up questions using rule-based approach"""
+    # Base follow-up questions that work for most bills
+    base_questions = [
+        "How will this bill affect ordinary citizens?",
+        "What are the main changes this bill introduces?", 
+        "When will this bill take effect?",
+        "What penalties are mentioned in this bill?",
+        "How does this bill impact businesses?",
+        "What rights does this bill give to citizens?",
+        "What obligations does this bill place on citizens?",
+        "How will this bill be implemented?",
+        "What government agencies are involved in this bill?",
+        "What fees or costs are mentioned in this bill?"
+    ]
+    
+    # Context-specific questions based on current conversation
+    context_lower = current_context.lower()
+    context_questions = []
+    
+    if 'tax' in context_lower:
+        context_questions.extend([
+            "What are the tax rates mentioned?",
+            "Who is exempt from these taxes?",
+            "When are tax payments due?"
+        ])
+    
+    if 'penalty' in context_lower or 'fine' in context_lower:
+        context_questions.extend([
+            "What are the maximum penalties?",
+            "How are penalties calculated?",
+            "Can penalties be appealed?"
+        ])
+    
+    if 'business' in context_lower or 'company' in context_lower:
+        context_questions.extend([
+            "What licenses are required?",
+            "What are the compliance requirements?",
+            "How does this affect small businesses?"
+        ])
+    
+    if 'citizen' in context_lower or 'mwananchi' in context_lower:
+        context_questions.extend([
+            "What services will citizens receive?",
+            "How can citizens participate?",
+            "What support is available for citizens?"
+        ])
+    
+    # Section-specific questions
+    section_questions = []
+    for section in chunk_sections[:3]:  # Top 3 sections
+        if section and section.strip():
+            section_questions.append(f"Tell me more about the '{section}' section")
+    
+    # Combine and select diverse questions
+    all_questions = base_questions + context_questions + section_questions
+    
+    # Remove duplicates and select up to 4 diverse questions
+    unique_questions = list(dict.fromkeys(all_questions))  # Preserves order
+    return unique_questions[:4]
+
+
+def _get_fallback_followup_questions() -> List[str]:
+    """Get basic fallback questions when all else fails"""
+    return [
+        "How will this bill affect citizens?",
+        "What are the main provisions?",
+        "When does this take effect?",
+        "What are the key requirements?"
+    ]
 
 
 def analyze_conversation_context(conversation_history: List[Dict]) -> Dict:
