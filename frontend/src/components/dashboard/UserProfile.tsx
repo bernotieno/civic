@@ -81,10 +81,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
       setLoading(true);
       const response = await apiService.getUserProfile();
       if (response.success) {
-        setProfileData(response.data);
+        const userData = response.data || response.user;
+        setProfileData(userData);
         setEditData({
-          name: response.data.name || '',
-          phone: response.data.phone || ''
+          name: userData.name || '',
+          phone: userData.phone || ''
         });
       }
     } catch (err) {
@@ -98,6 +99,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
     try {
       setLoading(true);
       setError('');
+      setSuccess('');
       const response = await apiService.updateUserProfile(editData);
       if (response.success) {
         setSuccess('Profile updated successfully');
@@ -122,6 +124,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
     try {
       setLoading(true);
       setError('');
+      setSuccess('');
       const response = await apiService.changePassword(passwordData);
       if (response.success) {
         setSuccess('Password changed successfully');
@@ -139,6 +142,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
   const handleExportData = async () => {
     try {
       setLoading(true);
+      setError('');
+      setSuccess('');
       const response = await apiService.exportUserData();
       if (response.success) {
         // Create download link
@@ -150,6 +155,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
         a.click();
         URL.revokeObjectURL(url);
         setSuccess('Data exported successfully');
+      } else {
+        setError(response.message || 'Failed to export data');
       }
     } catch (err) {
       setError('Failed to export data');
@@ -204,7 +211,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => {
+                  setActiveTab(tab.id as any);
+                  setError('');
+                  setSuccess('');
+                }}
                 className={`flex items-center px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'

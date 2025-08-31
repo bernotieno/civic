@@ -85,6 +85,8 @@ auth_urlpatterns = [
     path('auth/logout/', views.LogoutView.as_view(), name='logout'),
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/profile/', views.UserProfileView.as_view(), name='profile'),
+    path('auth/change-password/', views.change_password, name='change_password'),
+    path('auth/export-data/', views.export_user_data, name='export_data'),
     
     # Anonymous session support for non-registered users
     # Returns temporary session_id for tracking anonymous interactions

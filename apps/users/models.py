@@ -347,6 +347,7 @@ class CustomUser(AbstractUser, SoftDeleteModel):
     )
     name = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField(unique=True, blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
     
     # Location hierarchy - ALL are ForeignKeys to Location model
     county = models.ForeignKey(

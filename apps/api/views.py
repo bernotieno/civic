@@ -13,6 +13,9 @@ from django.contrib.auth import login
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db import models
+from django.db.models import Q, Count
+from django.utils import timezone
 from drf_spectacular.utils import (
     extend_schema, 
     OpenApiExample, 
@@ -510,25 +513,200 @@ class AnonymousSessionView(APIView):
     }
 )
 class UserProfileView(APIView):
-    """Get current user profile and app configuration"""
+    """Get and update user profile"""
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
+        """Get user profile with stats"""
         serializer = UserProfileSerializer(request.user)
         
         # Get user context for app configuration
         from apps.core.context import UserContext
         user_context = UserContext(request.user)
         
+        # Get feedback stats
+        from apps.feedback.models import Feedback
+        feedback_stats = Feedback.objects.filter(
+            user=request.user, 
+            is_deleted=False
+        ).aggregate(
+            total_count=models.Count('id')
+        )
+        
+        # Since there's no status field, we'll use response_count as a proxy for resolved
+        resolved_count = Feedback.objects.filter(
+            user=request.user, 
+            is_deleted=False,
+            response_count__gt=0
+        ).count()
+        
+        profile_data = serializer.data.copy()
+        profile_data.update({
+            'feedback_count': feedback_stats['total_count'] or 0,
+            'resolved_count': resolved_count or 0,
+            'phone': request.user.phone or '',
+            'last_login': request.user.last_login.isoformat() if request.user.last_login else None,
+        })
+        
         return Response({
             'success': True,
-            'user': serializer.data,
+            'data': profile_data,
             'app_config': user_context.app_config,
             'permissions': {
                 'can_access_endpoints': user_context.app_config['available_endpoints'],
                 'data_scope': user_context.app_config['data_scope']
             }
         })
+    
+    def patch(self, request):
+        """Update user profile"""
+        user = request.user
+        data = request.data
+        
+        # Update allowed fields
+        if 'name' in data:
+            name = data['name'].strip()
+            if len(name) >= 2:
+                user.name = name
+            else:
+                return Response({
+                    'success': False,
+                    'message': 'Name must be at least 2 characters long'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if 'phone' in data:
+            user.phone = data['phone'].strip()
+        
+        try:
+            user.save()
+            
+            # Return updated profile
+            serializer = UserProfileSerializer(user)
+            profile_data = serializer.data.copy()
+            profile_data.update({
+                'phone': user.phone or '',
+                'feedback_count': 0,  # Will be updated by frontend
+                'resolved_count': 0,  # Will be updated by frontend
+            })
+            
+            return Response({
+                'success': True,
+                'message': 'Profile updated successfully',
+                'data': profile_data
+            })
+        except Exception as e:
+            return Response({
+                'success': False,
+                'message': f'Failed to update profile: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@extend_schema(
+    tags=['Authentication'],
+    summary="🔒 Change Password",
+    description="Change user password with current password verification"
+)
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def change_password(request):
+    """Change user password"""
+    user = request.user
+    data = request.data
+    
+    current_password = data.get('current_password')
+    new_password = data.get('new_password')
+    confirm_password = data.get('confirm_password')
+    
+    if not current_password or not new_password or not confirm_password:
+        return Response({
+            'success': False,
+            'message': 'All password fields are required'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    if new_password != confirm_password:
+        return Response({
+            'success': False,
+            'message': 'New passwords do not match'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    if len(new_password) < 6:
+        return Response({
+            'success': False,
+            'message': 'New password must be at least 6 characters long'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    if not user.check_password(current_password):
+        return Response({
+            'success': False,
+            'message': 'Current password is incorrect'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        user.set_password(new_password)
+        user.save()
+        
+        return Response({
+            'success': True,
+            'message': 'Password changed successfully'
+        })
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Failed to change password: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@extend_schema(
+    tags=['Authentication'],
+    summary="📥 Export User Data",
+    description="Export all user data for privacy compliance"
+)
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def export_user_data(request):
+    """Export user data"""
+    user = request.user
+    
+    try:
+        # Get user feedback
+        from apps.feedback.models import Feedback
+        feedback_data = []
+        
+        for feedback in Feedback.objects.filter(user=user, is_deleted=False):
+            feedback_data.append({
+                'id': str(feedback.id),
+                'title': feedback.title,
+                'content': feedback.content,
+                'category': feedback.category,
+                'priority': feedback.priority,
+                'status': feedback.status,
+                'created_at': feedback.created_at.isoformat(),
+                'updated_at': feedback.updated_at.isoformat(),
+            })
+        
+        export_data = {
+            'user_profile': {
+                'name': user.name,
+                'email': user.email,
+                'county': user.user_county.name,
+                'role': user.role,
+                'date_joined': user.date_joined.isoformat(),
+                'last_login': user.last_login.isoformat() if user.last_login else None,
+            },
+            'feedback_submissions': feedback_data,
+            'export_date': timezone.now().isoformat(),
+            'total_feedback': len(feedback_data)
+        }
+        
+        return Response({
+            'success': True,
+            'data': export_data
+        })
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Failed to export data: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # =============================================================================

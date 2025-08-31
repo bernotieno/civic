@@ -408,7 +408,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = [
-            'id', 'name', 'email', 'role', 'role_display', 
+            'id', 'name', 'email', 'phone', 'role', 'role_display', 
             'admin_level', 'level_display', 'county_name', 
             'accessible_counties', 'date_joined'
         ]
