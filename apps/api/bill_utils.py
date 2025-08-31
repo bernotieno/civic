@@ -33,8 +33,18 @@ def process_bill_document_complete(uploaded_file: UploadedFile, bill_instance) -
         }
     """
     try:
+        # Update progress: Starting
+        bill_instance.processing_status = 'processing'
+        bill_instance.processing_progress = 10
+        bill_instance.processing_message = 'Extracting text from PDF...'
+        bill_instance.save(update_fields=['processing_status', 'processing_progress', 'processing_message'])
+        
         # Step 1: Extract text from PDF (reset file pointer first)
         if PdfReader is None:
+            bill_instance.processing_status = 'failed'
+            bill_instance.processing_progress = 0
+            bill_instance.processing_message = 'PDF processing library not available'
+            bill_instance.save(update_fields=['processing_status', 'processing_progress', 'processing_message'])
             return {
                 'success': False,
                 'summary_markdown': '',
@@ -57,6 +67,10 @@ def process_bill_document_complete(uploaded_file: UploadedFile, bill_instance) -
         full_text = full_text.strip()
         
         if not full_text:
+            bill_instance.processing_status = 'failed'
+            bill_instance.processing_progress = 0
+            bill_instance.processing_message = 'No text could be extracted from PDF'
+            bill_instance.save(update_fields=['processing_status', 'processing_progress', 'processing_message'])
             return {
                 'success': False,
                 'summary_markdown': '',
@@ -65,19 +79,42 @@ def process_bill_document_complete(uploaded_file: UploadedFile, bill_instance) -
                 'error': 'No text could be extracted from PDF'
             }
         
+        # Update progress: Text extracted
+        bill_instance.processing_progress = 30
+        bill_instance.processing_message = 'Creating summary...'
+        bill_instance.save(update_fields=['processing_progress', 'processing_message'])
+        
         # Step 2: Create summary
         summary_markdown = _create_summary(full_text)
+        
+        # Update progress: Summary created
+        bill_instance.processing_progress = 60
+        bill_instance.processing_message = 'Converting to HTML...'
+        bill_instance.save(update_fields=['processing_progress', 'processing_message'])
         
         # Step 3: Convert to HTML (simple conversion)
         summary_html = _convert_to_html(summary_markdown)
         
+        # Update progress: HTML created
+        bill_instance.processing_progress = 80
+        bill_instance.processing_message = 'Creating chunks for AI chat...'
+        bill_instance.save(update_fields=['processing_progress', 'processing_message'])
+        
         # Step 4: Create chunks for AI chat
         chunks_created = create_bill_chunks(full_text, bill_instance)
+        
+        # Update progress: Finalizing
+        bill_instance.processing_progress = 95
+        bill_instance.processing_message = 'Finalizing...'
+        bill_instance.save(update_fields=['processing_progress', 'processing_message'])
         
         # Step 5: Update bill with chunking info
         bill_instance.is_chunked = True
         bill_instance.total_chunks = chunks_created
-        bill_instance.save(update_fields=['is_chunked', 'total_chunks'])
+        bill_instance.processing_status = 'completed'
+        bill_instance.processing_progress = 100
+        bill_instance.processing_message = 'Processing complete'
+        bill_instance.save(update_fields=['is_chunked', 'total_chunks', 'processing_status', 'processing_progress', 'processing_message'])
         
         return {
             'success': True,
@@ -88,6 +125,12 @@ def process_bill_document_complete(uploaded_file: UploadedFile, bill_instance) -
         }
         
     except Exception as e:
+        # Update progress: Failed
+        bill_instance.processing_status = 'failed'
+        bill_instance.processing_progress = 0
+        bill_instance.processing_message = f'Processing failed: {str(e)}'
+        bill_instance.save(update_fields=['processing_status', 'processing_progress', 'processing_message'])
+        
         return {
             'success': False,
             'summary_markdown': '',

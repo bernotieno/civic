@@ -82,6 +82,50 @@ def validate_chat_question(question: str, bill_id: str) -> Dict:
                     ]
                 }
         
+        # Check for nonsensical input (repeated characters, gibberish)
+        # Count unique characters
+        unique_chars = len(set(question.lower()))
+        total_chars = len(question.replace(' ', ''))
+        
+        if total_chars > 0 and unique_chars / total_chars < 0.3:
+            return {
+                'valid': False,
+                'reason': 'Question appears to be nonsensical',
+                'user_message': 'Please ask a clear question about this bill using proper words.',
+                'suggestions': [
+                    'What is the main purpose of this bill?',
+                    'How does this bill affect citizens?',
+                    'What are the key provisions in this bill?'
+                ]
+            }
+        
+        # Check for repeated patterns (like "wwwwwww")
+        if re.search(r'(.)\1{4,}', question):
+            return {
+                'valid': False,
+                'reason': 'Question contains repeated characters',
+                'user_message': 'Please ask a proper question about the bill.',
+                'suggestions': [
+                    'What does this bill do?',
+                    'How will this bill affect me?',
+                    'What are the main changes in this bill?'
+                ]
+            }
+        
+        # Check if question has actual words
+        words = re.findall(r'\b[a-zA-Z]{2,}\b', question)
+        if len(words) < 2:
+            return {
+                'valid': False,
+                'reason': 'Question needs to contain actual words',
+                'user_message': 'Please ask a complete question about this bill.',
+                'suggestions': [
+                    'What is this bill about?',
+                    'How does this bill affect citizens?',
+                    'What changes does this bill make?'
+                ]
+            }
+        
         # Check if question is relevant to bill content
         relevant_keywords = [
             'bill', 'law', 'section', 'act', 'clause', 'provision',
@@ -111,10 +155,11 @@ def validate_chat_question(question: str, bill_id: str) -> Dict:
             return {
                 'valid': False,
                 'reason': 'Question does not appear to be about the bill',
+                'user_message': 'Please ask a specific question about this bill.',
                 'suggestions': [
-                    'Try asking "What does this bill mean for citizens?"',
-                    'Ask "How will this bill affect me?"',
-                    'Try "What are the main changes in this bill?"'
+                    'What does this bill mean for citizens?',
+                    'How will this bill affect me?',
+                    'What are the main changes in this bill?'
                 ]
             }
         

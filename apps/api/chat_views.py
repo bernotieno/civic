@@ -81,8 +81,12 @@ def bill_chat(request, bill_id):
             return Response({
                 'success': False,
                 'error': validation['reason'],
-                'suggestions': validation['suggestions'],
-                'message': 'Please rephrase your question'
+                'suggestions': validation.get('suggestions', [
+                    'Ask about the main purpose of this bill',
+                    'Inquire how this bill affects citizens',
+                    'Ask about specific sections or provisions'
+                ]),
+                'message': validation.get('user_message', 'Please ask a clear question about this bill')
             }, status=400)
         
         # Check if bill exists and is accessible
@@ -161,11 +165,12 @@ def bill_chat(request, bill_id):
             return Response({
                 'success': False,
                 'error': 'No relevant information found',
-                'message': 'I could not find information in this bill related to your question. Try rephrasing or asking about different aspects of the bill.',
+                'message': 'I could not find information in this bill that relates to your question. Please try asking about specific aspects of the bill.',
                 'suggestions': [
-                    'Ask about main provisions of the bill',
-                    'Inquire about how the bill affects citizens',
-                    'Try using different keywords'
+                    f'What is the main purpose of the {bill.title}?',
+                    'How does this bill affect ordinary citizens?',
+                    'What are the key provisions in this bill?',
+                    'When will this bill take effect?'
                 ],
                 'conversation_id': session_id
             }, status=200)
@@ -182,12 +187,26 @@ def bill_chat(request, bill_id):
         )
         
         if not chat_response['success']:
+            error_msg = chat_response.get('error', 'Failed to generate response')
+            user_message = 'I am having trouble understanding your question. Please try asking in a different way or be more specific about what you want to know about this bill.'
+            
+            # Provide better error messages based on error type
+            if 'invalid' in error_msg.lower() or 'unclear' in error_msg.lower():
+                user_message = 'Your question is not clear. Please ask a specific question about this bill using complete sentences.'
+            elif 'timeout' in error_msg.lower():
+                user_message = 'The system is taking too long to respond. Please try asking a simpler question.'
+            
             return Response({
                 'success': False,
-                'error': chat_response.get('error', 'Failed to generate response'),
-                'message': 'I am unable to answer your question at the moment. Please try again later.',
+                'error': error_msg,
+                'message': user_message,
+                'suggestions': [
+                    f'What does the {bill.title} do?',
+                    'How will this bill affect me?',
+                    'What are the main changes in this bill?'
+                ],
                 'conversation_id': session_id
-            }, status=500)
+            }, status=200)
         
         # Update session data
         session_data['count'] = session_data.get('count', 0) + 1
@@ -251,7 +270,12 @@ def bill_chat(request, bill_id):
         return Response({
             'success': False,
             'error': 'Chat service temporarily unavailable',
-            'message': 'Please try again later or contact support if the problem persists'
+            'message': 'I am currently unable to process your question. Please try again in a few moments, or ask a different question about this bill.',
+            'suggestions': [
+                'Try refreshing the page and asking again',
+                'Ask a simpler question about the bill',
+                'Check if the bill is still being processed'
+            ]
         }, status=500)
 
 

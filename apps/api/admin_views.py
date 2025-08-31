@@ -701,11 +701,18 @@ def admin_bill_progress(request, bill_id):
         except Exception as e:
             logger.debug(f"No async session for bill {bill_id}, using Phase 1 progress")
         
-        # Fall back to Phase 1 progress tracking
-        progress_data = get_bill_progress(bill_id)
-        
-        # Get bill basic info
+        # Get bill and return actual progress from database
         bill = Bill.objects.get(id=bill_id, is_deleted=False)
+        
+        # Use actual progress from bill instance
+        progress_data = {
+            'status': getattr(bill, 'processing_status', 'pending'),
+            'progress': getattr(bill, 'processing_progress', 0),
+            'message': getattr(bill, 'processing_message', 'Processing...'),
+            'completion_percentage': getattr(bill, 'processing_progress', 0),
+            'current_stage': getattr(bill, 'processing_message', 'Processing...'),
+            'estimated_time_remaining': getattr(bill, 'estimated_time_remaining', None)
+        }
         
         response_data = {
             'success': True,
