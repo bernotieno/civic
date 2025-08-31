@@ -8,10 +8,7 @@ import {
   MessageSquare, 
   Clock, 
   CheckCircle, 
-  TrendingUp,
-  ArrowUp,
-  ArrowDown,
-  Minus
+  TrendingUp
 } from 'lucide-react';
 
 interface FeedbackStats {
@@ -31,11 +28,6 @@ interface StatCardProps {
   subtitle: string;
   icon: React.ElementType;
   color: 'blue' | 'yellow' | 'green' | 'purple';
-  trend?: {
-    value: number;
-    direction: 'up' | 'down' | 'neutral';
-    label: string;
-  };
 }
 
 const StatCard: React.FC<StatCardProps> = ({ 
@@ -43,95 +35,52 @@ const StatCard: React.FC<StatCardProps> = ({
   value, 
   subtitle, 
   icon: Icon, 
-  color, 
-  trend 
+  color
 }) => {
   const colorClasses = {
     blue: {
       bg: 'bg-blue-50',
       iconBg: 'bg-blue-100',
       iconColor: 'text-blue-600',
-      textColor: 'text-blue-600',
       borderColor: 'border-blue-200'
     },
     yellow: {
       bg: 'bg-yellow-50',
       iconBg: 'bg-yellow-100',
       iconColor: 'text-yellow-600',
-      textColor: 'text-yellow-600',
       borderColor: 'border-yellow-200'
     },
     green: {
       bg: 'bg-green-50',
       iconBg: 'bg-green-100',
       iconColor: 'text-green-600',
-      textColor: 'text-green-600',
       borderColor: 'border-green-200'
     },
     purple: {
       bg: 'bg-purple-50',
       iconBg: 'bg-purple-100',
       iconColor: 'text-purple-600',
-      textColor: 'text-purple-600',
       borderColor: 'border-purple-200'
     }
   };
 
   const classes = colorClasses[color];
 
-  const getTrendIcon = () => {
-    if (!trend) return null;
-    
-    switch (trend.direction) {
-      case 'up':
-        return <ArrowUp className="h-3 w-3 text-green-500" />;
-      case 'down':
-        return <ArrowDown className="h-3 w-3 text-red-500" />;
-      default:
-        return <Minus className="h-3 w-3 text-gray-400" />;
-    }
-  };
-
-  const getTrendColor = () => {
-    if (!trend) return 'text-gray-500';
-    
-    switch (trend.direction) {
-      case 'up':
-        return 'text-green-600';
-      case 'down':
-        return 'text-red-600';
-      default:
-        return 'text-gray-500';
-    }
-  };
-
   return (
-    <div className={`${classes.bg} border ${classes.borderColor} rounded-xl p-4 sm:p-6 hover:shadow-md transition-shadow duration-200`}>
-      <div className="flex items-center justify-between mb-4">
-        <div className={`${classes.iconBg} p-3 rounded-lg`}>
-          <Icon className={`h-6 w-6 ${classes.iconColor}`} />
+    <div className={`${classes.bg} border ${classes.borderColor} rounded-xl p-4 hover:shadow-md transition-shadow duration-200`}>
+      <div className="flex items-center mb-3">
+        <div className={`${classes.iconBg} p-2 rounded-lg mr-3`}>
+          <Icon className={`h-5 w-5 ${classes.iconColor}`} />
         </div>
-        {trend && (
-          <div className="flex items-center space-x-1">
-            {getTrendIcon()}
-            <span className={`text-xs font-medium ${getTrendColor()}`}>
-              {trend.value > 0 ? '+' : ''}{trend.value}%
-            </span>
-          </div>
-        )}
+        <div>
+          <h3 className="text-sm font-medium text-gray-600">{title}</h3>
+          <p className="text-xl font-bold text-gray-900">{value}</p>
+        </div>
       </div>
-      
-      <div>
-        <h3 className="text-sm font-medium text-gray-600 mb-1">{title}</h3>
-        <p className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{value}</p>
-        <p className="text-sm text-gray-500">{subtitle}</p>
-        {trend && (
-          <p className="text-xs text-gray-400 mt-2">{trend.label}</p>
-        )}
-      </div>
+      <p className="text-xs text-gray-500">{subtitle}</p>
     </div>
   );
-};
+};}
 
 const FeedbackOverviewCards: React.FC<FeedbackOverviewCardsProps> = ({ stats }) => {
   const cards = [
@@ -140,101 +89,45 @@ const FeedbackOverviewCards: React.FC<FeedbackOverviewCardsProps> = ({ stats }) 
       value: stats.totalFeedback,
       subtitle: 'Submissions made',
       icon: MessageSquare,
-      color: 'blue' as const,
-      trend: {
-        value: 12,
-        direction: 'up' as const,
-        label: 'vs last month'
-      }
+      color: 'blue' as const
     },
     {
       title: 'Pending Responses',
       value: stats.pendingResponses,
-      subtitle: 'Awaiting government action',
+      subtitle: 'Awaiting action',
       icon: Clock,
-      color: 'yellow' as const,
-      trend: {
-        value: -8,
-        direction: 'down' as const,
-        label: 'vs last month'
-      }
+      color: 'yellow' as const
     },
     {
       title: 'Resolved Issues',
       value: stats.resolvedIssues,
       subtitle: 'Successfully addressed',
       icon: CheckCircle,
-      color: 'green' as const,
-      trend: {
-        value: 25,
-        direction: 'up' as const,
-        label: 'vs last month'
-      }
+      color: 'green' as const
     },
     {
       title: 'Avg Response Time',
       value: `${stats.averageResponseTime} days`,
-      subtitle: 'Government response speed',
+      subtitle: 'Response speed',
       icon: TrendingUp,
-      color: 'purple' as const,
-      trend: {
-        value: -15,
-        direction: 'down' as const,
-        label: 'faster than average'
-      }
+      color: 'purple' as const
     }
   ];
 
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Your Feedback Overview</h2>
-        <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-          View detailed analytics →
-        </button>
-      </div>
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {cards.map((card, index) => (
-          <StatCard
-            key={index}
-            title={card.title}
-            value={card.value}
-            subtitle={card.subtitle}
-            icon={card.icon}
-            color={card.color}
-            trend={card.trend}
-          />
-        ))}
-      </div>
-
-      {/* Quick Insights */}
-      <div className="mt-6 bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Insights</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="flex items-start space-x-3">
-            <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">Great Response Rate</p>
-              <p className="text-sm text-gray-600">
-                {Math.round((stats.resolvedIssues / stats.totalFeedback) * 100)}% of your feedback has been resolved
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-start space-x-3">
-            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">Active Engagement</p>
-              <p className="text-sm text-gray-600">
-                You're helping improve {stats.pendingResponses + stats.resolvedIssues} community issues
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
+      {cards.map((card, index) => (
+        <StatCard
+          key={index}
+          title={card.title}
+          value={card.value}
+          subtitle={card.subtitle}
+          icon={card.icon}
+          color={card.color}
+        />
+      ))}
     </div>
   );
-};
+};}
 
 export default FeedbackOverviewCards;

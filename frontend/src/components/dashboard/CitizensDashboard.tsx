@@ -272,14 +272,7 @@ const CitizensDashboard: React.FC = () => {
             {currentView === 'home' && (
               <div className="space-y-6">
                 <WelcomeSection user={user} />
-                <FeedbackOverviewCards stats={dashboardData.stats} />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                  <RecentFeedbackStatus recentFeedback={dashboardData.recentFeedback} />
-                  <QuickActionsPanel onViewChange={handleViewChange} />
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                  <TransparencySection />
-                </div>
+                <RecentFeedbackStatus recentFeedback={dashboardData.recentFeedback} />
               </div>
             )}
 

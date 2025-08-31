@@ -44,24 +44,15 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onViewChange }) =
       isPrimary: true
     },
     {
-      title: 'Anonymous Participation',
-      description: 'Participate in public consultation anonymously',
-      icon: UserX,
+      title: 'View Bills & Projects',
+      description: 'Browse current parliamentary bills',
+      icon: Search,
       color: 'bg-gray-100 hover:bg-gray-200 border border-gray-300',
       textColor: 'text-gray-700',
-      action: () => navigate('/anonymous-feedback'),
-      isPrimary: false
-    },
-    {
-      title: 'Urgent National Issue',
-      description: 'Report urgent national matters to Parliament',
-      icon: AlertTriangle,
-      color: 'bg-red-100 hover:bg-red-200 border border-red-300',
-      textColor: 'text-red-700',
-      action: () => navigate('/emergency-report'),
+      action: () => onViewChange ? onViewChange('bills-projects') : navigate('/bills-projects'),
       isPrimary: false
     }
-  ];
+  ];}
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
@@ -122,35 +113,7 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onViewChange }) =
         </p>
       </div>
 
-      {/* Help Section */}
-      <div className="border-t border-gray-200 pt-6 mt-6">
-        <h4 className="text-sm font-medium text-gray-900 mb-3">Need Help?</h4>
-        <div className="space-y-2">
-          <button className="w-full text-left text-sm text-gray-600 hover:text-gray-900 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors">
-            📋 How to engage with Parliament
-          </button>
-          <button className="w-full text-left text-sm text-gray-600 hover:text-gray-900 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors">
-            🔍 Understanding bill processes
-          </button>
-          <button className="w-full text-left text-sm text-gray-600 hover:text-gray-900 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors">
-            📞 Contact support
-          </button>
-        </div>
-      </div>
 
-      {/* Quick Stats */}
-      <div className="border-t border-gray-200 pt-6 mt-6">
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 text-center">
-          <div className="bg-blue-50 rounded-lg p-2 sm:p-3">
-            <p className="text-xl sm:text-2xl font-bold text-blue-600">2.5</p>
-            <p className="text-xs text-blue-600">Avg Response Days</p>
-          </div>
-          <div className="bg-green-50 rounded-lg p-2 sm:p-3">
-            <p className="text-xl sm:text-2xl font-bold text-green-600">87%</p>
-            <p className="text-xs text-green-600">Resolution Rate</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

@@ -23,20 +23,19 @@ interface RecentFeedbackStatusProps {
 
 const CategoryBadge: React.FC<{ category: string }> = ({ category }) => {
   const categoryConfig: Record<string, { label: string; color: string }> = {
-    infrastructure: { label: 'Infrastructure', color: 'bg-orange-100 text-orange-800' },
-    healthcare: { label: 'Healthcare', color: 'bg-red-100 text-red-800' },
-    education: { label: 'Education', color: 'bg-purple-100 text-purple-800' },
-    utilities: { label: 'Utilities', color: 'bg-blue-100 text-blue-800' },
-    environment: { label: 'Environment', color: 'bg-green-100 text-green-800' },
-    safety: { label: 'Public Safety', color: 'bg-yellow-100 text-yellow-800' },
-    other: { label: 'Other', color: 'bg-gray-100 text-gray-800' }
+    infrastructure: { label: 'Infrastructure', color: 'bg-orange-100 text-orange-700' },
+    healthcare: { label: 'Healthcare', color: 'bg-red-100 text-red-700' },
+    education: { label: 'Education', color: 'bg-purple-100 text-purple-700' },
+    utilities: { label: 'Utilities', color: 'bg-blue-100 text-blue-700' },
+    environment: { label: 'Environment', color: 'bg-green-100 text-green-700' },
+    safety: { label: 'Safety', color: 'bg-yellow-100 text-yellow-700' },
+    other: { label: 'Other', color: 'bg-gray-100 text-gray-700' }
   };
 
   const config = categoryConfig[category] || categoryConfig.other;
 
   return (
-    <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${config.color}`}>
-      <Tag className="h-3 w-3 mr-1" />
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${config.color}`}>
       {config.label}
     </span>
   );
@@ -49,51 +48,32 @@ const FeedbackCard: React.FC<{ feedback: FeedbackItem }> = ({ feedback }) => {
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
     if (diffInHours < 24) {
-      return `${diffInHours} hours ago`;
+      return `${diffInHours}h ago`;
     } else if (diffInHours < 48) {
       return 'Yesterday';
     } else {
       return date.toLocaleDateString('en-US', { 
         month: 'short', 
-        day: 'numeric',
-        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+        day: 'numeric'
       });
     }
   };
 
   return (
-    <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 sm:p-4 hover:bg-white hover:shadow-sm transition-all duration-200">
-      <div className="mb-3 sm:mb-4">
+    <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 hover:bg-white hover:shadow-sm transition-all duration-200">
+      <div className="flex items-center justify-between">
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-medium text-gray-900 mb-2 line-clamp-2">
+          <h3 className="text-sm font-medium text-gray-900 mb-1 line-clamp-1">
             {feedback.title}
           </h3>
-          <div className="flex flex-wrap items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span>{formatDate(feedback.created_at)}</span>
             <CategoryBadge category={feedback.category} />
-            {feedback.is_anonymous && (
-              <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
-                👤 Anonymous
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm text-gray-500">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-          <div className="flex items-center">
-            <Calendar className="h-4 w-4 mr-1" />
-            <span className="text-xs sm:text-sm">{formatDate(feedback.created_at)}</span>
-          </div>
-          <div className="flex items-center">
-            <FileText className="h-4 w-4 mr-1" />
-            <span className="text-xs sm:text-sm">ID: {feedback.id.slice(0, 8)}</span>
           </div>
         </div>
         
-        <button className="flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm self-start sm:self-auto">
-          View Details
-          <ExternalLink className="h-4 w-4 ml-1" />
+        <button className="flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm ml-2">
+          <ExternalLink className="h-4 w-4" />
         </button>
       </div>
     </div>

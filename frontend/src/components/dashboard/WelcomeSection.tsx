@@ -46,22 +46,13 @@ const WelcomeSection: React.FC<WelcomeSectionProps> = ({ user }) => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           {/* Left Side - Simplified Greeting */}
           <div className="mb-6 lg:mb-0">
-            <div className="flex items-start sm:items-center mb-3">
-              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-yellow-300 flex-shrink-0 mt-1 sm:mt-0" />
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold leading-tight">
-                {getGreeting()}, {userName}!
-              </h1>
-            </div>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold leading-tight mb-3">
+              {getGreeting()}, {userName}!
+            </h1>
 
-            <p className="text-blue-100 text-sm sm:text-base mb-4 leading-relaxed">
+            <p className="text-blue-100 text-sm sm:text-base leading-relaxed">
               Your voice matters. Engage with Parliament and shape national policy.
             </p>
-
-            {/* Single Key Stat */}
-            <div className="flex items-center bg-white/10 rounded-full px-3 sm:px-4 py-2 text-xs sm:text-sm w-fit">
-              <TrendingUp className="h-4 w-4 mr-2 text-green-300 flex-shrink-0" />
-              <span className="font-semibold">{monthlyResolved} bills open for public participation</span>
-            </div>
           </div>
 
           {/* Right Side - Primary Action */}
