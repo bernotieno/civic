@@ -14,6 +14,7 @@ import {
   Alert,
   Keyboard
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 
@@ -41,7 +42,7 @@ export default function BillDetailsScreen() {
   const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
   
-  const [activeTab, setActiveTab] = useState<'details' | 'summary' | 'chat'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'summary' | 'chat' | 'ben'>('details');
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -476,8 +477,8 @@ Core elements:
         {renderContent()}
       </View>
 
-      {/* Submit Feedback Button - Only show when not in chat tab or when keyboard is hidden */}
-      {(activeTab !== 'chat' || keyboardHeight === 0) && (
+      {/*//Submit Feedback Button - Only show when not in chat tab*/}
+      {activeTab !== 'ben' && (
         <View style={styles.bottomContainer}>
           <TouchableOpacity
             style={styles.feedbackButton}
@@ -508,7 +509,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     color: "#E3FEF7",
-    fontSize: 16,
+    fontSize: 26,
     fontWeight: "600",
   },
   billInfo: {
