@@ -200,10 +200,6 @@ def admin_feedback_list(request):
                     'id': str(f.id),
                     'title': f.title,
                     'content': f.content,
-                    'category': f.category,
-                    'category_display': f.get_category_display(),
-                    'priority': f.priority,
-                    'priority_display': f.get_priority_display(),
                     'tracking_id': str(f.id),
                     'county': f.user.user_county.name if f.user and f.user.user_county else 'Unknown',
                     'location_path': f.get_location_path(),
@@ -220,7 +216,9 @@ def admin_feedback_list(request):
                     'can_edit': f.can_edit,
                     'can_delete': f.can_delete,
                     'edit_count': f.edit_count,
-                    'edited_at': f.edited_at
+                    'edited_at': f.edited_at,
+                    'related_bill_id': f.related_bill_id,
+                    'related_project_id': str(f.related_project_id) if f.related_project_id else None
                 }
                 feedback_data.append(feedback_item)
             except Exception as e:

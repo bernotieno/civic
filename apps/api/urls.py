@@ -138,8 +138,7 @@ feedback_urlpatterns = [
     
     # Tracking functionality removed for scalability
     
-    # Feedback metadata and categories
-    path('feedback/categories/', feedback_views.feedback_categories, name='categories'),
+    # Feedback metadata (categories removed)
     
     # User feedback management (authenticated users only)
     path('feedback/my-submissions/', feedback_views.UserFeedbackListView.as_view(), name='user_feedback_list'),

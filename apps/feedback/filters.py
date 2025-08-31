@@ -5,18 +5,12 @@
 
 import django_filters
 from django.db.models import Q
-from .models import Feedback, FEEDBACK_CATEGORIES
+from .models import Feedback
 
 class UserFeedbackFilter(django_filters.FilterSet):
     """Advanced filtering for user's feedback"""
     
-    # Category filtering
-    category = django_filters.ChoiceFilter(choices=FEEDBACK_CATEGORIES)
-    
-    # Priority filtering
-    priority = django_filters.ChoiceFilter(
-        choices=Feedback._meta.get_field('priority').choices
-    )
+
     
     # Date range filtering
     date_from = django_filters.DateFilter(field_name='created_at', lookup_expr='gte')
@@ -33,7 +27,7 @@ class UserFeedbackFilter(django_filters.FilterSet):
     
     class Meta:
         model = Feedback
-        fields = ['category', 'priority', 'date_from', 'date_to', 'search', 'has_edits']
+        fields = ['date_from', 'date_to', 'search', 'has_edits']
     
     # Response filtering removed
     

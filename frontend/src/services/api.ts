@@ -14,15 +14,12 @@ import {
   FeedbackSubmissionData,
   FeedbackSubmissionResponse,
   FeedbackTrackingResponse,
-  FeedbackCategoriesResponse,
   UserFeedbackListResponse,
   RateLimitError,
-  FeedbackCategoryOption,
   AnonymousSession,
   AnonymousSessionResponse,
   AnonymousSessionStatus,
-  AnonymousFeedbackData,
-  PriorityOption
+  AnonymousFeedbackData
 } from '../types';
 
 class CivicAIApiService {
@@ -488,134 +485,7 @@ class CivicAIApiService {
     }
   }
 
-  /**
-   * Get feedback categories with department routing information
-   */
-  async getFeedbackCategories(): Promise<FeedbackCategoriesResponse> {
-    try {
-      const response = await fetch(`${this.baseURL}/api/feedback/categories/`, {
-        method: 'GET',
-        headers: this.getHeaders(false),
-      });
 
-      const data = await this.handleResponse<FeedbackCategoriesResponse>(response);
-
-      // If API doesn't return categories in expected format, provide defaults
-      if (!data.data?.categories) {
-        return {
-          success: true,
-          data: {
-            categories: this.getDefaultFeedbackCategories()
-          }
-        };
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Error fetching feedback categories:', error);
-      // Return default categories on error
-      return {
-        success: true,
-        data: {
-          categories: this.getDefaultFeedbackCategories()
-        }
-      };
-    }
-  }
-
-  /**
-   * Get default feedback categories with department routing
-   */
-  private getDefaultFeedbackCategories(): FeedbackCategoryOption[] {
-    return [
-      {
-        value: 'infrastructure',
-        label: 'Infrastructure & Roads',
-        department: 'Public Works',
-        description: 'Road maintenance, bridges, public buildings'
-      },
-      {
-        value: 'healthcare',
-        label: 'Healthcare Services',
-        department: 'Health',
-        description: 'Hospitals, clinics, medical equipment'
-      },
-      {
-        value: 'education',
-        label: 'Education & Schools',
-        department: 'Education',
-        description: 'Schools, teachers, educational resources'
-      },
-      {
-        value: 'water_sanitation',
-        label: 'Water & Sanitation',
-        department: 'Water',
-        description: 'Water supply, sewerage, waste management'
-      },
-      {
-        value: 'security',
-        label: 'Security & Safety',
-        department: 'Security',
-        description: 'Police services, public safety, crime'
-      },
-      {
-        value: 'environment',
-        label: 'Environment & Waste',
-        department: 'Environment',
-        description: 'Pollution, waste collection, environmental protection'
-      },
-      {
-        value: 'governance',
-        label: 'Governance & Corruption',
-        department: 'Ethics',
-        description: 'Government services, corruption, transparency'
-      },
-      {
-        value: 'economic',
-        label: 'Economic Development',
-        department: 'Development',
-        description: 'Business permits, economic opportunities, markets'
-      },
-      {
-        value: 'other',
-        label: 'Other Issues',
-        department: 'General Administration',
-        description: 'Issues not covered by other categories'
-      }
-    ];
-  }
-
-  /**
-   * Get priority options with time expectations
-   */
-  getPriorityOptions(): PriorityOption[] {
-    return [
-      {
-        value: 'low',
-        label: 'Low Priority',
-        timeframe: '3–7 days',
-        description: 'Non-urgent issues that can wait for regular processing'
-      },
-      {
-        value: 'medium',
-        label: 'Medium Priority',
-        timeframe: '1–3 days',
-        description: 'Standard issues requiring timely attention'
-      },
-      {
-        value: 'high',
-        label: 'High Priority',
-        timeframe: '6–24 hours',
-        description: 'Important issues affecting community services'
-      },
-      {
-        value: 'urgent',
-        label: 'Urgent',
-        timeframe: '2–6 hours',
-        description: 'Critical issues requiring immediate government response'
-      }
-    ];
-  }
 
   /**
    * Track feedback by tracking ID (public endpoint - no auth required)
@@ -646,8 +516,6 @@ class CivicAIApiService {
       const cleanedData = {
         title: feedbackData.title.trim(),
         content: feedbackData.content.trim(),
-        category: feedbackData.category,
-        priority: feedbackData.priority,
         county_id: feedbackData.county_id,
         is_anonymous: isAnonymous,
         ...(feedbackData.sub_county_id && { sub_county_id: feedbackData.sub_county_id }),
@@ -705,18 +573,8 @@ class CivicAIApiService {
       throw new Error('Content must be at least 50 characters');
     }
 
-    if (!data.category) {
-      throw new Error('Category is required');
-    }
-
     if (!data.county_id) {
       throw new Error('County selection is required');
-    }
-
-    // Validate priority
-    const validPriorities = ['low', 'medium', 'high', 'urgent'];
-    if (!validPriorities.includes(data.priority)) {
-      throw new Error('Invalid priority level');
     }
   }
 
@@ -735,8 +593,6 @@ class CivicAIApiService {
         session_id: feedbackData.session_id,
         title: feedbackData.title.trim(),
         content: feedbackData.content.trim(),
-        category: feedbackData.category,
-        priority: feedbackData.priority,
         county_id: feedbackData.county_id,
         ...(feedbackData.sub_county_id && { sub_county_id: feedbackData.sub_county_id }),
         ...(feedbackData.ward_id && { ward_id: feedbackData.ward_id }),

@@ -7,6 +7,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   FeedbackSubmissionData, 
   FeedbackFormErrors, 
+  FeedbackCategoryOption, 
+  PriorityOption,
   AuthUser 
 } from '../../types';
 import { apiService } from '../../services/api';
@@ -46,6 +48,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
   const [formData, setFormData] = useState<FeedbackSubmissionData>({
     title: '',
     content: '',
+    category: '',
+    priority: 'medium',
     county_id: 0,
     sub_county_id: undefined,
     ward_id: undefined,
@@ -55,6 +59,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
 
   const [errors, setErrors] = useState<FeedbackFormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [categories, setCategories] = useState<FeedbackCategoryOption[]>([]);
+  const [priorityOptions] = useState<PriorityOption[]>(apiService.getPriorityOptions());
   const [rateLimitInfo, setRateLimitInfo] = useState<{ canSubmit: boolean; remaining: number }>({
     canSubmit: true,
     remaining: 10
@@ -89,6 +95,13 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
   useEffect(() => {
     const loadInitialData = async () => {
       try {
+        // Load feedback categories
+        const categoriesResponse = await apiService.getFeedbackCategories();
+        console.log('📂 Categories response:', categoriesResponse);
+        if (categoriesResponse.success) {
+          setCategories(categoriesResponse.data.categories);
+        }
+
         // Check rate limit
         const rateLimitStatus = await apiService.checkRateLimit();
         setRateLimitInfo(rateLimitStatus);
@@ -273,6 +286,11 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
       newErrors.content = 'Content must be at least 50 characters';
     }
 
+    // Category validation
+    if (!formData.category) {
+      newErrors.category = 'Category is required';
+    }
+
     // County validation
     if (!formData.county_id) {
       newErrors.county_id = 'County selection is required';
@@ -305,7 +323,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
     console.log('🚀 Form submission started');
     console.log('👤 User object:', user);
     console.log('📝 Form data:', formData);
-    console.log('🏛️ User accessible counties:', user?.accessible_counties);
+    console.log('🏛️ User accessible counties:', user.accessible_counties);
 
     // Check rate limit for authenticated users
     if (!isAnonymous && !rateLimitInfo.canSubmit) {
@@ -334,6 +352,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
             session_id: anonymousSession.session_id,
             title: formData.title,
             content: formData.content,
+            category: formData.category,
+            priority: formData.priority,
             county_id: formData.county_id,
             sub_county_id: formData.sub_county_id,
             ward_id: formData.ward_id,
@@ -350,6 +370,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
         setFormData({
           title: '',
           content: '',
+          category: '',
+          priority: 'medium',
           county_id: formData.county_id, // Keep county selection
           sub_county_id: undefined,
           ward_id: undefined,
@@ -382,6 +404,12 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
     }
   };
 
+  /**
+   * Get selected category details
+   */
+  const selectedCategory = categories.find(cat => cat.value === formData.category);
+  const selectedPriority = priorityOptions.find(p => p.value === formData.priority);
+
   if (locationLoading) {
     return (
       <div className="flex flex-col sm:flex-row items-center justify-center p-6 sm:p-8 gap-3">
@@ -408,7 +436,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
         <p className="text-gray-600">
           {isAnonymous 
             ? 'Submit anonymous feedback to your county government. Your identity will remain completely private.'
-            : `Share your concerns with ${user?.county_name || 'your'} County Government. Your feedback will be reviewed by the appropriate officials.`
+            : `Share your concerns with ${user?.county_name || 'your'} County Government. Your feedback will be routed to the appropriate department for review.`
           }
         </p>
         
@@ -535,6 +563,69 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           <div className="flex justify-between mt-1">
             {errors.content && <p className="text-sm text-red-600">{errors.content}</p>}
             <p className="text-sm text-gray-500 ml-auto">{formData.content.length} characters</p>
+          </div>
+        </div>
+
+        {/* Category and Priority Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+          {/* Category Field */}
+          <div>
+            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+              Category <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="category"
+              value={formData.category}
+              onChange={(e) => handleInputChange('category', e.target.value)}
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.category ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+              }`}
+              disabled={isSubmitting}
+            >
+              <option value="">Select a category</option>
+              {categories.map((category) => (
+                <option key={category.value} value={category.value}>
+                  {category.label}
+                </option>
+              ))}
+            </select>
+            {errors.category && <p className="text-sm text-red-600 mt-1">{errors.category}</p>}
+            {selectedCategory && (
+              <div className="mt-2 p-2 bg-blue-50 rounded-md">
+                <p className="text-sm text-blue-800">
+                  <strong>Department:</strong> {selectedCategory.department}
+                </p>
+                <p className="text-sm text-blue-700">{selectedCategory.description}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Priority Field */}
+          <div>
+            <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">
+              Priority Level
+            </label>
+            <select
+              id="priority"
+              value={formData.priority}
+              onChange={(e) => handleInputChange('priority', e.target.value as any)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isSubmitting}
+            >
+              {priorityOptions.map((priority) => (
+                <option key={priority.value} value={priority.value}>
+                  {priority.label}
+                </option>
+              ))}
+            </select>
+            {selectedPriority && (
+              <div className="mt-2 p-2 bg-yellow-50 rounded-md">
+                <p className="text-sm text-yellow-800">
+                  <strong>Expected Response:</strong> {selectedPriority.timeframe}
+                </p>
+                <p className="text-sm text-yellow-700">{selectedPriority.description}</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -686,6 +777,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
           </div>
         )}
 
+
+
         {/* Submit Button */}
         <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
           <button
@@ -694,6 +787,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
               setFormData({
                 title: '',
                 content: '',
+                category: '',
+                priority: 'medium',
                 county_id: formData.county_id,
                 sub_county_id: undefined,
                 ward_id: undefined,

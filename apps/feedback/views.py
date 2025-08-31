@@ -20,11 +20,11 @@ from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParamete
 from drf_spectacular.types import OpenApiTypes
 
 from apps.core.decorators import invisible_permission_required, endpoint_allowed
-from .models import Feedback, FEEDBACK_CATEGORIES, PRIORITY_CHOICES
+from .models import Feedback
 from .serializers import (
     FeedbackSubmissionSerializer, AnonymousFeedbackSerializer,
-    FeedbackCategoryChoiceSerializer, FeedbackSubmissionResponseSerializer, 
-    AnonymousFeedbackResponseSerializer, FeedbackCategoriesResponseSerializer,
+    FeedbackSubmissionResponseSerializer, 
+    AnonymousFeedbackResponseSerializer,
     FeedbackErrorResponseSerializer, UserFeedbackListSerializer, 
     UserFeedbackDetailSerializer, UserFeedbackUpdateSerializer, UserFeedbackStatsSerializer
 )
@@ -129,81 +129,7 @@ class AnonymousFeedbackView(APIView):
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
-@extend_schema(
-    tags=['Feedback'],
-    summary="📂 Get Feedback Categories",
-    description="Get all available feedback categories for form dropdowns.",
-    responses={
-        200: OpenApiResponse(
-            response=FeedbackCategoriesResponseSerializer,
-            description="Categories retrieved successfully"
-        )
-    }
-)
-@csrf_exempt
-@api_view(['GET'])
-@permission_classes([permissions.AllowAny])
-def feedback_categories(request):
-    """Get available feedback categories with enhanced metadata"""
-    categories = []
-    
-    # Enhanced category data with government department routing
-    category_metadata = {
-        'infrastructure': {
-            'icon': '🏗️',
-            'department': 'Public Works & Infrastructure',
-        },
-        'healthcare': {
-            'icon': '🏥',
-            'department': 'Health & Medical Services',
-        },
-        'education': {
-            'icon': '🎓',
-            'department': 'Education & Human Resources',
-        },
-        'water_sanitation': {
-            'icon': '💧',
-            'department': 'Water, Sanitation & Environment',
-        },
-        'security': {
-            'icon': '🛡️',
-            'department': 'Security & Emergency Services',
-        },
-        'environment': {
-            'icon': '🌱',
-            'department': 'Environment & Natural Resources',
-        },
-        'governance': {
-            'icon': '🏛️',
-            'department': 'Ethics & Anti-Corruption Unit',
-        },
-        'economic': {
-            'icon': '💼',
-            'department': 'Trade, Industry & Economic Development',
-        },
-        'other': {
-            'icon': '📋',
-            'department': 'General Administration',
-        }
-    }
-    
-    for value, label in FEEDBACK_CATEGORIES:
-        metadata = category_metadata.get(value, {})
-        
-        category_data = {
-            'value': value,
-            'label': label,
-            'description': f"{metadata.get('icon', '📋')} {label} - Submit feedback related to {label.lower()}",
-            'icon': metadata.get('icon', '📋'),
-            'department': metadata.get('department', 'General Administration')
-        }
-        
-        categories.append(category_data)
-    
-    return Response({
-        'success': True,
-        'categories': categories
-    })
+
 
 
 @extend_schema_view(
@@ -225,7 +151,7 @@ class UserFeedbackListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
     filterset_class = UserFeedbackFilter
-    ordering_fields = ['created_at', 'updated_at', 'priority']
+    ordering_fields = ['created_at', 'updated_at', 'view_count', 'edit_count']
     ordering = ['-created_at']
     search_fields = ['title', 'content']
     
@@ -258,15 +184,10 @@ class UserFeedbackListView(generics.ListAPIView):
                 user_stats = calculate_user_feedback_stats(request.user)
                 cache.set(cache_key, user_stats, 15 * 60)
 
-            # Get available filter options
-            all_user_feedback = self.get_queryset()
+            # Get available filter options (placeholder for future implementation)
             filter_options = {
-                'available_categories': list(all_user_feedback.values_list(
-                    'category', flat=True
-                ).distinct()),
-                'available_priorities': list(all_user_feedback.values_list(
-                    'priority', flat=True
-                ).distinct()),
+                'available_categories': [],
+                'available_priorities': [],
             }
 
             return Response({
@@ -279,8 +200,6 @@ class UserFeedbackListView(generics.ListAPIView):
                     'user_stats': user_stats,
                     'filters': filter_options,
                     'applied_filters': {
-                        'category': request.query_params.get('category'),
-                        'priority': request.query_params.get('priority'),
                         'search': request.query_params.get('search'),
                         'ordering': request.query_params.get('ordering', '-created_at'),
                     }
@@ -503,10 +422,13 @@ def user_feedback_statistics(request):
                 'count': month_count
             })
         
-        # Category analysis
-        category_stats = user_feedback.values('category').annotate(
-            count=Count('id')
-        ).order_by('-count')
+        # Basic analysis
+        basic_analysis = {
+            'total_feedback': user_feedback.count(),
+            'this_month': user_feedback.filter(
+                created_at__gte=timezone.now().replace(day=1)
+            ).count()
+        }
         
         # Engagement metrics
         most_viewed = user_feedback.order_by('-view_count').first()
@@ -530,7 +452,7 @@ def user_feedback_statistics(request):
         detailed_stats = {
             **basic_stats,
             'monthly_breakdown': list(reversed(monthly_stats)),
-            'category_breakdown': list(category_stats),
+            'basic_analysis': basic_analysis,
             'engagement': engagement_stats,
         }
         

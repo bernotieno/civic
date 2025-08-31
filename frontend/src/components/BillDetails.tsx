@@ -26,8 +26,6 @@ const BillDetails: React.FC = () => {
   const [feedbackData, setFeedbackData] = useState({
     title: '',
     content: '',
-    category: 'legislation',
-    priority: 'medium',
     is_anonymous: false
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -82,8 +80,6 @@ const BillDetails: React.FC = () => {
             session_id: sessionData.session_id,
             title: feedbackData.title,
             content: feedbackData.content,
-            category: feedbackData.category,
-            priority: feedbackData.priority,
             county_id: 1,
             related_bill_id: bill?.id
           })
@@ -100,8 +96,6 @@ const BillDetails: React.FC = () => {
           body: JSON.stringify({
             title: feedbackData.title,
             content: feedbackData.content,
-            category: feedbackData.category,
-            priority: feedbackData.priority,
             county_id: 1,
             related_bill_id: bill?.id
           })
@@ -113,8 +107,6 @@ const BillDetails: React.FC = () => {
         setFeedbackData({
           title: '',
           content: '',
-          category: 'legislation',
-          priority: 'medium',
           is_anonymous: false
         });
         setShowFeedbackForm(false);
@@ -274,37 +266,7 @@ const BillDetails: React.FC = () => {
                             />
                           </div>
                           
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                              <select
-                                value={feedbackData.category}
-                                onChange={(e) => setFeedbackData({...feedbackData, category: e.target.value})}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                              >
-                                <option value="legislation">Legislation & Bills</option>
-                                <option value="budget">Budget & Finance</option>
-                                <option value="healthcare">Healthcare Policy</option>
-                                <option value="education">Education Policy</option>
-                                <option value="governance">Governance & Oversight</option>
-                                <option value="other">Other National Issues</option>
-                              </select>
-                            </div>
-                            
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                              <select
-                                value={feedbackData.priority}
-                                onChange={(e) => setFeedbackData({...feedbackData, priority: e.target.value})}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                              >
-                                <option value="low">Low</option>
-                                <option value="medium">Medium</option>
-                                <option value="high">High</option>
-                                <option value="urgent">Urgent</option>
-                              </select>
-                            </div>
-                          </div>
+
                           
                           <div className="flex items-center">
                             <input

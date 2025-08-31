@@ -23,14 +23,6 @@ def calculate_user_feedback_stats(user):
         'total_submissions': user_feedback.count(),
     }
     
-    # Category breakdown
-    category_stats = user_feedback.values('category').annotate(
-        count=Count('id')
-    ).order_by('-count')
-    
-    stats['category_breakdown'] = list(category_stats)
-    stats['most_used_category'] = category_stats[0]['category'] if category_stats else None
-    
     # Response statistics removed
     
     # Submission streak (consecutive days with submissions)
@@ -39,6 +31,8 @@ def calculate_user_feedback_stats(user):
     ).values('created_at__date').distinct().count()
     
     stats['submissions_last_30_days'] = recent_submissions
+    stats['category_breakdown'] = []
+    stats['most_used_category'] = None
     
     # Edit statistics - Handle missing fields gracefully
     try:
@@ -337,53 +331,15 @@ class FeedbackAnalytics:
     
     @classmethod
     def get_category_stats(cls, county=None, days=30):
-        """Get feedback statistics by category"""
-        # Late import to avoid circular dependency
-        from .models import Feedback
-        from django.db.models import Count
-        
-        # Base queryset
-        queryset = Feedback.objects.filter(is_deleted=False)
-        
-        # Filter by county if provided
-        if county:
-            queryset = queryset.filter(county=county)
-        
-        # Filter by date range
-        since_date = timezone.now() - timedelta(days=days)
-        queryset = queryset.filter(created_at__gte=since_date)
-        
-        # Get category counts
-        category_stats = queryset.values('category').annotate(
-            count=Count('id')
-        ).order_by('-count')
-        
-        return list(category_stats)
+        """Get feedback statistics by category - placeholder for future implementation"""
+        # Category field not implemented yet
+        return []
     
     @classmethod
     def get_status_distribution(cls, county=None, days=30):
-        """Get feedback status distribution"""
-        # Late import to avoid circular dependency
-        from .models import Feedback
-        from django.db.models import Count
-        
-        # Base queryset
-        queryset = Feedback.objects.filter(is_deleted=False)
-        
-        # Filter by county if provided
-        if county:
-            queryset = queryset.filter(county=county)
-        
-        # Filter by date range
-        since_date = timezone.now() - timedelta(days=days)
-        queryset = queryset.filter(created_at__gte=since_date)
-        
-        # Get status distribution
-        status_stats = queryset.values('status').annotate(
-            count=Count('id')
-        ).order_by('-count')
-        
-        return list(status_stats)
+        """Get feedback status distribution - placeholder for future implementation"""
+        # Status field not implemented yet
+        return []
         
 
 # # =============================================================================

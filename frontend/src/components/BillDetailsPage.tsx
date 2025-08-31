@@ -163,17 +163,7 @@ const BillDetailsPage: React.FC = () => {
                   />
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Priority Level
-                  </label>
-                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option value="low">Low - General comment</option>
-                    <option value="medium">Medium - Important concern</option>
-                    <option value="high">High - Significant impact</option>
-                    <option value="urgent">Urgent - Critical issue</option>
-                  </select>
-                </div>
+
                 
                 <div className="flex gap-3">
                   <button className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">

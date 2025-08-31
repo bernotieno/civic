@@ -15,9 +15,7 @@ import {
   AnonymousSession,
   AnonymousSessionStatus,
   AnonymousFeedbackData,
-  County,
-  FeedbackCategoryOption,
-  PriorityOption
+  County
 } from '../../types';
 import { apiService } from '../../services/api';
 import { useLocationHierarchy } from '../../hooks/useLocationHierarchy';
@@ -41,8 +39,6 @@ export const AnonymousFeedbackForm: React.FC<AnonymousFeedbackFormProps> = ({
   const [formData, setFormData] = useState<Partial<AnonymousFeedbackData>>({
     title: '',
     content: '',
-    category: '',
-    priority: 'medium',
     county_id: 0,
     sub_county_id: undefined,
     ward_id: undefined,
@@ -52,8 +48,6 @@ export const AnonymousFeedbackForm: React.FC<AnonymousFeedbackFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [counties, setCounties] = useState<County[]>([]);
-  const [categories, setCategories] = useState<FeedbackCategoryOption[]>([]);
-  const [priorityOptions] = useState<PriorityOption[]>(apiService.getPriorityOptions());
   const [loadingData, setLoadingData] = useState(true);
   const [dataError, setDataError] = useState<string | null>(null);
 
@@ -81,15 +75,11 @@ export const AnonymousFeedbackForm: React.FC<AnonymousFeedbackFormProps> = ({
       setLoadingData(true);
       setDataError(null);
 
-      console.log('Loading counties and categories...');
+      console.log('Loading counties...');
 
-      const [countiesData, categoriesResponse] = await Promise.all([
-        apiService.getCounties(),
-        apiService.getFeedbackCategories()
-      ]);
+      const countiesData = await apiService.getCounties();
 
       console.log('Counties loaded:', countiesData);
-      console.log('Categories response:', categoriesResponse);
 
       // Counties should be a direct array
       if (Array.isArray(countiesData)) {
@@ -98,15 +88,6 @@ export const AnonymousFeedbackForm: React.FC<AnonymousFeedbackFormProps> = ({
       } else {
         console.error('Counties data is not an array:', countiesData);
         setDataError('Failed to load counties data');
-      }
-
-      // Categories should have success wrapper
-      if (categoriesResponse.success && categoriesResponse.data?.categories) {
-        setCategories(categoriesResponse.data.categories);
-        console.log('Set categories:', categoriesResponse.data.categories.length);
-      } else {
-        console.error('Categories response not successful:', categoriesResponse);
-        setDataError('Failed to load categories data');
       }
     } catch (error) {
       console.error('Error loading initial data:', error);
@@ -264,9 +245,7 @@ export const AnonymousFeedbackForm: React.FC<AnonymousFeedbackFormProps> = ({
       newErrors.content = 'Description must be less than 2000 characters';
     }
 
-    if (!formData.category) {
-      newErrors.category = 'Category is required';
-    }
+
 
     if (!formData.county_id) {
       newErrors.county_id = 'County is required';
@@ -327,8 +306,6 @@ export const AnonymousFeedbackForm: React.FC<AnonymousFeedbackFormProps> = ({
         setFormData({
           title: '',
           content: '',
-          category: '',
-          priority: 'medium',
           county_id: formData.county_id, // Keep county selection
           sub_county_id: undefined,
           ward_id: undefined,
@@ -359,8 +336,6 @@ export const AnonymousFeedbackForm: React.FC<AnonymousFeedbackFormProps> = ({
     setFormData({
       title: '',
       content: '',
-      category: '',
-      priority: 'medium',
       county_id: 0,
       sub_county_id: undefined,
       ward_id: undefined,
@@ -573,50 +548,7 @@ export const AnonymousFeedbackForm: React.FC<AnonymousFeedbackFormProps> = ({
               </div>
             </div>
 
-            {/* Category and Priority Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-                  Category <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="category"
-                  value={formData.category || ''}
-                  onChange={(e) => handleInputChange('category', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.category ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
-                  }`}
-                  disabled={isSubmitting}
-                >
-                  <option value="">Select category...</option>
-                  {Array.isArray(categories) && categories.map((category) => (
-                    <option key={category.value} value={category.value}>
-                      {category.label}
-                    </option>
-                  ))}
-                </select>
-                {errors.category && <p className="text-sm text-red-600 mt-1">{errors.category}</p>}
-              </div>
 
-              <div>
-                <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">
-                  Priority
-                </label>
-                <select
-                  id="priority"
-                  value={formData.priority || 'medium'}
-                  onChange={(e) => handleInputChange('priority', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={isSubmitting}
-                >
-                  {priorityOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
 
             {/* Submit Button */}
             <div className="flex justify-end">

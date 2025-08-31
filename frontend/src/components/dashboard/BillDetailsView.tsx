@@ -17,8 +17,6 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
   const [chatHistory, setChatHistory] = useState<ChatHistory | null>(null);
   const [feedbackData, setFeedbackData] = useState({
     content: '',
-    category: 'legislation',
-    priority: 'medium',
     is_anonymous: false
   });
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -124,8 +122,6 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
             session_id: sessionData.session_id,
             title: `Feedback on Bill: ${bill?.title}`,
             content: feedbackData.content,
-            category: feedbackData.category,
-            priority: feedbackData.priority,
             county_id: userCounty.id,
             related_bill_id: billId
           })
@@ -140,8 +136,6 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
           body: JSON.stringify({
             title: `Feedback on Bill: ${bill?.title}`,
             content: feedbackData.content,
-            category: feedbackData.category,
-            priority: feedbackData.priority,
             county_id: userCounty.id,
             related_bill_id: billId
           })
@@ -154,8 +148,6 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
         showSuccess('Success', `${feedbackData.is_anonymous ? 'Anonymous ' : ''}Feedback submitted successfully! Tracking ID: ${trackingId}`);
         setFeedbackData({
           content: '',
-          category: 'legislation',
-          priority: 'medium',
           is_anonymous: false
         });
       } else {
@@ -335,43 +327,7 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
                   />
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                    <select
-                      value={feedbackData.category}
-                      onChange={(e) => setFeedbackData({...feedbackData, category: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="legislation">Legislation & Bills</option>
-                      <option value="budget">Budget & Finance</option>
-                      <option value="healthcare">Healthcare Policy</option>
-                      <option value="education">Education Policy</option>
-                      <option value="infrastructure">Infrastructure Development</option>
-                      <option value="agriculture">Agriculture & Food Security</option>
-                      <option value="environment">Environment & Climate</option>
-                      <option value="security">National Security</option>
-                      <option value="governance">Governance & Oversight</option>
-                      <option value="economic">Economic Policy</option>
-                      <option value="social">Social Services</option>
-                      <option value="other">Other National Issues</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-                    <select
-                      value={feedbackData.priority}
-                      onChange={(e) => setFeedbackData({...feedbackData, priority: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="low">Low Priority</option>
-                      <option value="medium">Medium Priority</option>
-                      <option value="high">High Priority</option>
-                      <option value="urgent">Urgent</option>
-                    </select>
-                  </div>
-                </div>
+
                 
                 <div className="flex items-center gap-2">
                   <input
@@ -397,8 +353,6 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
                   <button
                     onClick={() => setFeedbackData({
                       content: '',
-                      category: 'legislation',
-                      priority: 'medium',
                       is_anonymous: false
                     })}
                     className="px-4 py-2 border border-gray-300 text-gray-700 text-sm sm:text-base rounded-md hover:bg-gray-50 transition-colors"

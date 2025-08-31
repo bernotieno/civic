@@ -9,28 +9,7 @@ from django.utils import timezone
 from apps.users.models import SoftDeleteModel, CustomUser, County, Location
 # Removed tracking ID generation
 
-# Feedback Categories for National Assembly Bills and Projects
-FEEDBACK_CATEGORIES = [
-    ('legislation', 'Legislation & Bills'),
-    ('budget', 'Budget & Finance'),
-    ('healthcare', 'Healthcare Policy'),
-    ('education', 'Education Policy'),
-    ('infrastructure', 'Infrastructure Development'),
-    ('agriculture', 'Agriculture & Food Security'),
-    ('environment', 'Environment & Climate'),
-    ('security', 'National Security'),
-    ('governance', 'Governance & Oversight'),
-    ('economic', 'Economic Policy'),
-    ('social', 'Social Services'),
-    ('other', 'Other National Issues')
-]
 
-PRIORITY_CHOICES = [
-    ('low', 'Low'),
-    ('medium', 'Medium'),
-    ('high', 'High'),
-    ('urgent', 'Urgent')
-]
 
 
 
@@ -59,8 +38,6 @@ class Feedback(SoftDeleteModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=200, db_index=True)
     content = models.TextField()
-    category = models.CharField(max_length=20, choices=FEEDBACK_CATEGORIES, db_index=True)
-    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
     
     # User and national scope
     user = models.ForeignKey(
@@ -111,7 +88,6 @@ class Feedback(SoftDeleteModel):
         indexes = [
             models.Index(fields=['user_county', 'created_at']),
             models.Index(fields=['user', 'created_at']),
-            models.Index(fields=['category', 'priority']),
             models.Index(fields=['is_anonymous', 'user_county']),
             models.Index(fields=['related_bill_id']),
             models.Index(fields=['related_project_id']),
@@ -187,7 +163,6 @@ class Feedback(SoftDeleteModel):
             feedback=self,
             previous_title=previous_data.get('title', ''),
             previous_content=previous_data.get('content', ''),
-            previous_category=previous_data.get('category', ''),
             edited_at=timezone.now()
             )
 
@@ -204,7 +179,6 @@ class FeedbackEdit(SoftDeleteModel):
     )
     previous_title = models.CharField(max_length=200)
     previous_content = models.TextField()
-    previous_category = models.CharField(max_length=20)
     edit_reason = models.CharField(max_length=200, blank=True)
     edited_at = models.DateTimeField(auto_now_add=True)
     

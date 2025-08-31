@@ -30,10 +30,7 @@ export interface Feedback {
   id: string;
   title: string;
   description: string;
-  category: string;
-  subcategory: string;
   location: Location;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
   status: 'submitted' | 'reviewing' | 'in_progress' | 'resolved' | 'closed';
   sentiment?: 'positive' | 'negative' | 'neutral';
   isAnonymous: boolean;
@@ -42,12 +39,9 @@ export interface Feedback {
 }
 
 export interface FeedbackForm {
-  category: string;
-  subcategory: string;
   title: string;
   description: string;
   location: Location;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
 }
 
 // Anonymous Session Types
@@ -86,9 +80,10 @@ export interface AnonymousFeedbackData {
   session_id: string;
   title: string;
   content: string;
-  category: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  related_bill_id?: string;
+  county_id: number;
+  sub_county_id?: number;
+  ward_id?: number;
+  village_id?: number;
 }
 
 // Dashboard Types
@@ -282,10 +277,7 @@ export interface FeedbackItem {
   title: string;
   created_at: string;
   updated_at: string;
-  category: string;
-  category_display: string;
-  priority: string;
-  priority_display: string;
+
   view_count: number;
   location_path: string;
   can_edit: boolean;
@@ -326,28 +318,12 @@ export interface CitizenDashboardData {
 // ENHANCED FEEDBACK SYSTEM TYPES
 // =============================================================================
 
-// Feedback Categories with Department Routing
-export interface FeedbackCategoryOption {
-  value: string;
-  label: string;
-  department: string;
-  description: string;
-}
 
-// Priority Levels with Time Expectations
-export interface PriorityOption {
-  value: 'low' | 'medium' | 'high' | 'urgent';
-  label: string;
-  timeframe: string;
-  description: string;
-}
 
 // Feedback Form Data for Submission
 export interface FeedbackSubmissionData {
   title: string;
   content: string;
-  category: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
   county_id: number;
   sub_county_id?: number;
   ward_id?: number;
@@ -360,8 +336,7 @@ export interface FeedbackSubmissionData {
 export interface FeedbackFormErrors {
   title?: string;
   content?: string;
-  category?: string;
-  priority?: string;
+  county_id?: string;
   related_bill_id?: string;
   general?: string;
 }
@@ -416,13 +391,7 @@ export interface LocationSelectionState {
   loadingVillages: boolean;
 }
 
-// Feedback Categories Response
-export interface FeedbackCategoriesResponse {
-  success: boolean;
-  data: {
-    categories: FeedbackCategoryOption[];
-  };
-}
+
 
 // User Feedback List Response
 export interface UserFeedbackListResponse {
@@ -438,8 +407,6 @@ export interface UserFeedbackListResponse {
 // Enhanced Feedback Item with Full Details
 export interface DetailedFeedbackItem extends FeedbackItem {
   content: string;
-  priority: string;
-  priority_display: string;
   location_path: string;
   response_count: number;
   last_response_at?: string;
