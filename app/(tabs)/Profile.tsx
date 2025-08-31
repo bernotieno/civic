@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   Alert,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 // Type definitions
@@ -65,6 +66,7 @@ interface Colors {
 
 const ProfileSection: React.FC = () => {
   // Personal Info State
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [personalInfo, setPersonalInfo] = useState<PersonalInfo>({
     id: 'USR001234',
@@ -214,6 +216,17 @@ const ProfileSection: React.FC = () => {
       </View>
     </View>
   );
+  
+  const handleLogout = () => {
+    // 👉 Here you'll call your backend logout API
+    // Example: await fetch("/logout")
+
+    // For now simulate logout
+    setTimeout(() => {
+      // Clear auth state (e.g. AsyncStorage, context, etc.)
+      router.replace("/LoginScreen"); // send user to login
+    }, 1000);
+  };
 
   const renderHistorySection = (
     title: string, 
@@ -321,9 +334,12 @@ const ProfileSection: React.FC = () => {
         {renderNotificationSettings()}
         
         <View style={styles.footer}>
-          <TouchableOpacity style={[styles.logoutButton, { borderColor: colors.danger }]}>
-            <Text style={[styles.logoutText, { color: colors.danger }]}>Logout</Text>
-          </TouchableOpacity>
+           <TouchableOpacity
+      style={[styles.logoutButton, { borderColor: colors.danger }]}
+      onPress={handleLogout}
+    >
+      <Text style={[styles.logoutText, { color: colors.danger }]}>Logout</Text>
+    </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
