@@ -176,11 +176,13 @@ def public_bills_list(request):
                 'chat_enabled_bills': len([b for b in bills_data if b['can_chat']]),
                 'recent_bills': len([b for b in bills_data if 
                     (timezone.now() - b['created_at']).days <= 30])
-            }
+            },
+            'timestamp': timezone.now().isoformat(),
+            'cache_version': 'v2.1'
         }
         
-        # Cache result for 10 minutes
-        cache.set(cache_key, result, timeout=600)
+        # Cache result for 5 minutes (shorter for better real-time updates)
+        cache.set(cache_key, result, timeout=300)
         
         logger.info(f"Returned {len(bills_data)} bills to citizen (page {page})")
         return Response(result)

@@ -584,18 +584,36 @@ def admin_bills_list(request):
                 # If document is provided, trigger processing
                 if document:
                     try:
-                        from .tasks import process_bill_document_complete
-                        # Start async processing
+                        from .bill_utils import process_bill_document_complete
+                        
+                        # Start processing immediately
                         bill.processing_status = 'processing'
                         bill.processing_message = 'Starting document processing...'
-                        bill.save(update_fields=['processing_status', 'processing_message'])
+                        bill.processing_progress = 5
+                        bill.save(update_fields=['processing_status', 'processing_message', 'processing_progress'])
                         
-                        # Process document in background
-                        process_bill_document_complete.delay(str(bill.id))
+                        # Process document synchronously for immediate results
+                        result = process_bill_document_complete(document, bill)
                         
-                        logger.info(f"✅ Bill created with document processing: {bill.id}")
+                        if result['success']:
+                            bill.summary = result['summary_markdown']
+                            bill.summary_html = result['summary_html']
+                            bill.processing_status = 'completed'
+                            bill.processing_progress = 100
+                            bill.processing_message = 'Processing complete'
+                            bill.save(update_fields=['summary', 'summary_html', 'processing_status', 'processing_progress', 'processing_message'])
+                            logger.info(f"✅ Bill created and processed successfully: {bill.id}")
+                        else:
+                            bill.processing_status = 'failed'
+                            bill.processing_message = f'Processing failed: {result["error"]}'
+                            bill.save(update_fields=['processing_status', 'processing_message'])
+                            logger.error(f"❌ Bill processing failed: {result['error']}")
+                        
                     except Exception as e:
-                        logger.error(f"❌ Error starting bill processing: {e}")
+                        logger.error(f"❌ Error processing bill document: {e}")
+                        bill.processing_status = 'failed'
+                        bill.processing_message = f'Processing error: {str(e)}'
+                        bill.save(update_fields=['processing_status', 'processing_message'])
                         # Bill is still created, just processing failed
                 
                 return Response({
@@ -693,16 +711,37 @@ def admin_bill_detail(request, bill_id):
                 # Trigger reprocessing if new document uploaded
                 bill.processing_status = 'processing'
                 bill.processing_message = 'Reprocessing document...'
+                bill.processing_progress = 5
             
             bill.save()
             
             # Start document processing if new document
             if document:
                 try:
-                    from .tasks import process_bill_document_complete
-                    process_bill_document_complete.delay(str(bill.id))
+                    from .bill_utils import process_bill_document_complete
+                    
+                    # Process document synchronously
+                    result = process_bill_document_complete(document, bill)
+                    
+                    if result['success']:
+                        bill.summary = result['summary_markdown']
+                        bill.summary_html = result['summary_html']
+                        bill.processing_status = 'completed'
+                        bill.processing_progress = 100
+                        bill.processing_message = 'Reprocessing complete'
+                        bill.save(update_fields=['summary', 'summary_html', 'processing_status', 'processing_progress', 'processing_message'])
+                        logger.info(f"✅ Bill reprocessed successfully: {bill.id}")
+                    else:
+                        bill.processing_status = 'failed'
+                        bill.processing_message = f'Reprocessing failed: {result["error"]}'
+                        bill.save(update_fields=['processing_status', 'processing_message'])
+                        logger.error(f"❌ Bill reprocessing failed: {result['error']}")
+                        
                 except Exception as e:
-                    logger.error(f"❌ Error starting bill reprocessing: {e}")
+                    logger.error(f"❌ Error reprocessing bill document: {e}")
+                    bill.processing_status = 'failed'
+                    bill.processing_message = f'Reprocessing error: {str(e)}'
+                    bill.save(update_fields=['processing_status', 'processing_message'])
             
             return Response({
                 'success': True,

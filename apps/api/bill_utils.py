@@ -237,17 +237,45 @@ def _create_summary(full_text: str) -> str:
         api_key = os.getenv("OPENAI_API_KEY")
         if api_key and clean_text:
             try:
-                # Take first 4000 chars to ensure we stay within limits
-                bill_text = clean_text[:4000]
+                # Take first 6000 chars to get more content but stay within limits
+                bill_text = clean_text[:6000]
+                
+                # Enhanced prompt for better summaries
+                system_prompt = """You are CivicAI, a legal analyst specializing in Kenyan parliamentary bills. Your job is to create clear, accurate summaries for ordinary Kenyan citizens. Always format output as clean HTML with proper tags."""
+                
+                user_prompt = f"""Analyze this Kenyan bill and create a comprehensive summary in HTML format. Structure it as follows:
+
+<h2>Bill Summary</h2>
+<p>Brief overview of what this bill does</p>
+
+<h3>Key Changes for Citizens</h3>
+<ul>
+<li>List specific impacts on citizens</li>
+<li>Include any new taxes, fees, or penalties</li>
+<li>Mention rights or services affected</li>
+</ul>
+
+<h3>Who This Affects</h3>
+<p>Specify which groups of people are impacted</p>
+
+<h3>Important Details</h3>
+<ul>
+<li>Key dates and deadlines</li>
+<li>Specific amounts, percentages, or numbers mentioned</li>
+<li>New requirements or procedures</li>
+</ul>
+
+Bill text to analyze:
+{bill_text}"""
                 
                 data = {
                     "model": "gpt-4o-mini",
                     "messages": [
-                        {"role": "system", "content": "You are summarizing ONE specific Kenyan bill. Generate HTML formatted output for web display. Use proper HTML tags like <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em> for formatting."},
-                        {"role": "user", "content": f'''Summarize ONLY this specific bill in simple English for citizens. Format the output as clean HTML with proper headings, paragraphs, and lists. Focus on key impacts like taxes, penalties, rights, and services. Structure it with clear sections:\n\n{bill_text}'''}
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
                     ],
-                    "temperature": 0.3,
-                    "max_tokens": 600
+                    "temperature": 0.2,
+                    "max_tokens": 1000
                 }
                 
                 req = urllib.request.Request(
@@ -259,17 +287,21 @@ def _create_summary(full_text: str) -> str:
                     }
                 )
                 
-                with urllib.request.urlopen(req, timeout=15) as response:
+                with urllib.request.urlopen(req, timeout=30) as response:
                     if response.status == 200:
                         result = json.loads(response.read().decode('utf-8'))
                         summary = result['choices'][0]['message']['content']
+                        logger.info(f"Successfully generated AI summary ({len(summary)} characters)")
                         return summary.strip()
+                    else:
+                        logger.error(f"OpenAI API returned status {response.status}")
+                        
             except Exception as api_error:
-                logger.warning(f"OpenAI API call failed: {api_error}")
+                logger.error(f"OpenAI API call failed: {api_error}")
         else:
-            logger.info("No OpenAI API key found, using fallback summary")
+            logger.warning("No OpenAI API key found or empty text, using fallback summary")
     except Exception as e:
-        logger.warning(f"AI summarization setup failed: {e}")
+        logger.error(f"AI summarization setup failed: {e}")
     
     # Enhanced fallback: Create a structured summary from the document
     try:
