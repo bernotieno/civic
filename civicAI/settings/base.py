@@ -208,10 +208,10 @@ REST_FRAMEWORK = {
 
 # JWT Configuration (ENHANCED)
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=24),  # Extended to 24 hours
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
     'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
+    'BLACKLIST_AFTER_ROTATION': False,  # Disable blacklisting to prevent token issues
     'UPDATE_LAST_LOGIN': True,
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
@@ -225,6 +225,9 @@ SIMPLE_JWT = {
     'JTI_CLAIM': 'jti',
     'TOKEN_OBTAIN_SERIALIZER': 'rest_framework_simplejwt.serializers.TokenObtainPairSerializer',
     'TOKEN_REFRESH_SERIALIZER': 'rest_framework_simplejwt.serializers.TokenRefreshSerializer',
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(hours=24),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=30),
 }
 
 # CORS Settings (ENHANCED for Development & Production + PHASE 2 WebSocket)
@@ -258,6 +261,11 @@ CORS_ALLOWED_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
     'x-session-id',  # For anonymous sessions
+    'cache-control',
+    'pragma',
+    'expires',
+    'x-forwarded-for',
+    'x-forwarded-proto',
 ]
 
 # 🚀 PHASE 2: WebSocket CORS support
@@ -398,10 +406,17 @@ CHANNEL_LAYERS = {
 # Use async_sessions cache for bill processing
 CIVICAI_CACHE_ALIAS = 'async_sessions'
 
-# Session configuration for anonymous users
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'default'
-SESSION_COOKIE_AGE = 2 * 60 * 60  # 2 hours for anonymous sessions
+# Session configuration - Fixed for authenticated users
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Use database for persistent sessions
+SESSION_COOKIE_AGE = 30 * 24 * 60 * 60  # 30 days for authenticated sessions
+SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookie
+SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection
+SESSION_SAVE_EVERY_REQUEST = True  # Extend session on each request
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep session after browser close
+SESSION_COOKIE_NAME = 'civicai_sessionid'  # Custom session cookie name
+SESSION_COOKIE_DOMAIN = None  # Use default domain
+SESSION_COOKIE_PATH = '/'  # Available for entire site
 
 # Internationalization
 LANGUAGE_CODE = 'en'

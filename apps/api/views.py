@@ -550,6 +550,7 @@ class UserProfileView(APIView):
         
         return Response({
             'success': True,
+            'user': profile_data,
             'data': profile_data,
             'app_config': user_context.app_config,
             'permissions': {

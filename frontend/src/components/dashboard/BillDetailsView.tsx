@@ -71,8 +71,13 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
   };
 
   const submitFeedback = async () => {
-    if (!userProfile || !feedbackData.content.trim()) {
+    if (!feedbackData.content.trim()) {
       showWarning('Input Required', 'Please enter your feedback.');
+      return;
+    }
+    
+    if (!userProfile) {
+      showError('Authentication Error', 'User profile not loaded. Please refresh the page.');
       return;
     }
 

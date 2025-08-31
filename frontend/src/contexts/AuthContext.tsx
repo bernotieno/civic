@@ -41,12 +41,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Check if user is authenticated
-  const isAuthenticated = !!user && apiService.isAuthenticated();
+  const isAuthenticated = !!user;
 
   // Initialize authentication state on mount
   useEffect(() => {
     initializeAuth();
   }, []);
+
+  // Set up periodic token refresh for authenticated users
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const refreshInterval = setInterval(async () => {
+      try {
+        const isValid = await (apiService as any).validateAndRefreshToken();
+        if (!isValid) {
+          console.log('Token validation failed during periodic check, but not logging out to prevent false positives');
+          // Don't automatically logout on periodic checks to prevent false positives
+        }
+      } catch (error) {
+        console.error('Periodic token refresh failed:', error);
+        // Only logout if it's a clear authentication error, not network issues
+        if (error instanceof Error && error.message.includes('Authentication required')) {
+          console.log('Logging out due to authentication error during periodic check');
+          await logout();
+        }
+      }
+    }, 30 * 60 * 1000); // Check every 30 minutes instead of 10
+
+    return () => clearInterval(refreshInterval);
+  }, [isAuthenticated]);
 
   /**
    * Initialize authentication state
@@ -54,13 +78,55 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    */
   const initializeAuth = async () => {
     try {
-      if (apiService.isAuthenticated()) {
-        await refreshUserProfile();
+      const accessToken = localStorage.getItem('access_token');
+      const refreshToken = localStorage.getItem('refresh_token');
+      
+      console.log('🔍 Initializing auth - Access token exists:', !!accessToken);
+      console.log('🔍 Initializing auth - Refresh token exists:', !!refreshToken);
+      
+      if (accessToken && refreshToken) {
+        try {
+          // First try to get user profile directly without token validation
+          // This is more reliable than validating tokens on page load
+          console.log('🔍 Attempting to fetch user profile directly...');
+          await refreshUserProfile();
+          console.log('✅ User profile loaded successfully');
+        } catch (profileError) {
+          console.log('⚠️ Profile fetch failed, trying token refresh:', profileError);
+          
+          // If profile fetch fails, try token refresh
+          const isValid = await (apiService as any).validateAndRefreshToken();
+          console.log('🔍 Token validation result:', isValid);
+          
+          if (isValid) {
+            try {
+              // Try profile fetch again after token refresh
+              await refreshUserProfile();
+              console.log('✅ User profile loaded after token refresh');
+            } catch (secondError) {
+              console.log('❌ Profile fetch failed even after token refresh, logging out');
+              await logout();
+            }
+          } else {
+            console.log('❌ Token validation failed, clearing tokens');
+            await logout();
+          }
+        }
+      } else {
+        console.log('🔍 No tokens found, user not authenticated');
       }
     } catch (error) {
-      console.error('Failed to initialize auth:', error);
-      // Clear invalid tokens
-      await logout();
+      console.error('❌ Failed to initialize auth:', error);
+      // Be more conservative about logging out on initialization errors
+      if (error instanceof Error && 
+          (error.message.includes('Authentication required') || 
+           error.message.includes('401') ||
+           error.message.includes('Unauthorized'))) {
+        console.log('🚪 Logging out due to clear authentication error');
+        await logout();
+      } else {
+        console.log('⚠️ Network or other error during auth init, keeping tokens for retry');
+      }
     } finally {
       setIsLoading(false);
     }

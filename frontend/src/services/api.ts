@@ -31,6 +31,29 @@ class CivicAIApiService {
   }
 
   /**
+   * Make authenticated API request with automatic token refresh
+   */
+  private async makeAuthenticatedRequest<T>(url: string, options: RequestInit): Promise<T> {
+    try {
+      const response = await fetch(url, options);
+      return await this.handleResponse<T>(response);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'TOKEN_REFRESHED') {
+        // Retry with refreshed token
+        const newHeaders = { ...options.headers };
+        const token = this.getAccessToken();
+        if (token) {
+          (newHeaders as any)['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const retryResponse = await fetch(url, { ...options, headers: newHeaders });
+        return await this.handleResponse<T>(retryResponse);
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Get request headers with optional authentication
    */
   private getHeaders(includeAuth: boolean = false): HeadersInit {
@@ -74,12 +97,105 @@ class CivicAIApiService {
   }
 
   /**
+   * Refresh access token using refresh token
+   */
+  private async refreshToken(): Promise<boolean> {
+    try {
+      const refreshToken = localStorage.getItem('refresh_token');
+      console.log('🔄 Attempting token refresh - Refresh token exists:', !!refreshToken);
+      
+      if (!refreshToken) {
+        console.log('❌ No refresh token available');
+        return false;
+      }
+
+      console.log('📞 Making refresh request to:', `${this.baseURL}/api/auth/refresh/`);
+      const response = await fetch(`${this.baseURL}/api/auth/refresh/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refresh: refreshToken }),
+      });
+
+      console.log('📞 Refresh response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📞 Refresh response data:', { hasAccess: !!data.access, hasRefresh: !!data.refresh });
+        
+        if (data.access) {
+          localStorage.setItem('access_token', data.access);
+          // Update refresh token if provided
+          if (data.refresh) {
+            localStorage.setItem('refresh_token', data.refresh);
+          }
+          console.log('✅ Token refresh successful');
+          return true;
+        }
+      } else {
+        const errorData = await response.text();
+        console.log('❌ Token refresh failed with status:', response.status, 'Error:', errorData);
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('❌ Token refresh failed with error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Validate current token and refresh if needed
+   */
+  async validateAndRefreshToken(): Promise<boolean> {
+    const token = this.getAccessToken();
+    if (!token) {
+      console.log('🔍 No access token found');
+      return false;
+    }
+    
+    // Check if token is expired or will expire soon (within 10 minutes)
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const now = Date.now() / 1000;
+      const tenMinutes = 10 * 60;
+      
+      console.log('🔍 Token validation - Current time:', now, 'Token exp:', payload.exp, 'Time until exp:', payload.exp - now);
+      
+      if (payload.exp <= now) {
+        console.log('🔍 Token is expired, attempting refresh');
+        return await this.refreshToken();
+      }
+      
+      if (payload.exp <= now + tenMinutes) {
+        console.log('🔍 Token expires soon, attempting refresh');
+        return await this.refreshToken();
+      }
+      
+      console.log('🔍 Token is still valid');
+      return true; // Token is still valid
+    } catch (error) {
+      console.log('🔍 Invalid token format, attempting refresh:', error);
+      // Invalid token format, try to refresh
+      return await this.refreshToken();
+    }
+  }
+
+  /**
    * Handle API response and check for errors
    */
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
       // Handle authentication errors
       if (response.status === 401) {
+        // Try to refresh token first
+        const refreshed = await this.refreshToken();
+        if (refreshed) {
+          // Retry the original request with new token
+          throw new Error('TOKEN_REFRESHED');
+        }
+        
         this.clearTokens();
         throw new Error('Authentication required. Please log in again.');
       }
@@ -275,7 +391,17 @@ class CivicAIApiService {
    * Check if user is authenticated
    */
   isAuthenticated(): boolean {
-    return !!this.getAccessToken();
+    const token = this.getAccessToken();
+    if (!token) return false;
+    
+    // Check if token is expired (basic check)
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const now = Date.now() / 1000;
+      return payload.exp > now;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -283,12 +409,10 @@ class CivicAIApiService {
    */
   async getUserProfile(): Promise<any> {
     try {
-      const response = await fetch(`${this.baseURL}/api/auth/profile/`, {
+      return await this.makeAuthenticatedRequest(`${this.baseURL}/api/auth/profile/`, {
         method: 'GET',
         headers: this.getHeaders(true),
       });
-
-      return this.handleResponse(response);
     } catch (error) {
       console.error('Error fetching user profile:', error);
       throw error;
