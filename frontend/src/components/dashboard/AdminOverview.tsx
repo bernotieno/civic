@@ -208,9 +208,7 @@ const AdminOverview: React.FC = () => {
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(feedback.status)}`}>
-                      {feedback.status_display || feedback.status.replace('_', ' ')}
-                    </span>
+
                     {feedback.response_count > 0 && (
                       <span className="text-xs text-green-600">
                         {feedback.response_count} response{feedback.response_count > 1 ? 's' : ''}

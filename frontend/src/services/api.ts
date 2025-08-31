@@ -81,6 +81,12 @@ class CivicAIApiService {
    */
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
+      // Handle authentication errors
+      if (response.status === 401) {
+        this.clearTokens();
+        throw new Error('Authentication required. Please log in again.');
+      }
+
       // Handle different types of errors
       if (response.status === 0) {
         throw new Error('Network error: Unable to connect to server. Please check your internet connection.');

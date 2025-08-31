@@ -190,7 +190,6 @@ const AdminFeedbackManagement: React.FC = () => {
         <div className="flex items-center space-x-4">
           <div className="text-sm text-gray-600">
             Total: {feedback.length} | 
-            Pending: {feedback.filter(f => f.status === 'pending').length} | 
             Responded: {feedback.filter(f => f.response_count > 0).length}
           </div>
           <button
@@ -214,9 +213,7 @@ const AdminFeedbackManagement: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Category
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
+
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   County
                 </th>
@@ -241,14 +238,10 @@ const AdminFeedbackManagement: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(item.category)}`}>
-                      {item.category_display || item.category.replace('_', ' ')}
+                      {item.category_display || (item.category ? item.category.replace('_', ' ') : 'Other')}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
-                      {item.status_display || item.status.replace('_', ' ')}
-                    </span>
-                  </td>
+
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {item.county}
                   </td>
@@ -259,7 +252,7 @@ const AdminFeedbackManagement: React.FC = () => {
                     >
                       View
                     </button>
-                    {item.response_count === 0 && item.status === 'pending' && (
+                    {item.response_count === 0 && (
                       <button
                         onClick={() => setSelectedFeedback(item)}
                         className="text-blue-600 hover:text-blue-900"
@@ -294,10 +287,7 @@ const AdminFeedbackManagement: React.FC = () => {
             
             <div className="flex flex-wrap gap-2 mb-3">
               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(item.category)}`}>
-                {item.category_display || item.category.replace('_', ' ')}
-              </span>
-              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
-                {item.status_display || item.status.replace('_', ' ')}
+                {item.category_display || (item.category ? item.category.replace('_', ' ') : 'Other')}
               </span>
             </div>
             
@@ -315,7 +305,7 @@ const AdminFeedbackManagement: React.FC = () => {
                 View Full
               </button>
               <div>
-                {item.response_count === 0 && item.status === 'pending' && (
+                {item.response_count === 0 && (
                   <button
                     onClick={() => setSelectedFeedback(item)}
                     className="px-3 py-1 text-sm text-blue-600 hover:text-blue-900 border border-blue-300 rounded"
@@ -328,9 +318,7 @@ const AdminFeedbackManagement: React.FC = () => {
                     Responded ({item.response_count})
                   </span>
                 )}
-                {item.status === 'resolved' && (
-                  <span className="text-sm text-green-700 font-medium">Resolved</span>
-                )}
+
               </div>
             </div>
           </div>
@@ -368,15 +356,10 @@ const AdminFeedbackManagement: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Category</label>
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(viewingFeedback.category)}`}>
-                    {viewingFeedback.category_display || viewingFeedback.category.replace('_', ' ')}
+                    {viewingFeedback.category_display || (viewingFeedback.category ? viewingFeedback.category.replace('_', ' ') : 'Other')}
                   </span>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Status</label>
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(viewingFeedback.status)}`}>
-                    {viewingFeedback.status_display || viewingFeedback.status.replace('_', ' ')}
-                  </span>
-                </div>
+
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -413,7 +396,7 @@ const AdminFeedbackManagement: React.FC = () => {
             </div>
             
             <div className="flex justify-end mt-6">
-              {viewingFeedback.response_count === 0 && viewingFeedback.status === 'pending' && (
+              {viewingFeedback.response_count === 0 && (
                 <button
                   onClick={() => {
                     setSelectedFeedback(viewingFeedback);

@@ -51,14 +51,18 @@ def admin_dashboard_stats(request):
         # Debug logging
         logger.info(f"📊 National dashboard stats for {user.name} (Level: {user.admin_level})")
         
-        # Optimize feedback stats with single aggregated query
+        # Get feedback stats without status field
         feedback_stats = Feedback.objects.filter(is_deleted=False).aggregate(
-            total_feedback=Count('id'),
-            pending_feedback=Count(Case(When(status='pending', then=1), output_field=IntegerField())),
-            in_review_feedback=Count(Case(When(status='in_review', then=1), output_field=IntegerField())),
-            responded_feedback=Count(Case(When(status='responded', then=1), output_field=IntegerField())),
-            resolved_feedback=Count(Case(When(status='resolved', then=1), output_field=IntegerField()))
+            total_feedback=Count('id')
         )
+        
+        # Add default values for status-based counts since status field doesn't exist
+        feedback_stats.update({
+            'pending_feedback': 0,
+            'in_review_feedback': 0,
+            'responded_feedback': 0,
+            'resolved_feedback': 0
+        })
         
         logger.info(f"📈 National feedback stats: {feedback_stats}")
         
@@ -200,8 +204,6 @@ def admin_feedback_list(request):
                     'category_display': f.get_category_display(),
                     'priority': f.priority,
                     'priority_display': f.get_priority_display(),
-                    'status': f.status,
-                    'status_display': f.get_status_display(),
                     'tracking_id': str(f.id),
                     'county': f.user.user_county.name if f.user and f.user.user_county else 'Unknown',
                     'location_path': f.get_location_path(),
@@ -303,19 +305,17 @@ def respond_to_feedback(request, feedback_id):
             is_public=True
         )
         
-        # Update feedback status and response tracking
-        feedback.status = 'responded'
+        # Update feedback response tracking
         feedback.response_count += 1
         feedback.last_response_at = timezone.now()
-        feedback.save(update_fields=['status', 'response_count', 'last_response_at'])
+        feedback.save(update_fields=['response_count', 'last_response_at'])
         
         logger.info(f"✅ Parliament response created successfully for feedback {feedback.id}")
         
         return Response({
             'success': True,
             'message': '✅ Parliament response sent successfully',
-            'response_id': str(response_obj.id),
-            'feedback_status': feedback.status
+            'response_id': str(response_obj.id)
         })
         
     except Feedback.DoesNotExist:
