@@ -57,9 +57,9 @@ const WelcomeSection: React.FC<WelcomeSectionProps> = ({ user }) => {
 
           {/* Right Side - Primary Action */}
           <div className="flex flex-col gap-3">
-            {/* Primary CTA - Submit Feedback */}
+            {/* Primary CTA - View Bills */}
             <button
-              onClick={() => navigate('/submit-feedback')}
+              onClick={() => navigate('?view=bills-projects')}
               className="bg-white text-blue-700 px-6 sm:px-8 py-3 sm:py-4 rounded-lg sm:rounded-xl font-semibold hover:bg-blue-50 transition-all duration-200 flex items-center justify-center group shadow-lg text-sm sm:text-base"
             >
               <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0" />
