@@ -7,18 +7,14 @@ from django.db.models import Count, Q, Case, When, IntegerField
 from django.utils import timezone
 from apps.users.models import CustomUser, County
 from apps.feedback.models import Feedback
-from apps.api.utils import summarize_bill_document
-from apps.api.utils import summarize_bill_document
-from apps.projects.models import Project, Bill, AdminFeedbackResponse
+from apps.projects.models import Project, Bill
 from .utils import (
-    summarize_bill_document, 
     process_bill_with_enhanced_features, 
     validate_pdf_file
 )
 from .progress_tracker import (
     get_bill_progress, 
-    reset_bill_progress, 
-    estimate_processing_time
+    reset_bill_progress
 )
 from .async_progress_tracker import (
     start_async_bill_processing,
@@ -27,20 +23,42 @@ from .async_progress_tracker import (
     cancel_bill_processing,
     get_all_active_processing_sessions
 )
-from .tasks import save_uploaded_file_for_async
+from .tasks import (
+    save_uploaded_file_for_async,
+    process_bill_async
+    )
 
 # OpenAPI documentation imports
 from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter, inline_serializer
 from drf_spectacular.openapi import OpenApiTypes
 from rest_framework import serializers
 from .serializers import (
-    AdminBillSerializer, BillProcessingRequestSerializer, BillProcessingResponseSerializer,
+    BillProcessingResponseSerializer,
     BillProcessingStatusSerializer, ProcessingOverviewResponseSerializer,
-    UserProfileSerializer, SuccessResponseSerializer, ErrorResponseSerializer,
-    AdminBillListResponseSerializer, BillProgressSerializer
+    SuccessResponseSerializer, ErrorResponseSerializer,
+    AdminBillListResponseSerializer,
 )
 
-import json
+from .bill_serializers import (
+    BillCreateRequestSerializer,
+    BillUpdateRequestSerializer, 
+    ProcessingRetryRequestSerializer,
+    FeedbackResponseRequestSerializer,
+    ProjectCreateRequestSerializer,
+    ProjectUpdateRequestSerializer,
+    StatusUpdateRequestSerializer,
+    # Response serializers
+    DashboardStatsResponseSerializer,
+    UsersListResponseSerializer,
+    FeedbackListResponseSerializer,
+    FeedbackResponseSuccessSerializer,
+    ProjectsListResponseSerializer,
+    ProjectCreatedResponseSerializer,
+    BillProgressResponseSerializer,
+    ProcessingRetrySuccessSerializer,
+    CancellationSuccessSerializer
+)
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -64,27 +82,7 @@ logger = logging.getLogger(__name__)
     """,
     tags=["Admin Dashboard"],
     responses={
-        200: OpenApiExample(
-            "Success Response",
-            value={
-                "success": True,
-                "data": {
-                    "total_users": 1250,
-                    "total_counties": 47,
-                    "total_feedback": 890,
-                    "pending_feedback": 45,
-                    "in_review_feedback": 12,
-                    "responded_feedback": 678,
-                    "resolved_feedback": 155,
-                    "total_projects": 34,
-                    "active_projects": 18,
-                    "total_bills": 25,
-                    "active_bills": 8
-                },
-                "user_level": "national",
-                "scope": "national"
-            }
-        ),
+        200: DashboardStatsResponseSerializer,
         403: ErrorResponseSerializer
     }
 )
@@ -166,27 +164,9 @@ def admin_dashboard_stats(request):
     - Administrative details (county, admin level)
     - Account status and join date
     """,
-    tags=["Admin User Management"],
+    tags=["Admin User Management"], 
     responses={
-        200: OpenApiExample(
-            "Users List Response", 
-            value={
-                "success": True,
-                "data": [
-                    {
-                        "id": 1,
-                        "name": "John Kiprop",
-                        "email": "john@example.com", 
-                        "role": "citizen",
-                        "role_display": "Citizen",
-                        "admin_level": None,
-                        "county": "Nairobi",
-                        "is_active": True,
-                        "date_joined": "2024-01-15T10:30:00Z"
-                    }
-                ]
-            }
-        ),
+        200: UsersListResponseSerializer,
         403: ErrorResponseSerializer
     }
 )
@@ -240,36 +220,7 @@ def admin_users_list(request):
     """,
     tags=["Admin Feedback Management"],
     responses={
-        200: OpenApiExample(
-            "Feedback List Response",
-            value={
-                "success": True,
-                "data": [
-                    {
-                        "id": "uuid-here",
-                        "title": "Road Infrastructure Issue",
-                        "content": "The main road in our area needs urgent repair...",
-                        "category": "infrastructure",
-                        "category_display": "Infrastructure",
-                        "priority": "high",
-                        "priority_display": "High Priority",
-                        "status": "pending",
-                        "status_display": "Pending Review",
-                        "tracking_id": "FB-2024-001234",
-                        "county": "Nairobi",
-                        "location_path": "Nairobi > Westlands > Parklands",
-                        "created_at": "2024-01-15T10:30:00Z",
-                        "is_anonymous": False,
-                        "response_count": 0,
-                        "user_name": "Jane Doe",
-                        "user_email": "jane@example.com"
-                    }
-                ],
-                "total_count": 1,
-                "user_level": "national",
-                "scope": "national"
-            }
-        ),
+        200: FeedbackListResponseSerializer,
         403: ErrorResponseSerializer
     }
 )
@@ -358,12 +309,7 @@ def admin_feedback_list(request):
     - Response tracking and analytics
     """,
     tags=["Admin Feedback Management"],
-    request=OpenApiExample(
-        "Response Request",
-        value={
-            "response_text": "Thank you for bringing this infrastructure issue to our attention. We have forwarded your feedback to the Ministry of Transport for immediate action. You can expect to see road repairs begin within the next 30 days."
-        }
-    ),
+    request=FeedbackResponseRequestSerializer,
     responses={
         200: OpenApiExample(
             "Response Success",
@@ -448,46 +394,13 @@ def respond_to_feedback(request, feedback_id):
     - Redirect to project detail after successful creation
     """,
     tags=["Admin Project Management"],
-    request=OpenApiExample(
-        "Create Project Request",
-        value={
-            "title": "National Digital Infrastructure Project",
-            "description": "Expanding broadband connectivity to rural areas",
-            "sponsor": "Ministry of ICT",
-            "status": "proposed",
-            "participation_deadline": "2024-06-15T23:59:59Z"
-        }
-    ),
+    request={
+        'multipart/form-data': ProjectCreateRequestSerializer,
+        'application/json': ProjectCreateRequestSerializer
+    },
     responses={
-        200: OpenApiExample(
-            "Projects List Response",
-            value={
-                "success": True,
-                "data": [
-                    {
-                        "id": "project-uuid",
-                        "title": "National Digital Infrastructure Project",
-                        "description": "Expanding broadband connectivity...",
-                        "sponsor": "Ministry of ICT",
-                        "participation_deadline": "2024-06-15T23:59:59Z",
-                        "document": "/media/projects/document.pdf",
-                        "status": "proposed",
-                        "status_display": "Proposed",
-                        "summary": "Project summary here...",
-                        "created_by": "Admin User",
-                        "created_at": "2024-01-15T10:30:00Z"
-                    }
-                ]
-            }
-        ),
-        201: OpenApiExample(
-            "Project Created Response",
-            value={
-                "success": True,
-                "message": "National project created successfully",
-                "project_id": "project-uuid"
-            }
-        ),
+        200: ProjectsListResponseSerializer,
+        201: ProjectCreatedResponseSerializer,
         403: ErrorResponseSerializer
     }
 )
@@ -563,10 +476,7 @@ def admin_projects_list(request):
     - proposed, approved, in_progress, completed, suspended, cancelled
     """,
     tags=["Admin Project Management"],
-    request=OpenApiExample(
-        "Status Update Request",
-        value={"status": "approved"}
-    ),
+    request=StatusUpdateRequestSerializer,
     responses={
         200: SuccessResponseSerializer,
         400: ErrorResponseSerializer,
@@ -621,16 +531,7 @@ def update_project_status(request, project_id):
     - Provide option to restore if needed
     """,
     tags=["Admin Project Management"],
-    request=OpenApiExample(
-        "Project Update Request",
-        value={
-            "title": "Updated Project Title",
-            "description": "Updated description with more details",
-            "sponsor": "Updated Ministry Name",
-            "status": "approved",
-            "participation_deadline": "2024-07-15T23:59:59Z"
-        }
-    ),
+    request=ProjectUpdateRequestSerializer,
     responses={
         200: SuccessResponseSerializer,
         404: ErrorResponseSerializer,
@@ -766,46 +667,7 @@ def public_projects_list(request):
     - Update bill lists after successful operation
     """,
     tags=["Admin Bill Management"],
-    request=inline_serializer(
-        name='BillUpdateRequest',
-        fields={
-            'title': serializers.CharField(
-                max_length=255, 
-                required=False,
-                help_text="Bill title"
-            ),
-            'description': serializers.CharField(
-                required=False,
-                help_text="Bill description"
-            ),
-            'sponsor': serializers.CharField(
-                max_length=255,
-                required=False, 
-                help_text="Bill sponsor (e.g., Ministry name)"
-            ),
-            'status': serializers.ChoiceField(
-                choices=[
-                    ('draft', 'Draft'),
-                    ('first_reading', 'First Reading'),
-                    ('committee_stage', 'Committee Stage'),
-                    ('second_reading', 'Second Reading'), 
-                    ('third_reading', 'Third Reading'),
-                    ('presidential_assent', 'Presidential Assent'),
-                    ('enacted', 'Enacted')
-                ],
-                required=False,
-                help_text="Current bill status"
-            ),
-            'participation_deadline': serializers.DateTimeField(
-                required=False,
-                help_text="Public participation deadline (ISO format)"
-            ),
-            'document': serializers.FileField(
-                required=False,
-                help_text="Updated bill document (PDF format)"
-            )
-        }
-    ),
+    request=BillUpdateRequestSerializer,
     examples=[
         OpenApiExample(
             "Bill Update Example",
@@ -965,31 +827,10 @@ def public_bills_list(request):
     - Comprehensive error handling and user feedback
     """,
     tags=["Admin Bill Management"],
-    request=inline_serializer(
-        name='BillCreationRequest',
-        fields={
-            'title': serializers.CharField(max_length=255),
-            'description': serializers.CharField(),
-            'sponsor': serializers.CharField(max_length=255),
-            'status': serializers.ChoiceField(
-                choices=[
-                    ('draft', 'Draft'),
-                    ('first_reading', 'First Reading'), 
-                    ('committee_stage', 'Committee Stage'),
-                    ('second_reading', 'Second Reading'),
-                    ('third_reading', 'Third Reading')
-                ],
-                default='draft'
-            ),
-            'participation_deadline': serializers.DateField(required=False),
-            'document': serializers.FileField(
-                required=False,
-                help_text="Upload PDF file"
-            ),
-            'async_processing': serializers.BooleanField(default=True),
-            'use_enhanced_processing': serializers.BooleanField(default=True),
-        }
-    ),
+    request={
+        'multipart/form-data': BillCreateRequestSerializer,
+        'application/json': BillCreateRequestSerializer
+    },
     responses={
         200: AdminBillListResponseSerializer,
         201: BillProcessingResponseSerializer,
@@ -1072,9 +913,9 @@ def admin_bills_list(request):
         data = request.data
         uploaded_doc = request.FILES.get('document')
         
-        # NEW Phase 2: Check processing preference (default to async)
+        # Check processing preference
         use_async = data.get('async_processing', True)
-        force_sync = data.get('force_sync', False)  # Override for debugging
+        force_sync = data.get('force_sync', False)
         
         # Validate file if provided
         validation_result = {}
@@ -1088,7 +929,7 @@ def admin_bills_list(request):
                 }, status=400)
         
         try:
-            # Create bill instance first (same as Phase 1)
+            # Create bill instance
             bill = Bill.objects.create(
                 title=data.get('title'),
                 description=data.get('description'),
@@ -1096,157 +937,68 @@ def admin_bills_list(request):
                 status=data.get('status', 'draft'),
                 participation_deadline=data.get('participation_deadline'),
                 document=uploaded_doc,
-                summary='',  # Will be populated after processing
+                summary='',
                 created_by=user,
-                # Initialize progress fields
                 processing_status='pending' if uploaded_doc else 'completed',
                 processing_progress=0 if uploaded_doc else 100,
-                processing_message='Waiting to start processing...' if uploaded_doc else 'No document to process',
+                processing_message='Waiting to start bulletproof processing...' if uploaded_doc else 'No document to process',
             )
             
             logger.info(f"Created bill {bill.id}: {bill.title}")
             
             # Process document if provided
             if uploaded_doc and use_async and not force_sync:
-                # NEW Phase 2: Async processing path
+                # NEW: Use bulletproof async processing
                 try:
-                    from .tasks import process_bill_async
-                    
-                    logger.info(f"Starting async processing for bill {bill.id}")
-                    
                     # Save file for async processing
                     file_path = save_uploaded_file_for_async(uploaded_doc, str(bill.id))
                     
-                    # Start async task
+                    # Start bulletproof async task
                     task = process_bill_async.delay(str(bill.id), file_path)
                     
                     # Setup progress tracking
                     session_result = start_async_bill_processing(str(bill.id), task.id)
                     
                     if session_result['success']:
-                        response_data = {
+                        return Response({
                             'success': True,
-                            'message': 'Bill created and async processing started',
+                            'message': 'Bill created and bulletproof processing started',
                             'bill_id': str(bill.id),
                             'processing_async': True,
+                            'processing_method': 'bulletproof_hierarchical',
                             'task_id': task.id,
                             'session_id': session_result['session_id'],
                             'websocket_channel': session_result['websocket_channel'],
-                            'estimated_time': estimate_processing_time(
-                                validation_result.get('page_count', 0)
-                            ),
+                            'estimated_time': '2-3 minutes',  # Much faster with new approach
                             'progress_endpoints': {
                                 'status': f'/api/admin/bills/{bill.id}/status/',
                                 'websocket': f'/ws/bills/{bill.id}/progress/',
                                 'polling': f'/api/admin/bills/{bill.id}/progress/'
                             }
-                        }
-                        
-                        logger.info(f"Async processing started for bill {bill.id}")
-                        return Response(response_data)
+                        })
                     else:
-                        logger.warning(f"Failed to start async session for bill {bill.id}, falling back to sync")
                         # Fall through to sync processing
                         use_async = False
                 
                 except Exception as e:
-                    logger.error(f"Async processing setup failed for bill {bill.id}: {str(e)}")
-                    # Fall through to sync processing
+                    logger.error(f"Bulletproof async processing setup failed: {str(e)}")
                     use_async = False
             
+            # Sync processing fallback (if needed)
             if uploaded_doc and (not use_async or force_sync):
-                # Phase 1: Sync processing path (maintained for backward compatibility)
-                try:
-                    logger.info(f"Starting sync processing for bill {bill.id}")
-                    
-                    # Check if enhanced processing should be used
-                    use_enhanced = data.get('use_enhanced_processing', True)
-                    
-                    if use_enhanced:
-                        # Use Phase 1 enhanced processing
-                        result = process_bill_with_enhanced_features(
-                            uploaded_doc, 
-                            bill, 
-                            use_enhanced=True
-                        )
-                        
-                        if result['success']:
-                            return Response({
-                                'success': True,
-                                'message': 'Bill created and processed successfully (sync)',
-                                'bill_id': str(bill.id),
-                                'processing_async': False,
-                                'used_enhanced': result['used_enhanced'],
-                                'summary_generated': True,
-                                'sections_count': result['sections_count'],
-                                'chunks_created': result['chunks_created'],
-                                'processing_time': result.get('processing_time'),
-                                'summary_available': bool(bill.summary),
-                                'html_available': bool(getattr(bill, 'summary_html', ''))
-                            })
-                        else:
-                            # Enhanced processing failed, but bill was created
-                            return Response({
-                                'success': True,
-                                'message': 'Bill created but processing failed',
-                                'bill_id': str(bill.id),
-                                'processing_async': False,
-                                'processing_error': result.get('error'),
-                                'can_retry': True
-                            })
-                    else:
-                        # Use original Phase 1 function
-                        summary = summarize_bill_document(uploaded_doc)
-                        
-                        # Convert to HTML using Phase 1 function
-                        from .bill_processor import markdown_to_html
-                        summary_html = markdown_to_html(summary)
-                        
-                        # Update bill
-                        bill.summary = summary
-                        if hasattr(bill, 'summary_html'):
-                            bill.summary_html = summary_html
-                        bill.processing_status = 'completed'
-                        bill.processing_progress = 100
-                        bill.processing_message = 'Sync processing complete'
-                        bill.save()
-                        
-                        return Response({
-                            'success': True,
-                            'message': 'Bill created and processed successfully (sync)',
-                            'bill_id': str(bill.id),
-                            'processing_async': False,
-                            'used_enhanced': False,
-                            'summary_generated': True,
-                            'processing_method': 'original'
-                        })
-                
-                except Exception as e:
-                    # Sync processing failed, update bill status
-                    error_msg = str(e)
-                    logger.error(f"Sync processing failed for bill {bill.id}: {error_msg}")
-                    
-                    bill.processing_status = 'failed'
-                    bill.processing_progress = 0
-                    bill.processing_message = f'Sync processing failed: {error_msg}'
-                    bill.save()
-                    
-                    return Response({
-                        'success': True,
-                        'message': 'Bill created but processing failed',
-                        'bill_id': str(bill.id),
-                        'processing_async': False,
-                        'processing_error': error_msg,
-                        'can_retry': True
-                    })
+                return Response({
+                    'success': False,
+                    'message': 'Sync processing not supported with bulletproof processor',
+                    'bill_id': str(bill.id),
+                    'error': 'Please use async processing for document processing'
+                }, status=400)
             
             # No document to process
             return Response({
                 'success': True,
                 'message': 'Bill created successfully (no document)',
                 'bill_id': str(bill.id),
-                'processing_async': False,
-                'summary_generated': False
+                'processing_async': False
             })
             
         except Exception as e:
@@ -1275,30 +1027,7 @@ def admin_bills_list(request):
     """,
     tags=["Admin Bill Management"],
     responses={
-        200: OpenApiExample(
-            "Progress Response",
-            value={
-                "success": True,
-                "bill_id": "bill-uuid",
-                "progress": {
-                    "status": "processing",
-                    "progress": 75,
-                    "message": "Generating AI summary...",
-                    "stage": "ai_processing",
-                    "stage_display": "AI Summary Generation",
-                    "time_remaining": 30,
-                    "estimated_completion": "2024-01-15T10:35:00Z"
-                },
-                "processing_type": "async",
-                "supports_realtime": True,
-                "bill_info": {
-                    "has_document": True,
-                    "created_at": "2024-01-15T10:30:00Z",
-                    "total_chunks": 15,
-                    "is_chunked": True
-                }
-            }
-        ),
+        200: BillProgressResponseSerializer,
         404: ErrorResponseSerializer,
         403: ErrorResponseSerializer
     }
@@ -1446,36 +1175,9 @@ def admin_bill_processing_status(request, bill_id):
     - Enhanced vs original processing algorithms
     """,
     tags=["Admin Bill Management - Async"],
-    request=inline_serializer(
-        name='RetryProcessingRequest',
-        fields={
-            'async_processing': serializers.BooleanField(
-                default=True,
-                help_text="Use background task with real-time updates"
-            ),
-            'use_enhanced_processing': serializers.BooleanField(
-                default=True,
-                help_text="Use enhanced AI processing features"
-            )
-        }
-    ),
+    request=ProcessingRetryRequestSerializer,
     responses={
-        200: OpenApiExample(
-            "Retry Success Response",
-            value={
-                "success": True,
-                "message": "Bill processing retry initiated successfully",
-                "bill_id": "bill-uuid",
-                "new_task_id": "celery-task-uuid",
-                "retry_attempt": 2,
-                "processing_async": True,
-                "progress_endpoints": {
-                    "status": "/api/admin/bills/bill-uuid/status/",
-                    "websocket": "/ws/bills/bill-uuid/progress/",
-                    "polling": "/api/admin/bills/bill-uuid/progress/"
-                }
-            }
-        ),
+        200: ProcessingRetrySuccessSerializer,
         400: ErrorResponseSerializer,
         403: ErrorResponseSerializer
     }
@@ -1592,17 +1294,7 @@ def admin_retry_bill_processing(request, bill_id):
     """,
     tags=["Admin Bill Management - Async"],
     responses={
-        200: OpenApiExample(
-            "Cancellation Success",
-            value={
-                "success": True,
-                "message": "Bill processing cancelled successfully",
-                "bill_id": "bill-uuid",
-                "was_cancelled": True,
-                "task_id": "celery-task-uuid",
-                "can_retry": True
-            }
-        ),
+        200: CancellationSuccessSerializer,
         403: ErrorResponseSerializer,
         500: ErrorResponseSerializer
     }

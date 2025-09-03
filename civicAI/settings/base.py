@@ -104,9 +104,17 @@ Authorization: Bearer <your-jwt-token>
 ---
 *Built with ❤️ for Kenya's civic engagement*
     ''',
-    'VERSION': '1.0.0',
+    'VERSION': '2.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,
+    'COMPONENT_NO_READ_ONLY_REQUIRED': True,
+    'ENUM_NAME_OVERRIDES': {
+        'Status324Enum': 'BillStatusEnum',
+        'CategoryFfeEnum': 'FeedbackCategoryEnum',
+    },
+    'PREPROCESSING_HOOKS': [
+        'drf_spectacular.hooks.preprocess_exclude_path_format'
+    ],
     'SWAGGER_UI_SETTINGS': {
         'deepLinking': True,
         'persistAuthorization': True,

@@ -40,6 +40,8 @@ app.conf.task_routes = getattr(settings, 'CELERY_TASK_ROUTES', {
     'apps.ai.tasks.calculate_urgency_scores_batch': {'queue': 'ai_analysis'},
     'apps.ai.tasks.generate_daily_ai_insights': {'queue': 'ai_insights'},
     'apps.ai.tasks.send_urgent_alert': {'queue': 'urgent_alerts'},
+    'apps.api.tasks.process_bill_async': {'queue': 'ai_responses'},
+    'apps.api.tasks.*': {'queue': 'default'},
 })
 
 # -----------------------------------------------------------------------------

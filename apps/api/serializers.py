@@ -1352,3 +1352,4 @@ class ChatValidationSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 "Bill not found or does not support chat functionality"
             )
+

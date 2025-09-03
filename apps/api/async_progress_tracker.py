@@ -555,6 +555,48 @@ def get_all_active_processing_sessions() -> List[Dict]:
         return []
 
 
+def complete_bill_processing_async(bill_id: str, success_metrics: dict) -> None:
+    """
+    Mark bill processing as completed and cleanup session
+    
+    Args:
+        bill_id: Bill UUID string
+        success_metrics: Metrics from successful processing
+    """
+    try:
+        session_key = ASYNC_SESSION_KEY.format(bill_id=bill_id)
+        session_data = cache.get(session_key, {})
+        
+        if session_data:
+            session_data.update({
+                'status': 'completed',
+                'progress': 100,
+                'stage': 'completed',
+                'message': 'Processing completed successfully',
+                'completed_at': timezone.now().isoformat(),
+                'success_metrics': success_metrics
+            })
+            
+            # Keep session data for 1 hour for status queries
+            cache.set(session_key, session_data, timeout=3600)
+            
+            # Broadcast completion
+            try:
+                from .websocket_handlers import broadcast_bill_progress
+                broadcast_bill_progress(bill_id, {
+                    'stage': 'completed',
+                    'progress': 100,
+                    'message': 'Processing completed successfully',
+                    'success_metrics': success_metrics,
+                    'completed': True
+                })
+            except Exception as e:
+                logger.warning(f"Could not broadcast completion for bill {bill_id}: {str(e)}")
+        
+        logger.info(f"Marked bill {bill_id} as completed with metrics: {success_metrics}")
+        
+    except Exception as e:
+        logger.error(f"Failed to complete async processing for bill {bill_id}: {str(e)}")
 # Export key functions
 __all__ = [
     'start_async_bill_processing',
@@ -564,5 +606,6 @@ __all__ = [
     'cancel_bill_processing',
     'cleanup_async_session',
     'update_bill_task_id',
+    'complete_bill_processing_async',
     'get_all_active_processing_sessions'
 ]
