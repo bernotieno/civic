@@ -208,8 +208,8 @@ REST_FRAMEWORK = {
 
 # JWT Configuration (ENHANCED)
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),  # Increased from 60 minutes to 24 hours
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),  # Increased from 7 days to 30 days
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
@@ -465,7 +465,7 @@ CELERY_TIMEZONE = config('CELERY_TIMEZONE', default='Africa/Nairobi')
 CELERY_ENABLE_UTC = config('CELERY_ENABLE_UTC', default=True, cast=bool)
 
 # Celery worker configuration
-CELERY_WORKER_CONCURRENCY = config('CELERY_WORKER_CONCURRENCY', default=4, cast=int)
+CELERY_WORKER_CONCURRENCY = config('CELERY_WORKER_CONCURRENCY', default=8, cast=int)
 CELERY_WORKER_PREFETCH_MULTIPLIER = config('CELERY_WORKER_PREFETCH_MULTIPLIER', default=1, cast=int)
 CELERY_TASK_ACKS_LATE = config('CELERY_TASK_ACKS_LATE', default=True, cast=bool)
 CELERY_WORKER_DISABLE_RATE_LIMITS = config('CELERY_WORKER_DISABLE_RATE_LIMITS', default=False, cast=bool)
@@ -477,6 +477,12 @@ CELERY_RESULT_EXTENDED = True
 # 🚀 PHASE 2: MONITORING
 CELERY_SEND_TASK_EVENTS = True
 CELERY_TASK_SEND_SENT_EVENT = True
+
+# Performance optimizations for bill processing
+broker_transport_options={'priority_steps': list(range(10))},
+task_inherit_parent_priority=True,
+task_default_priority=5,
+worker_prefetch_multiplier=2,  # Allow workers to prefetch 2 tasks
 
 # 🚀 PHASE 2: ENHANCED CELERY TASK ROUTING (Bill Processing + AI Tasks)
 CELERY_TASK_ROUTES = {

@@ -5,6 +5,10 @@ import os
 from celery import Celery
 from django.conf import settings
 from decouple import config
+import logging
+from django.core.cache import cache
+
+logger = logging.getLogger('apps.ai')
 
 # -----------------------------------------------------------------------------
 # Set default Django settings module for the 'celery' command-line program
@@ -114,27 +118,32 @@ def health_check():
 # -----------------------------------------------------------------------------
 # Task Failure Handler (for all tasks)
 # -----------------------------------------------------------------------------
-def ai_task_failure_handler(task_id, error, traceback, einfo):
-    import logging
-    from django.core.cache import cache
+def ai_task_failure_handler(request, exc, task_id, args, kwargs, einfo):
+    """
+    Handle AI task failures with enhanced logging and cache-based retry tracking.
+    Compatible with Celery global task_annotations['*']['on_failure'].
+    """
 
-    logger = logging.getLogger('apps.ai')
+    task_name = request.task  # e.g. 'apps.api.tasks.process_bill_async'
 
-    # Log failure
-    logger.error(f'AI Task {task_id} failed: {error}', extra={
+    logger.error(f'AI Task {task_id} ({task_name}) failed', extra={
         'task_id': task_id,
-        'error': str(error),
-        'traceback': traceback
+        'task_name': task_name,
+        'exception': str(exc),
+        'args': args,
+        'kwargs': kwargs,
+        'traceback': str(einfo)
     })
 
-    # Increment failure count for alerting
-    task_key = f'ai_task_failures_{task_id.split(".")[2]}'
-    failure_count = cache.get(task_key, 0)
-    cache.set(task_key, failure_count + 1, timeout=3600)
+    # Track failure rate
+    failure_key = f'ai_task_failures_{task_name}'
+    failure_count = cache.get(failure_key, 0)
+    cache.set(failure_key, failure_count + 1, timeout=3600)
 
-    # Critical alert threshold
+    # Critical alerting if needed
     if failure_count > 5:
-        logger.critical(f'High failure rate detected for AI task: {task_id}')
+        logger.critical(f'🚨 High failure rate detected for {task_name} (ID: {task_id})')
+
 
 # Register handler globally
 app.conf.task_annotations = {

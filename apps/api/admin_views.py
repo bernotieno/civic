@@ -29,15 +29,70 @@ from .async_progress_tracker import (
 )
 from .tasks import save_uploaded_file_for_async
 
+# OpenAPI documentation imports
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter, inline_serializer
+from drf_spectacular.openapi import OpenApiTypes
+from rest_framework import serializers
+from .serializers import (
+    AdminBillSerializer, BillProcessingRequestSerializer, BillProcessingResponseSerializer,
+    BillProcessingStatusSerializer, ProcessingOverviewResponseSerializer,
+    UserProfileSerializer, SuccessResponseSerializer, ErrorResponseSerializer,
+    AdminBillListResponseSerializer, BillProgressSerializer
+)
+
 import json
 import logging
 
 logger = logging.getLogger(__name__)
 
+@extend_schema(
+    summary="Get Admin Dashboard Statistics",
+    description="""
+    Retrieve comprehensive dashboard statistics for parliament administrators.
+    
+    **Frontend Integration:**
+    - Use this endpoint to populate the main admin dashboard
+    - Refresh every 30 seconds for real-time stats
+    - Display charts and counters based on returned data
+    - Handle different admin levels (national vs regional scope)
+    
+    **Returned Statistics:**
+    - User counts and demographics
+    - Feedback statistics by status
+    - Project and bill summaries
+    - System-wide metrics
+    """,
+    tags=["Admin Dashboard"],
+    responses={
+        200: OpenApiExample(
+            "Success Response",
+            value={
+                "success": True,
+                "data": {
+                    "total_users": 1250,
+                    "total_counties": 47,
+                    "total_feedback": 890,
+                    "pending_feedback": 45,
+                    "in_review_feedback": 12,
+                    "responded_feedback": 678,
+                    "resolved_feedback": 155,
+                    "total_projects": 34,
+                    "active_projects": 18,
+                    "total_bills": 25,
+                    "active_bills": 8
+                },
+                "user_level": "national",
+                "scope": "national"
+            }
+        ),
+        403: ErrorResponseSerializer
+    }
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def admin_dashboard_stats(request):
     """Get admin dashboard statistics for national parliament system"""
+    # notes_for_frontend: Call this endpoint on dashboard load and set up auto-refresh every 30-60 seconds
     user = request.user
     
     if user.role != 'parliament_admin':
@@ -95,10 +150,51 @@ def admin_dashboard_stats(request):
         'scope': 'national'
     })
 
+@extend_schema(
+    summary="Get Users List",
+    description="""
+    Retrieve complete list of all registered users in the system.
+    
+    **Frontend Integration:**
+    - Use for user management interface
+    - Implement sorting and filtering based on role, county, status
+    - Show user cards with key information
+    - Enable bulk operations for user management
+    
+    **User Information Includes:**
+    - Basic profile data (name, email, role)
+    - Administrative details (county, admin level)
+    - Account status and join date
+    """,
+    tags=["Admin User Management"],
+    responses={
+        200: OpenApiExample(
+            "Users List Response", 
+            value={
+                "success": True,
+                "data": [
+                    {
+                        "id": 1,
+                        "name": "John Kiprop",
+                        "email": "john@example.com", 
+                        "role": "citizen",
+                        "role_display": "Citizen",
+                        "admin_level": None,
+                        "county": "Nairobi",
+                        "is_active": True,
+                        "date_joined": "2024-01-15T10:30:00Z"
+                    }
+                ]
+            }
+        ),
+        403: ErrorResponseSerializer
+    }
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def admin_users_list(request):
     """Get users list for national parliament admin"""
+    # notes_for_frontend: Display as sortable table with filters for role, county, and active status
     user = request.user
     
     if user.role != 'parliament_admin':
@@ -124,10 +220,64 @@ def admin_users_list(request):
         'data': users_data
     })
 
+@extend_schema(
+    summary="Get National Feedback List",
+    description="""
+    Retrieve all citizen feedback from across the country for parliament review.
+    
+    **Frontend Integration:**
+    - Display as paginated list with priority indicators
+    - Implement filtering by status, category, county, priority
+    - Show feedback cards with key details and action buttons
+    - Enable bulk operations (mark as reviewed, assign, etc.)
+    - Color-code by priority and status
+    
+    **Feedback Data Includes:**
+    - Content and categorization
+    - Status and priority levels
+    - Location and user information
+    - Response statistics and timestamps
+    """,
+    tags=["Admin Feedback Management"],
+    responses={
+        200: OpenApiExample(
+            "Feedback List Response",
+            value={
+                "success": True,
+                "data": [
+                    {
+                        "id": "uuid-here",
+                        "title": "Road Infrastructure Issue",
+                        "content": "The main road in our area needs urgent repair...",
+                        "category": "infrastructure",
+                        "category_display": "Infrastructure",
+                        "priority": "high",
+                        "priority_display": "High Priority",
+                        "status": "pending",
+                        "status_display": "Pending Review",
+                        "tracking_id": "FB-2024-001234",
+                        "county": "Nairobi",
+                        "location_path": "Nairobi > Westlands > Parklands",
+                        "created_at": "2024-01-15T10:30:00Z",
+                        "is_anonymous": False,
+                        "response_count": 0,
+                        "user_name": "Jane Doe",
+                        "user_email": "jane@example.com"
+                    }
+                ],
+                "total_count": 1,
+                "user_level": "national",
+                "scope": "national"
+            }
+        ),
+        403: ErrorResponseSerializer
+    }
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def admin_feedback_list(request):
     """Get feedback list for national parliament admin"""
+    # notes_for_frontend: Implement infinite scroll or pagination, add filters sidebar, use color coding for priorities
     user = request.user
     
     if user.role != 'parliament_admin':
@@ -176,7 +326,7 @@ def admin_feedback_list(request):
             }
             feedback_data.append(feedback_item)
         except Exception as e:
-            logger.error(f"❌ Error processing feedback {f.id}: {e}")
+            logger.error(f"⚠️ Error processing feedback {f.id}: {e}")
             continue
     
     logger.info(f"✅ Successfully processed {len(feedback_data)} national feedback items")
@@ -189,10 +339,51 @@ def admin_feedback_list(request):
         'scope': 'national'
     })
 
+@extend_schema(
+    summary="Respond to Citizen Feedback",
+    description="""
+    Submit an official parliament response to citizen feedback.
+    
+    **Frontend Integration:**
+    - Use in feedback detail modal or dedicated response page
+    - Implement rich text editor for response composition
+    - Show preview before submission
+    - Update feedback status in real-time after response
+    - Send confirmation notification to user
+    
+    **Response Features:**
+    - Official parliament response attribution
+    - Automatic status update to 'responded'
+    - Email notification to feedback submitter
+    - Response tracking and analytics
+    """,
+    tags=["Admin Feedback Management"],
+    request=OpenApiExample(
+        "Response Request",
+        value={
+            "response_text": "Thank you for bringing this infrastructure issue to our attention. We have forwarded your feedback to the Ministry of Transport for immediate action. You can expect to see road repairs begin within the next 30 days."
+        }
+    ),
+    responses={
+        200: OpenApiExample(
+            "Response Success",
+            value={
+                "success": True,
+                "message": "Parliament response sent successfully",
+                "response_id": "response-uuid-here",
+                "feedback_status": "responded"
+            }
+        ),
+        400: ErrorResponseSerializer,
+        404: ErrorResponseSerializer,
+        403: ErrorResponseSerializer
+    }
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def respond_to_feedback(request, feedback_id):
     """Respond to feedback as parliament admin"""
+    # notes_for_frontend: Show success message and update feedback list/detail view after successful response
     user = request.user
     
     if user.role != 'parliament_admin':
@@ -235,13 +426,76 @@ def respond_to_feedback(request, feedback_id):
     except Feedback.DoesNotExist:
         return Response({'error': 'Feedback not found'}, status=404)
     except Exception as e:
-        logger.error(f"❌ Error responding to feedback: {e}")
+        logger.error(f"⚠️ Error responding to feedback: {e}")
         return Response({'error': f'Failed to send response: {str(e)}'}, status=500)
 
+@extend_schema(
+    summary="Manage National Projects",
+    description="""
+    GET: Retrieve all national projects with full details and status information.
+    POST: Create a new national project with document upload support.
+    
+    **Frontend Integration (GET):**
+    - Display projects in cards/table layout
+    - Implement filtering by status, date range
+    - Show project timeline and budget information
+    - Enable quick actions (edit, delete, status change)
+    
+    **Frontend Integration (POST):**
+    - Use multipart form with file upload capability
+    - Validate required fields before submission
+    - Show progress indicator during upload
+    - Redirect to project detail after successful creation
+    """,
+    tags=["Admin Project Management"],
+    request=OpenApiExample(
+        "Create Project Request",
+        value={
+            "title": "National Digital Infrastructure Project",
+            "description": "Expanding broadband connectivity to rural areas",
+            "sponsor": "Ministry of ICT",
+            "status": "proposed",
+            "participation_deadline": "2024-06-15T23:59:59Z"
+        }
+    ),
+    responses={
+        200: OpenApiExample(
+            "Projects List Response",
+            value={
+                "success": True,
+                "data": [
+                    {
+                        "id": "project-uuid",
+                        "title": "National Digital Infrastructure Project",
+                        "description": "Expanding broadband connectivity...",
+                        "sponsor": "Ministry of ICT",
+                        "participation_deadline": "2024-06-15T23:59:59Z",
+                        "document": "/media/projects/document.pdf",
+                        "status": "proposed",
+                        "status_display": "Proposed",
+                        "summary": "Project summary here...",
+                        "created_by": "Admin User",
+                        "created_at": "2024-01-15T10:30:00Z"
+                    }
+                ]
+            }
+        ),
+        201: OpenApiExample(
+            "Project Created Response",
+            value={
+                "success": True,
+                "message": "National project created successfully",
+                "project_id": "project-uuid"
+            }
+        ),
+        403: ErrorResponseSerializer
+    }
+)
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def admin_projects_list(request):
     """Get or create national projects"""
+    # notes_for_frontend: For GET use project cards with status badges. For POST use form with file upload and validation
     user = request.user
     
     if user.role != 'parliament_admin':
@@ -293,10 +547,38 @@ def admin_projects_list(request):
         except Exception as e:
             return Response({'error': str(e)}, status=400)
 
+@extend_schema(
+    summary="Update Project Status",
+    description="""
+    Update the status of a national project (e.g., proposed → approved → in_progress → completed).
+    
+    **Frontend Integration:**
+    - Use in project detail page or quick action buttons
+    - Implement dropdown with valid status transitions
+    - Show confirmation dialog for status changes
+    - Update project list/detail view after successful change
+    - Display status change history if available
+    
+    **Valid Status Values:**
+    - proposed, approved, in_progress, completed, suspended, cancelled
+    """,
+    tags=["Admin Project Management"],
+    request=OpenApiExample(
+        "Status Update Request",
+        value={"status": "approved"}
+    ),
+    responses={
+        200: SuccessResponseSerializer,
+        400: ErrorResponseSerializer,
+        404: ErrorResponseSerializer,
+        403: ErrorResponseSerializer
+    }
+)
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def update_project_status(request, project_id):
     """Update national project status"""
+    # notes_for_frontend: Use status dropdown with validation, show confirmation dialog before changing status
     user = request.user
     
     if user.role != 'parliament_admin':
@@ -320,10 +602,46 @@ def update_project_status(request, project_id):
     except Project.DoesNotExist:
         return Response({'error': 'Project not found'}, status=404)
 
+@extend_schema(
+    summary="Edit or Delete Project",
+    description="""
+    PUT: Update project details including title, description, sponsor, and documents.
+    DELETE: Soft delete a project (removes from public view but preserves data).
+    
+    **Frontend Integration (PUT):**
+    - Use in project edit modal/page with form validation
+    - Support file upload for document updates
+    - Show preview of changes before saving
+    - Handle validation errors gracefully
+    
+    **Frontend Integration (DELETE):**
+    - Show confirmation dialog with project details
+    - Warn about consequences of deletion
+    - Update project list after successful deletion
+    - Provide option to restore if needed
+    """,
+    tags=["Admin Project Management"],
+    request=OpenApiExample(
+        "Project Update Request",
+        value={
+            "title": "Updated Project Title",
+            "description": "Updated description with more details",
+            "sponsor": "Updated Ministry Name",
+            "status": "approved",
+            "participation_deadline": "2024-07-15T23:59:59Z"
+        }
+    ),
+    responses={
+        200: SuccessResponseSerializer,
+        404: ErrorResponseSerializer,
+        403: ErrorResponseSerializer
+    }
+)
 @api_view(['PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def admin_project_detail(request, project_id):
     """Edit or delete national project"""
+    # notes_for_frontend: PUT - use edit form with file upload. DELETE - show confirmation dialog with project details
     user = request.user
     
     if user.role != 'parliament_admin':
@@ -364,10 +682,49 @@ def admin_project_detail(request, project_id):
     except Project.DoesNotExist:
         return Response({'error': 'Project not found'}, status=404)
 
+@extend_schema(
+    summary="Get Public Projects List",
+    description="""
+    Retrieve all active projects visible to the public (no authentication required).
+    
+    **Frontend Integration:**
+    - Use for public-facing project directory
+    - Display projects in cards or list layout
+    - Implement search and filtering capabilities
+    - Show project status with appropriate badges
+    - Enable social sharing of projects
+    
+    **Note:** This endpoint is publicly accessible and rate-limited.
+    """,
+    tags=["Public Access"],
+    responses={
+        200: OpenApiExample(
+            "Public Projects Response",
+            value={
+                "success": True,
+                "data": [
+                    {
+                        "id": "project-uuid",
+                        "title": "Community Health Initiative",
+                        "description": "Improving healthcare access in rural areas",
+                        "sponsor": "Ministry of Health",
+                        "participation_deadline": "2024-05-30T23:59:59Z",
+                        "document": "/media/projects/health-initiative.pdf",
+                        "status": "approved",
+                        "status_display": "Approved",
+                        "summary": "This project aims to establish...",
+                        "created_at": "2024-01-15T10:30:00Z"
+                    }
+                ]
+            }
+        )
+    }
+)
 @api_view(['GET'])
 @permission_classes([])
 def public_projects_list(request):
     """Get public projects list - no authentication required"""
+    # notes_for_frontend: Display as public gallery with search/filter options, no authentication needed
     
     # Get all active projects (not deleted)
     projects = Project.objects.filter(is_deleted=False).select_related('created_by')
@@ -390,11 +747,89 @@ def public_projects_list(request):
         'data': projects_data
     })
 
-
+@extend_schema(
+    summary="Edit or Delete Parliamentary Bill",
+    description="""
+    PUT: Update bill metadata including title, description, sponsor, status, and documents.
+    DELETE: Soft delete a parliamentary bill (removes from public view but preserves data).
+    
+    **Frontend Integration (PUT):**
+    - Use in bill edit interface with comprehensive form
+    - Support document replacement with validation
+    - Show bill processing status during updates
+    - Handle concurrent edit conflicts gracefully
+    
+    **Frontend Integration (DELETE):**
+    - Show detailed confirmation dialog with bill information
+    - Warn about impact on public access and citizen engagement
+    - Verify admin permissions before allowing deletion
+    - Update bill lists after successful operation
+    """,
+    tags=["Admin Bill Management"],
+    request=inline_serializer(
+        name='BillUpdateRequest',
+        fields={
+            'title': serializers.CharField(
+                max_length=255, 
+                required=False,
+                help_text="Bill title"
+            ),
+            'description': serializers.CharField(
+                required=False,
+                help_text="Bill description"
+            ),
+            'sponsor': serializers.CharField(
+                max_length=255,
+                required=False, 
+                help_text="Bill sponsor (e.g., Ministry name)"
+            ),
+            'status': serializers.ChoiceField(
+                choices=[
+                    ('draft', 'Draft'),
+                    ('first_reading', 'First Reading'),
+                    ('committee_stage', 'Committee Stage'),
+                    ('second_reading', 'Second Reading'), 
+                    ('third_reading', 'Third Reading'),
+                    ('presidential_assent', 'Presidential Assent'),
+                    ('enacted', 'Enacted')
+                ],
+                required=False,
+                help_text="Current bill status"
+            ),
+            'participation_deadline': serializers.DateTimeField(
+                required=False,
+                help_text="Public participation deadline (ISO format)"
+            ),
+            'document': serializers.FileField(
+                required=False,
+                help_text="Updated bill document (PDF format)"
+            )
+        }
+    ),
+    examples=[
+        OpenApiExample(
+            "Bill Update Example",
+            value={
+                "title": "Updated Finance Bill 2024",
+                "description": "Comprehensive tax reform legislation with updated provisions",
+                "sponsor": "Ministry of Finance and Planning", 
+                "status": "committee_stage",
+                "participation_deadline": "2024-08-15T23:59:59Z"
+            },
+            request_only=True
+        )
+    ],
+    responses={
+        200: SuccessResponseSerializer,
+        404: ErrorResponseSerializer,
+        403: ErrorResponseSerializer
+    }
+)
 @api_view(['PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def admin_bill_detail(request, bill_id):
     """Edit or delete parliamentary bill"""
+    # notes_for_frontend: PUT - comprehensive edit form with document handling. DELETE - detailed confirmation with impact warning
     user = request.user
     
     if user.role != 'parliament_admin':
@@ -435,10 +870,50 @@ def admin_bill_detail(request, bill_id):
     except Bill.DoesNotExist:
         return Response({'error': 'Bill not found'}, status=404)
 
+@extend_schema(
+    summary="Get Public Bills List",
+    description="""
+    Retrieve all published parliamentary bills accessible to the public (no authentication required).
+    
+    **Frontend Integration:**
+    - Use for public bill directory and citizen engagement portal
+    - Display bills with status indicators and participation deadlines
+    - Implement search by title, sponsor, or content
+    - Show bill summaries and key information
+    - Enable filtering by status, date, and sponsor
+    - Link to detailed bill view and chat functionality
+    
+    **Note:** Only shows completed, published bills. Rate-limited for fair usage.
+    """,
+    tags=["Public Access"],
+    responses={
+        200: OpenApiExample(
+            "Public Bills Response",
+            value={
+                "success": True,
+                "data": [
+                    {
+                        "id": "bill-uuid",
+                        "title": "Digital Economy Bill 2024",
+                        "description": "Framework for digital transformation and e-commerce regulation",
+                        "sponsor": "Ministry of ICT",
+                        "status": "committee_stage",
+                        "status_display": "Committee Stage",
+                        "participation_deadline": "2024-07-30T23:59:59Z",
+                        "document": "/media/bills/digital-economy-2024.pdf",
+                        "summary": "This bill establishes the framework for...",
+                        "created_at": "2024-02-01T09:00:00Z"
+                    }
+                ]
+            }
+        )
+    }
+)
 @api_view(['GET'])
 @permission_classes([])
 def public_bills_list(request):
     """Get public bills list - no authentication required"""
+    # notes_for_frontend: Display as searchable public directory with status badges and participation info
     
     # Get all active bills
     bills = Bill.objects.filter(
@@ -463,7 +938,65 @@ def public_bills_list(request):
         'data': bills_data
     })
 
-
+@extend_schema(
+    summary="Manage Parliamentary Bills",
+    description="""
+    GET: Retrieve all parliamentary bills with comprehensive processing status and admin controls.
+    POST: Create a new parliamentary bill with document upload and processing options.
+    
+    **Key Features:**
+    - **Phase 1**: Basic bill management with document processing
+    - **Phase 2**: Async processing with real-time progress tracking  
+    - **Phase 3**: AI-powered summaries and citizen chat preparation
+    
+    **Frontend Integration (GET):**
+    - Display bills table with processing status indicators
+    - Show real-time progress bars for active processing
+    - Status [('draft', 'Draft'), ('first_reading', 'First Reading'), ('committee_stage', 'Committee Stage')]
+    - Enable WebSocket connections for live updates
+    - Provide retry/cancel controls for failed/processing bills
+    - Color-code bills by processing status
+    
+    **Frontend Integration (POST):**
+    - Multi-part form with document upload and validation
+    - Processing preference controls (async vs sync)
+    - Real-time progress tracking with WebSocket support
+    - Fallback handling for processing failures
+    - Comprehensive error handling and user feedback
+    """,
+    tags=["Admin Bill Management"],
+    request=inline_serializer(
+        name='BillCreationRequest',
+        fields={
+            'title': serializers.CharField(max_length=255),
+            'description': serializers.CharField(),
+            'sponsor': serializers.CharField(max_length=255),
+            'status': serializers.ChoiceField(
+                choices=[
+                    ('draft', 'Draft'),
+                    ('first_reading', 'First Reading'), 
+                    ('committee_stage', 'Committee Stage'),
+                    ('second_reading', 'Second Reading'),
+                    ('third_reading', 'Third Reading')
+                ],
+                default='draft'
+            ),
+            'participation_deadline': serializers.DateField(required=False),
+            'document': serializers.FileField(
+                required=False,
+                help_text="Upload PDF file"
+            ),
+            'async_processing': serializers.BooleanField(default=True),
+            'use_enhanced_processing': serializers.BooleanField(default=True),
+        }
+    ),
+    responses={
+        200: AdminBillListResponseSerializer,
+        201: BillProcessingResponseSerializer,
+        400: ErrorResponseSerializer,
+        403: ErrorResponseSerializer
+    }
+)
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def admin_bills_list(request):
@@ -472,6 +1005,7 @@ def admin_bills_list(request):
     ENHANCED: Now supports async processing with fallback to sync
     BACKWARD COMPATIBLE: All Phase 1 functionality preserved
     """
+    # notes_for_frontend: GET - implement WebSocket for real-time updates. POST - use progress tracking with cancel/retry options
     user = request.user
     
     if user.role != 'parliament_admin':
@@ -512,8 +1046,8 @@ def admin_bills_list(request):
                     async_status = get_bill_processing_status(str(b.id))
                     bill_data.update({
                         'async_info': {
-                            'task_id': async_status.get('task_id'),
-                            'can_retry': async_status.get('can_retry', False),
+                            'task_id': str(async_status.get('task_id', '')),
+                            'can_retry': bool(async_status.get('can_retry', False)),
                             'session_info': async_status.get('session_info', {}),
                             'task_info': async_status.get('task_info', {}),
                             'supports_realtime': True  # WebSocket available
@@ -719,7 +1253,56 @@ def admin_bills_list(request):
             logger.error(f"Bill creation failed: {str(e)}")
             return Response({'error': str(e)}, status=400)
 
-
+@extend_schema(
+    summary="Get Bill Processing Progress",
+    description="""
+    Retrieve current processing progress for a parliamentary bill.
+    Supports both synchronous (Phase 1) and asynchronous (Phase 2) processing modes.
+    
+    **Frontend Integration:**
+    - Poll this endpoint every 2-3 seconds during processing
+    - Display progress bar with completion percentage
+    - Show current processing stage and estimated time remaining
+    - Handle WebSocket connection for real-time updates when available
+    - Display error details if processing fails
+    - Enable retry functionality for failed processing
+    
+    **Processing Stages:**
+    - pending: Waiting to start processing
+    - processing: Actively processing document
+    - completed: Successfully completed
+    - failed: Processing failed with error details
+    """,
+    tags=["Admin Bill Management"],
+    responses={
+        200: OpenApiExample(
+            "Progress Response",
+            value={
+                "success": True,
+                "bill_id": "bill-uuid",
+                "progress": {
+                    "status": "processing",
+                    "progress": 75,
+                    "message": "Generating AI summary...",
+                    "stage": "ai_processing",
+                    "stage_display": "AI Summary Generation",
+                    "time_remaining": 30,
+                    "estimated_completion": "2024-01-15T10:35:00Z"
+                },
+                "processing_type": "async",
+                "supports_realtime": True,
+                "bill_info": {
+                    "has_document": True,
+                    "created_at": "2024-01-15T10:30:00Z",
+                    "total_chunks": 15,
+                    "is_chunked": True
+                }
+            }
+        ),
+        404: ErrorResponseSerializer,
+        403: ErrorResponseSerializer
+    }
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def admin_bill_progress(request, bill_id):
@@ -727,6 +1310,7 @@ def admin_bill_progress(request, bill_id):
     Get bill processing progress (Phase 1 endpoint - maintained)
     Enhanced to work with both sync and async processing
     """
+    # notes_for_frontend: Poll every 2-3 seconds, display progress bar, connect WebSocket for real-time updates if supported
     user = request.user
     
     if user.role != 'parliament_admin':
@@ -784,13 +1368,42 @@ def admin_bill_progress(request, bill_id):
             'error': str(e)
         }, status=500)
 
-
+@extend_schema(
+    summary="Get Detailed Bill Processing Status",
+    description="""
+    Retrieve comprehensive processing status for async operations including:
+    - Current processing stage and progress percentage
+    - Celery task information and status
+    - Processing logs and performance metrics
+    - Error details and recovery options
+    - Real-time update capabilities
+    
+    **Frontend Integration:**
+    - Use for detailed processing monitoring dashboard
+    - Display processing logs and technical details
+    - Show task management controls (cancel, retry)
+    - Enable WebSocket connection for live updates
+    - Provide debugging information for processing issues
+    
+    **Available Controls:**
+    - supports_cancellation: Can cancel ongoing processing
+    - supports_retry: Can retry failed processing
+    - WebSocket channel for real-time updates
+    """,
+    tags=["Admin Bill Management - Async"],
+    responses={
+        200: BillProcessingStatusSerializer,
+        403: ErrorResponseSerializer,
+        500: ErrorResponseSerializer
+    }
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def admin_bill_processing_status(request, bill_id):
     """
     NEW ENDPOINT: Get detailed processing status for async operations
     """
+    # notes_for_frontend: Use for detailed admin dashboard with processing logs, task controls, and real-time monitoring
     user = request.user
     
     if user.role != 'parliament_admin':
@@ -815,13 +1428,65 @@ def admin_bill_processing_status(request, bill_id):
             'error': str(e)
         }, status=500)
 
-
+@extend_schema(
+    summary="Retry Failed Bill Processing",
+    description="""
+    Retry processing for a failed or cancelled bill with options for async or sync processing.
+    
+    **Frontend Integration:**
+    - Use retry button on failed processing bills
+    - Provide processing mode selection (async/sync)
+    - Show retry confirmation dialog with processing options
+    - Track retry attempts and display retry history
+    - Enable progress monitoring after retry initiation
+    
+    **Processing Options:**
+    - async_processing: Use background task with real-time updates
+    - sync processing: Immediate processing with basic progress
+    - Enhanced vs original processing algorithms
+    """,
+    tags=["Admin Bill Management - Async"],
+    request=inline_serializer(
+        name='RetryProcessingRequest',
+        fields={
+            'async_processing': serializers.BooleanField(
+                default=True,
+                help_text="Use background task with real-time updates"
+            ),
+            'use_enhanced_processing': serializers.BooleanField(
+                default=True,
+                help_text="Use enhanced AI processing features"
+            )
+        }
+    ),
+    responses={
+        200: OpenApiExample(
+            "Retry Success Response",
+            value={
+                "success": True,
+                "message": "Bill processing retry initiated successfully",
+                "bill_id": "bill-uuid",
+                "new_task_id": "celery-task-uuid",
+                "retry_attempt": 2,
+                "processing_async": True,
+                "progress_endpoints": {
+                    "status": "/api/admin/bills/bill-uuid/status/",
+                    "websocket": "/ws/bills/bill-uuid/progress/",
+                    "polling": "/api/admin/bills/bill-uuid/progress/"
+                }
+            }
+        ),
+        400: ErrorResponseSerializer,
+        403: ErrorResponseSerializer
+    }
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def admin_retry_bill_processing(request, bill_id):
     """
     NEW ENDPOINT: Retry failed bill processing
     """
+    # notes_for_frontend: Show retry confirmation, track retry attempts, enable progress monitoring after retry
     user = request.user
     
     if user.role != 'parliament_admin':
@@ -907,13 +1572,48 @@ def admin_retry_bill_processing(request, bill_id):
             'error': str(e)
         }, status=500)
 
-
+@extend_schema(
+    summary="Cancel Ongoing Bill Processing",
+    description="""
+    Cancel currently running bill processing task gracefully.
+    
+    **Frontend Integration:**
+    - Use cancel button on actively processing bills
+    - Show cancellation confirmation dialog
+    - Display cancellation progress and status
+    - Enable retry option after successful cancellation
+    - Update processing status in real-time
+    
+    **Cancellation Process:**
+    - Graceful task termination
+    - Cleanup of temporary resources
+    - Status update to cancelled
+    - Preservation of partial results
+    """,
+    tags=["Admin Bill Management - Async"],
+    responses={
+        200: OpenApiExample(
+            "Cancellation Success",
+            value={
+                "success": True,
+                "message": "Bill processing cancelled successfully",
+                "bill_id": "bill-uuid",
+                "was_cancelled": True,
+                "task_id": "celery-task-uuid",
+                "can_retry": True
+            }
+        ),
+        403: ErrorResponseSerializer,
+        500: ErrorResponseSerializer
+    }
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def admin_cancel_bill_processing(request, bill_id):
     """
     NEW ENDPOINT: Cancel ongoing bill processing
     """
+    # notes_for_frontend: Show cancellation confirmation, display cancellation status, enable retry after cancellation
     user = request.user
     
     if user.role != 'parliament_admin':
@@ -944,28 +1644,114 @@ def admin_cancel_bill_processing(request, bill_id):
             'error': str(e)
         }, status=500)
 
-
+@extend_schema(
+    summary="Reprocess Bill (Legacy)",
+    description="""
+    Legacy endpoint for bill reprocessing. Now delegates to the retry endpoint for consistency.
+    Use the retry endpoint directly for new implementations.
+    
+    **Note:** This endpoint is maintained for backward compatibility.
+    For new implementations, use `/admin/bills/{bill_id}/retry/` instead.
+    """,
+    tags=["Admin Bill Management"],
+    request=inline_serializer(
+    name='BillCreationRequest',
+    fields={
+        'title': serializers.CharField(max_length=255, help_text="Bill title"),
+        'description': serializers.CharField(help_text="Bill description"),
+        'sponsor': serializers.CharField(max_length=255, help_text="Bill sponsor"),
+        'status': serializers.ChoiceField(
+            choices=[('draft', 'Draft'), ('first_reading', 'First Reading'), 
+                    ('committee_stage', 'Committee Stage')],
+            default='draft',
+            required=False
+        ),
+        'participation_deadline': serializers.DateTimeField(required=False),
+        'document': serializers.FileField(required=False, help_text="PDF document"),
+        'async_processing': serializers.BooleanField(default=True),
+        'use_enhanced_processing': serializers.BooleanField(default=True),
+        'force_sync': serializers.BooleanField(default=False)
+    }
+),
+    responses={
+        200: BillProcessingResponseSerializer,
+        403: ErrorResponseSerializer
+    }
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def admin_bill_reprocess(request, bill_id):
     """
     Enhanced reprocess endpoint (Phase 1 maintained + Phase 2 async support)
     """
+    # notes_for_frontend: Legacy endpoint - use retry endpoint for new implementations
     user = request.user
     
     if user.role != 'parliament_admin':
         return Response({'error': 'Access denied'}, status=403)
     
     # This endpoint now delegates to the retry endpoint for consistency
-    return admin_retry_bill_processing(request, bill_id)
+    # This endpoint now delegates to the retry endpoint for consistency
+    try:
+        # Get processing preference from request
+        use_async = request.data.get('async_processing', True)
+        
+        if use_async:
+            result = retry_failed_bill_processing(bill_id)
+            if result['success']:
+                return Response({
+                    'success': True,
+                    'message': 'Bill reprocessing started successfully',
+                    'bill_id': bill_id,
+                    'processing_async': True
+                })
+            else:
+                return Response({'success': False, 'error': result['message']}, status=400)
+        else:
+            return Response({
+                'success': False,
+                'error': 'Sync reprocessing not implemented in legacy endpoint'
+            }, status=400)
+            
+    except Exception as e:
+        return Response({'success': False, 'error': str(e)}, status=500)
 
-
+@extend_schema(
+    summary="Get Processing Overview Dashboard",
+    description="""
+    Comprehensive system-wide processing overview for admin dashboard including:
+    - Processing statistics and bill counts
+    - Active async processing sessions
+    - System capabilities and health status
+    - Performance metrics and monitoring data
+    
+    **Frontend Integration:**
+    - Use for main processing dashboard/overview page
+    - Display system health indicators and statistics
+    - Show active processing sessions with progress
+    - Enable system monitoring and capacity planning
+    - Implement auto-refresh for real-time monitoring
+    
+    **Dashboard Components:**
+    - Processing statistics charts
+    - Active sessions list with controls
+    - System capabilities overview
+    - Performance metrics visualization
+    """,
+    tags=["Admin Bill Management"],
+    responses={
+        200: ProcessingOverviewResponseSerializer,
+        403: ErrorResponseSerializer,
+        500: ErrorResponseSerializer
+    }
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def admin_processing_overview(request):
     """
     Enhanced processing overview (Phase 1 maintained + Phase 2 async info)
     """
+    # notes_for_frontend: Use for system dashboard with charts, active sessions monitoring, and auto-refresh capability
     user = request.user
     
     if user.role != 'parliament_admin':
@@ -1027,68 +1813,3 @@ def admin_processing_overview(request):
             'success': False,
             'error': str(e)
         }, status=500)
-
-
-# @api_view(['GET', 'POST'])
-# @permission_classes([IsAuthenticated])
-# def admin_bills_list(request):
-#     """Get or create parliamentary bills"""
-#     user = request.user
-    
-#     if user.role != 'parliament_admin':
-#         return Response({'error': 'Access denied'}, status=403)
-    
-#     if request.method == 'GET':
-#         # Get all bills
-#         bills = Bill.objects.filter(is_deleted=False).select_related('created_by')
-        
-#         bills_data = [{
-#             'id': str(b.id),
-#             'title': b.title,
-#             'description': b.description,
-#             'sponsor': b.sponsor,
-#             'status': b.status,
-#             'status_display': b.get_status_display(),
-#             'participation_deadline': b.participation_deadline,
-#             'document': b.document.url if b.document else None,
-#             'summary': b.summary,
-#             'created_by': b.created_by.name if b.created_by else 'System',
-#             'created_at': b.created_at
-#         } for b in bills]
-        
-#         return Response({
-#             'success': True,
-#             'data': bills_data
-#         })
-    
-#     elif request.method == 'POST':
-#         data = request.data
-
-#         uploaded_doc = request.FILES.get('document')
-#         summary = None
-
-#         if uploaded_doc:
-#             summary = summarize_bill_document(uploaded_doc)
-
-        
-#         try:
-#             bill = Bill.objects.create(
-#                 title=data.get('title'),
-#                 description=data.get('description'),
-#                 sponsor=data.get('sponsor'),
-#                 status=data.get('status', 'draft'),
-#                 participation_deadline=data.get('participation_deadline'),
-#                 document=request.FILES.get('document'),
-#                 summary=summary or '',
-#                 created_by=user
-#             )
-            
-#             return Response({
-#                 'success': True,
-#                 'message': 'Parliamentary bill created successfully',
-#                 'bill_id': str(bill.id),
-#                 'summary_generated': summary is not None and "AI summarization failed" not in summary
-#             })
-            
-#         except Exception as e:
-#             return Response({'error': str(e)}, status=400)

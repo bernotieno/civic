@@ -1,6 +1,8 @@
 #  apps/projects/models.py
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 from apps.users.models import SoftDeleteModel, ActiveManager
+from pgvector.django import VectorField 
 import uuid
 
 # Bill Status Choices
@@ -129,6 +131,16 @@ class BillChunk(SoftDeleteModel):
     # Content
     content = models.TextField(help_text="Raw text content of chunk")
     processed_content = models.TextField(blank=True, help_text="AI-processed content")
+    
+    # Vector embedding for similarity search (raw vector only)
+    embedding = VectorField(dimensions=1536, null=True, blank=True, help_text="Vector embedding for similarity search")
+    
+    # Embedding metadata (separate fields)
+    embedding_model = models.CharField(max_length=50, blank=True, help_text="Model used for embedding")
+    embedding_created_at = models.DateTimeField(null=True, blank=True, help_text="When embedding was generated")
+    embedding_dimensions = models.IntegerField(null=True, blank=True, help_text="Embedding vector dimensions")
+    is_placeholder_embedding = models.BooleanField(default=False, help_text="Whether this is a placeholder embedding")
+    embedding_error = models.TextField(blank=True, help_text="Error message if embedding generation failed")
     
     # Metadata for search and retrieval
     character_count = models.IntegerField(default=0)

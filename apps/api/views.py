@@ -62,29 +62,7 @@ class AuthRateThrottle(UserRateThrottle):
     responses={
         201: OpenApiResponse(
             response=RegisterResponseSerializer,
-            description="Registration successful",
-            examples=[
-                OpenApiExample(
-                    "Successful Registration",
-                    value={
-                        "success": True,
-                        "message": "Registration successful",
-                        "user": {
-                            "id": 1,
-                            "name": "John Doe Kiprop",
-                            "email": "john.kiprop@gmail.com",
-                            "role": "citizen",
-                            "role_display": "Citizen",
-                            "county_name": "Kisumu",
-                            "tenant_name": "Kisumu"
-                        },
-                        "tokens": {
-                            "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-                            "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-                        }
-                    }
-                )
-            ]
+            description="Registration successful"
         ),
         400: OpenApiResponse(
             response=ErrorResponseSerializer,
@@ -179,52 +157,11 @@ class RegisterView(APIView):
     responses={
         200: OpenApiResponse(
             response=LoginResponseSerializer,
-            description="Login successful",
-            examples=[
-                OpenApiExample(
-                    "Citizen Login",
-                    value={
-                        "success": True,
-                        "message": "Login successful",
-                        "user": {
-                            "id": 1,
-                            "name": "John Doe Kiprop",
-                            "email": "john.kiprop@gmail.com",
-                            "role": "citizen",
-                            "role_display": "Citizen",
-                            "county_name": "Kisumu",
-                            "tenant_name": "Kisumu",
-                            "accessible_counties": [
-                                {"id": 1, "name": "Kisumu", "code": "KSM"}
-                            ]
-                        },
-                        "app_config": {
-                            "available_endpoints": ["feedback", "profile"],
-                            "data_scope": "county"
-                        },
-                        "tokens": {
-                            "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-                            "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-                        }
-                    }
-                )
-            ]
+            description="Login successful"
         ),
         400: OpenApiResponse(
             response=ErrorResponseSerializer,
-            description="Login failed",
-            examples=[
-                OpenApiExample(
-                    "Invalid Credentials",
-                    value={
-                        "success": False,
-                        "message": "Login failed",
-                        "errors": {
-                            "non_field_errors": ["Invalid credentials"]
-                        }
-                    }
-                )
-            ]
+            description="Login failed"
         )
     }
 )
@@ -342,19 +279,7 @@ class LogoutView(APIView):
     responses={
         201: OpenApiResponse(
             response=AnonymousSessionResponseSerializer,
-            description="Anonymous session created successfully",
-            examples=[
-                OpenApiExample(
-                    "Session Created",
-                    value={
-                        "success": True,
-                        "message": "Anonymous session created",
-                        "session_id": "ANON_8f3a2c1e4d6b9a7f2c5e8d1a4b7f9c2e",
-                        "expires_in": 7200,
-                        "max_submissions": 3
-                    }
-                )
-            ]
+            description="Anonymous session created successfully"
         ),
         400: OpenApiResponse(
             response=ErrorResponseSerializer,
@@ -483,42 +408,7 @@ class UserProfileView(APIView):
         responses={
             200: OpenApiResponse(
                 response=CountySerializer(many=True),
-                description="List of counties",
-                examples=[
-                    OpenApiExample(
-                        "Counties List",
-                        value=[
-                            {
-                                "id": 1,
-                                "name": "Kisumu",
-                                "code": "KSM",
-                                "is_active": True,
-                                "location_data": {
-                                    "id": 1,
-                                    "name": "Kisumu",
-                                    "type": "county",
-                                    "level": 0,
-                                    "code": "001",
-                                    "full_path": "Kisumu"
-                                }
-                            },
-                            {
-                                "id": 2,
-                                "name": "Nairobi",
-                                "code": "NBI",
-                                "is_active": True,
-                                "location_data": {
-                                    "id": 2,
-                                    "name": "Nairobi",
-                                    "type": "county",
-                                    "level": 0,
-                                    "code": "047",
-                                    "full_path": "Nairobi"
-                                }
-                            }
-                        ]
-                    )
-                ]
+                description="List of counties"
             )
         }
     )
@@ -571,14 +461,12 @@ class CountyListView(generics.ListAPIView):
         OpenApiParameter(
             name='county_id',
             type=OpenApiTypes.INT,
-            description='County ID to get children from (use with type parameter)',
-            examples=[OpenApiExample('Kisumu County', value=1)]
+            description='County ID to get children from (use with type parameter)'
         ),
         OpenApiParameter(
             name='parent_id', 
             type=OpenApiTypes.INT,
-            description='Parent location ID to get children from',
-            examples=[OpenApiExample('Parent location', value=5)]
+            description='Parent location ID to get children from'
         ),
         OpenApiParameter(
             name='type',
@@ -595,35 +483,7 @@ class CountyListView(generics.ListAPIView):
     responses={
         200: OpenApiResponse(
             response=LocationListResponseSerializer,
-            description="Location hierarchy retrieved successfully",
-            examples=[
-                OpenApiExample(
-                    "Sub-counties in Kisumu",
-                    value={
-                        "success": True,
-                        "locations": [
-                            {
-                                "id": 3,
-                                "name": "Kisumu East",
-                                "type": "sub_county",
-                                "level": 1,
-                                "code": "001-001",
-                                "full_path": "Kisumu > Kisumu East",
-                                "children": []
-                            },
-                            {
-                                "id": 4,
-                                "name": "Kisumu West", 
-                                "type": "sub_county",
-                                "level": 1,
-                                "code": "001-002",
-                                "full_path": "Kisumu > Kisumu West",
-                                "children": []
-                            }
-                        ]
-                    }
-                )
-            ]
+            description="Location hierarchy retrieved successfully"
         ),
         400: OpenApiResponse(
             response=ErrorResponseSerializer,
@@ -782,23 +642,7 @@ def anonymous_session_status(request, session_id):
     responses={
         200: OpenApiResponse(
             response=SystemHealthSerializer,
-            description="System is healthy",
-            examples=[
-                OpenApiExample(
-                    "Healthy System",
-                    value={
-                        "success": True,
-                        "message": "CivicAI API is running",
-                        "version": "1.0.0",
-                        "features": {
-                            "counties": 47,
-                            "anonymous_sessions": True,
-                            "invisible_boundaries": True,
-                            "jwt_auth": True
-                        }
-                    }
-                )
-            ]
+            description="System is healthy"
         )
     }
 )

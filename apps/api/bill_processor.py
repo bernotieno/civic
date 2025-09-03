@@ -176,12 +176,13 @@ def detect_bill_sections(text: str) -> List[Dict]:
     return sections
 
 
-def apply_civicai_prompt_to_section(section_content: str, section_title: str) -> str:
+def apply_civicai_prompt_to_section(section_content: str, section_title: str, timeout: int = 45) -> str:
     """
-    Apply CivicAI master prompt to single section
+    Apply CivicAI master prompt to single section with improved error handling
     Args:
         section_content: Text content of the section
         section_title: Name/title of the section
+        timeout: API timeout in seconds (default: 45)
     Returns:
         str: Processed markdown content following CivicAI format
     """
@@ -214,12 +215,30 @@ def apply_civicai_prompt_to_section(section_content: str, section_title: str) ->
             }
         )
         
-        with urllib.request.urlopen(req, timeout=30) as response:
-            if response.status == 200:
-                result = json.loads(response.read().decode('utf-8'))
-                return result['choices'][0]['message']['content']
-            else:
-                return f"**{section_title}**\n\n{section_content[:1000]}...\n\n*Note: AI processing failed with status {response.status}.*"
+        # Improved error handling with retry logic
+        max_retries = 2
+        for attempt in range(max_retries + 1):
+            try:
+                with urllib.request.urlopen(req, timeout=timeout) as response:
+                    if response.status == 200:
+                        result = json.loads(response.read().decode('utf-8'))
+                        return result['choices'][0]['message']['content']
+                    elif response.status == 429:  # Rate limited
+                        if attempt < max_retries:
+                            import time
+                            time.sleep(2 ** attempt)  # Exponential backoff
+                            continue
+                        else:
+                            return f"**{section_title}**\n\n{section_content[:1000]}...\n\n*Note: AI service temporarily busy (rate limited).*"
+                    else:
+                        return f"**{section_title}**\n\n{section_content[:1000]}...\n\n*Note: AI processing failed with status {response.status}.*"
+            except urllib.error.URLError as e:
+                if attempt < max_retries:
+                    import time
+                    time.sleep(1)
+                    continue
+                else:
+                    return f"**{section_title}**\n\n{section_content[:1000]}...\n\n*Note: Network error - {str(e)}*"
                 
     except Exception as e:
         return f"**{section_title}**\n\n{section_content[:1000]}...\n\n*Note: AI processing error - {str(e)}*"

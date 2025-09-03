@@ -119,3 +119,12 @@ Code Standards
 ✅ APIs: Respect user context and tenant boundaries
 ✅ Tests: Test each role's access level
 ✅ Documentation: Update README for new features
+
+🧱 1. Install pgvector in PostgreSQL
+psql -U postgres
+CREATE EXTENSION IF NOT EXISTS vector;
+
+
+SET ivfflat.probes = 20;
+
+celery -A civicAI worker -l INFO --pool=prefork --concurrency=8 --prefetch-multiplier=2

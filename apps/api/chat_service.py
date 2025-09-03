@@ -1,5 +1,6 @@
 # apps/api/chat_service.py
 import re
+import hashlib
 import urllib.request
 import urllib.parse
 import json
@@ -156,147 +157,79 @@ def validate_chat_question(question: str, bill_id: str) -> Dict:
             'suggestions': ['Please try rephrasing your question']
         }
 
-
 def find_relevant_chunks(bill_id: str, user_question: str, limit: int = 5) -> List[Dict]:
     """
-    Find most relevant bill chunks for user question using keyword matching
-    (This is a simplified version - embeddings would be more sophisticated)
-    
-    Args:
-        bill_id: Bill UUID string
-        user_question: User's question about the bill
-        limit: Maximum chunks to return
-    Returns:
-        list[dict]: [
-            {
-                'chunk_id': str,
-                'section_title': str,
-                'content': str,
-                'processed_content': str,
-                'relevance_score': float,
-                'chunk_order': int
-            }
-        ]
+    Hybrid wrapper around the canonical embedding+keyword pipeline,
+    preserving the legacy return shape and adding safe fallbacks.
     """
+    # Local import to avoid circulars if placement changes
     try:
-        # Cache key for chunk search
-        cache_key = f'chunk_search_{bill_id}_{hash(user_question.lower())}_{limit}'
-        cached_result = cache.get(cache_key)
-        if cached_result:
-            return cached_result
-        
-        # Get all chunks for the bill
-        chunks = BillChunk.objects.filter(
-            bill_id=bill_id,
-            is_deleted=False
-        ).order_by('chunk_index')
-        
-        if not chunks.exists():
-            logger.warning(f"No chunks found for bill {bill_id}")
-            return []
-        
-        # Extract keywords from user question
-        question_lower = user_question.lower()
-        
-        # Remove common stop words and extract meaningful terms
-        stop_words = {
-            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-            'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have',
-            'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should',
-            'may', 'might', 'can', 'this', 'that', 'these', 'those', 'i', 'you',
-            'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them'
-        }
-        
-        # Extract keywords (simple approach)
-        keywords = []
-        words = re.findall(r'\b\w+\b', question_lower)
-        for word in words:
-            if len(word) > 2 and word not in stop_words:
-                keywords.append(word)
-        
-        # Important domain-specific terms that boost relevance
-        priority_terms = {
-            'tax': 3.0, 'fee': 3.0, 'penalty': 3.0, 'fine': 3.0, 'money': 2.5,
-            'citizen': 2.5, 'mwananchi': 2.5, 'people': 2.0, 'public': 2.0,
-            'right': 3.0, 'rights': 3.0, 'obligation': 2.5, 'duty': 2.5,
-            'government': 2.0, 'ministry': 2.0, 'authority': 2.0,
-            'business': 2.5, 'company': 2.5, 'individual': 2.0,
-            'affect': 2.0, 'impact': 2.0, 'change': 2.0, 'new': 1.5,
-            'section': 1.5, 'clause': 1.5, 'provision': 1.5,
-            'shall': 1.5, 'must': 2.0, 'required': 2.0, 'mandatory': 2.0
-        }
-        
-        # Score each chunk based on keyword relevance
-        chunk_scores = []
-        
-        for chunk in chunks:
-            score = 0.0
-            
-            # Text to search in (prefer processed content if available)
-            search_text = (chunk.processed_content or chunk.content).lower()
-            section_title = chunk.section_title.lower()
-            
-            # Score based on keyword matches
-            for keyword in keywords:
-                # Title matches get higher score
-                title_matches = section_title.count(keyword)
-                content_matches = search_text.count(keyword)
-                
-                # Apply priority multiplier if it's a priority term
-                multiplier = priority_terms.get(keyword, 1.0)
-                
-                score += (title_matches * 2.0 + content_matches * 1.0) * multiplier
-            
-            # Bonus for exact phrase matches
-            if user_question.lower() in search_text:
-                score += 5.0
-            
-            # Bonus for question-specific terms in content
-            question_indicators = ['what', 'how', 'when', 'where', 'why', 'who']
-            for indicator in question_indicators:
-                if indicator in question_lower and indicator in search_text:
-                    score += 1.0
-            
-            if score > 0:
-                chunk_scores.append({
-                    'chunk_id': str(chunk.id),
-                    'section_title': chunk.section_title,
-                    'content': chunk.content,
-                    'processed_content': chunk.processed_content or chunk.content,
-                    'relevance_score': round(score, 2),
-                    'chunk_order': chunk.chunk_index,
-                    'character_count': len(chunk.content)
-                })
-        
-        # Sort by relevance score (highest first)
-        chunk_scores.sort(key=lambda x: x['relevance_score'], reverse=True)
-        
-        # Take top results
-        relevant_chunks = chunk_scores[:limit]
-        
-        # If no relevant chunks found with keyword matching, return first few chunks
-        if not relevant_chunks:
-            logger.info(f"No keyword matches for question in bill {bill_id}, returning first chunks")
-            for chunk in chunks[:limit]:
-                relevant_chunks.append({
-                    'chunk_id': str(chunk.id),
-                    'section_title': chunk.section_title,
-                    'content': chunk.content,
-                    'processed_content': chunk.processed_content or chunk.content,
-                    'relevance_score': 0.1,  # Low relevance score
-                    'chunk_order': chunk.chunk_index,
-                    'character_count': len(chunk.content)
-                })
-        
-        # Cache results for 10 minutes
-        cache.set(cache_key, relevant_chunks, timeout=600)
-        
-        logger.info(f"Found {len(relevant_chunks)} relevant chunks for question in bill {bill_id}")
-        return relevant_chunks
-        
+        # canonical pipeline: embeddings + keyword + weighted fusion【:contentReference[oaicite:3]{index=3}】
+        from apps.api.embedding_service import hybrid_search
     except Exception as e:
-        logger.error(f"Error finding relevant chunks for bill {bill_id}: {str(e)}")
+        logger.error(f"Imports failed in find_relevant_chunks: {e}")
         return []
+
+    try:
+        # Stable cache key (avoid Python's randomized hash())
+        sig = hashlib.md5(user_question.lower().encode("utf-8")).hexdigest()
+        cache_key = f"chunk_search_v2_{bill_id}_{sig}_{limit}"
+        cached = cache.get(cache_key)
+        if cached:
+            return cached
+
+        # Overfetch a bit, then trim (quality boost)
+        raw_results = hybrid_search(bill_id=bill_id, query=user_question, limit=limit * 2)
+
+        upgraded: List[Dict] = []
+        for r in (raw_results or []):
+            content = r.get("content", "")
+            processed = r.get("processed_content") or content
+            score = float(r.get("similarity_score", 0.0))
+            # optional: clamp to [0,1] since upstream normalizes keyword scores to 0-1【:contentReference[oaicite:4]{index=4}】
+            score = max(0.0, min(1.0, score))
+            upgraded.append({
+                "chunk_id": r.get("chunk_id"),
+                "section_title": r.get("section_title", ""),
+                "content": content,
+                "processed_content": processed,
+                "relevance_score": round(score, 3),
+                "chunk_order": r.get("chunk_order", 0),
+                "character_count": r.get("character_count", len(content)),
+                # keep for observability; hybrid_search populates this【:contentReference[oaicite:5]{index=5}】
+                "search_method": r.get("search_method", "unknown"),
+                **({"embedding_info": r["embedding_info"]} if "embedding_info" in r else {})
+            })
+
+        # Sort + trim
+        upgraded.sort(key=lambda x: x["relevance_score"], reverse=True)
+        relevant_chunks = upgraded[:limit]
+
+        # Final fallback: first N chunks when nothing meaningful is returned
+        if not relevant_chunks:
+            logger.info(f"No semantic/keyword matches for bill {bill_id}; returning first {limit} chunks")
+            first_chunks = (BillChunk.objects
+                .filter(bill_id=bill_id, is_deleted=False)
+                .order_by("chunk_index")[:limit])
+            relevant_chunks = [{
+                "chunk_id": str(ch.id),
+                "section_title": ch.section_title,
+                "content": ch.content or "",
+                "processed_content": ch.processed_content or (ch.content or ""),
+                "relevance_score": 0.1,
+                "chunk_order": ch.chunk_index,
+                "character_count": len(ch.content or ""),
+                "search_method": "first_chunks_fallback",
+            } for ch in first_chunks]
+
+        cache.set(cache_key, relevant_chunks, timeout=600)
+        logger.info(f"[find_relevant_chunks] bill={bill_id} limit={limit} → {len(relevant_chunks)} results")
+        return relevant_chunks
+
+    except Exception as e:
+        logger.error(f"Error in upgraded find_relevant_chunks for bill {bill_id}: {e}")
+        return []
+
 
 
 def generate_citizen_chat_response(bill_id: str, user_question: str, relevant_chunks: List[Dict], conversation_context: List[Dict] = None) -> Dict:
@@ -319,6 +252,14 @@ def generate_citizen_chat_response(bill_id: str, user_question: str, relevant_ch
             'error': str (if failed)
         }
     """
+    import time
+    start_time = time.time()
+
+    cache_key = f'chat_response_{hashlib.md5((user_question + bill_id).encode()).hexdigest()}'
+    cached_response = cache.get(cache_key)
+    if cached_response:
+        return cached_response  
+    
     try:
         if not relevant_chunks:
             return {
@@ -369,6 +310,9 @@ def generate_citizen_chat_response(bill_id: str, user_question: str, relevant_ch
                 "temperature": 0.3,  # Lower temperature for more consistent answers
                 "max_tokens": 800
             }
+
+            openai_start = time.time()
+            logger.info(f"⏱️  DEBUG: Starting OpenAI call after {openai_start - start_time:.2f}s")   
             
             req = urllib.request.Request(
                 "https://api.openai.com/v1/chat/completions",
@@ -380,9 +324,18 @@ def generate_citizen_chat_response(bill_id: str, user_question: str, relevant_ch
             )
             
             with urllib.request.urlopen(req, timeout=30) as response:
+                logger.info(f"🚀 DEBUG: OpenAI response status: {response.status}")
                 if response.status == 200:
                     result = json.loads(response.read().decode('utf-8'))
+
+                    logger.info(f"🔍 DEBUG: OpenAI result keys: {list(result.keys())}")
+                    logger.info(f"✅ DEBUG: OpenAI choices length: {len(result.get('choices', []))}")
+
                     ai_response = result['choices'][0]['message']['content']
+
+                    openai_end = time.time()
+                    logger.info(f"⏱️  DEBUG: OpenAI call took {openai_end - openai_start:.2f}s")
+                    logger.info(f"📝 DEBUG: AI response length: {len(ai_response)} chars")
                     
                     # Extract sources from relevant chunks
                     sources = list(set([chunk['section_title'] for chunk in relevant_chunks 
@@ -402,6 +355,14 @@ def generate_citizen_chat_response(bill_id: str, user_question: str, relevant_ch
                     
                     logger.info(f"Generated AI response for bill {bill_id} question")
                     
+                    # Before return, cache successful responses
+                    if result.get('choices') and len(result['choices']) > 0:
+                        cache.set(cache_key, result, timeout=180)  # 3 minutes    
+                    logger.info(f"🎯 DEBUG: About to return success response")
+
+                    total_time = time.time() - start_time
+                    logger.info(f"🏁 DEBUG: Total response generation: {total_time:.2f}s")  
+
                     return {
                         'success': True,
                         'response': ai_response,
@@ -417,11 +378,20 @@ def generate_citizen_chat_response(bill_id: str, user_question: str, relevant_ch
                     }
                 else:
                     logger.warning(f"OpenAI API returned status {response.status}")
+                    logger.error(f"💥 DEBUG: Exception in OpenAI call - Type: {type(e)}, Message: {str(e)}")
+                    logger.error(f"💥 DEBUG: Exception occurred at line: {e.__traceback__.tb_lineno if e.__traceback__ else 'unknown'}")    
                     return create_fallback_response(user_question, relevant_chunks, bill.title)
                     
+        # except Exception as e:
+        #     logger.error(f"OpenAI API call failed: {str(e)}")
+        #     return create_fallback_response(user_question, relevant_chunks, bill.title)
         except Exception as e:
-            logger.error(f"OpenAI API call failed: {str(e)}")
-            return create_fallback_response(user_question, relevant_chunks, bill.title)
+            logger.error(f"💥 DEBUG: Exception type: {type(e).__name__}")
+            logger.error(f"💥 DEBUG: Exception message: {str(e)}")
+            logger.error(f"💥 DEBUG: Exception traceback line: {e.__traceback__.tb_lineno if e.__traceback__ else 'unknown'}")
+            import traceback
+            logger.error(f"💥 DEBUG: Full traceback: {traceback.format_exc()}")
+            return create_fallback_response(user_question, relevant_chunks, bill.title) 
             
     except Exception as e:
         logger.error(f"Error generating chat response: {str(e)}")
@@ -429,11 +399,11 @@ def generate_citizen_chat_response(bill_id: str, user_question: str, relevant_ch
             'success': False,
             'response': '',
             'sources': [],
-            'confidence': 0.0,
-            'disclaimer': '',
-            'follow_up_suggestions': [],
-            'error': f'Failed to generate response: {str(e)}'
-        }
+                'confidence': 0.0,
+                'disclaimer': '',
+                'follow_up_suggestions': [],
+                'error': f'Failed to generate response: {str(e)}'
+            }
 
 
 def create_fallback_response(user_question: str, relevant_chunks: List[Dict], bill_title: str) -> Dict:

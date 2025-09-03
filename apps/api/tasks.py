@@ -8,6 +8,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.files import File
 from django.utils import timezone
 from django.conf import settings
+from celery import group
 
 # Import Phase 1 functions (all working and tested)
 from .bill_processor import (
@@ -25,44 +26,10 @@ from .progress_tracker import (
     mark_bill_processing_complete,
     estimate_processing_time
 )
+from .async_progress_tracker import update_bill_progress_async
+from .embedding_service import generate_chunk_embeddings
 
 logger = logging.getLogger(__name__)
-
-
-def create_async_progress_callback(bill_id: str, task_id: str, broadcast_func=None):
-    """
-    Create progress callback for async processing with WebSocket broadcasting
-    Args:
-        bill_id: Bill UUID string
-        task_id: Celery task ID
-        broadcast_func: Optional WebSocket broadcast function
-    Returns:
-        Callable: Progress callback function
-    """
-    def callback(stage: str, percentage: int, message: str):
-        # Update database progress (Phase 1 function)
-        time_remaining = None
-        if percentage > 0 and percentage < 100:
-            estimated_total = estimate_processing_time(50)  # Default estimate
-            time_remaining = int((100 - percentage) / 100 * estimated_total)
-        
-        update_bill_progress(bill_id, stage, percentage, message, time_remaining)
-        
-        # Broadcast via WebSocket if function provided
-        if broadcast_func:
-            try:
-                broadcast_func(bill_id, {
-                    'stage': stage,
-                    'progress': percentage,
-                    'message': message,
-                    'time_remaining': time_remaining,
-                    'task_id': task_id,
-                    'timestamp': timezone.now().isoformat()
-                })
-            except Exception as e:
-                logger.warning(f"WebSocket broadcast failed for bill {bill_id}: {str(e)}")
-    
-    return callback
 
 
 def save_uploaded_file_for_async(uploaded_file, bill_id: str) -> str:
@@ -147,17 +114,9 @@ def process_bill_async(self, bill_id: str, uploaded_file_path: str) -> Dict:
         }
     """
     from apps.projects.models import Bill
-    from .async_progress_tracker import broadcast_bill_progress
     
     start_time = time.time()
     temp_files_to_cleanup = [uploaded_file_path] if uploaded_file_path else []
-    
-    # Create progress callback with WebSocket broadcasting
-    progress_callback = create_async_progress_callback(
-        bill_id, 
-        self.request.id,
-        broadcast_bill_progress
-    )
     
     try:
         logger.info(f"Starting async processing for bill {bill_id}, task {self.request.id}")
@@ -179,7 +138,7 @@ def process_bill_async(self, bill_id: str, uploaded_file_path: str) -> Dict:
         from .async_progress_tracker import update_bill_task_id
         update_bill_task_id(bill_id, self.request.id)
         
-        progress_callback('extracting', 5, 'Starting async bill processing...')
+        update_bill_progress_async(bill_id, 'extracting', 5, 'Starting async bill processing...')
         
         # Validate file exists
         if not os.path.exists(uploaded_file_path):
@@ -210,39 +169,102 @@ def process_bill_async(self, bill_id: str, uploaded_file_path: str) -> Dict:
         # Process with Phase 1 enhanced function
         with FileWrapper(uploaded_file_path) as file_wrapper:
             # Step 1: Extract text with progress
-            progress_callback('extracting', 10, 'Extracting text from PDF...')
-            text, page_count = extract_pdf_text_with_progress(file_wrapper, progress_callback)
+            update_bill_progress_async(bill_id, 'extracting', 10, 'Extracting text from PDF...')
+            text, page_count = extract_pdf_text_with_progress(file_wrapper, None)
             
             if not text.strip():
                 raise Exception('No text could be extracted from PDF')
             
             # Step 2: Detect sections
-            progress_callback('analyzing', 55, 'Analyzing document structure...')
+            update_bill_progress_async(bill_id, 'analyzing', 55, 'Analyzing document structure...')
             sections = detect_bill_sections(text)
             sections_count = len(sections)
             
-            progress_callback('sectioning', 60, f'Identified {sections_count} sections for processing...')
+            update_bill_progress_async(bill_id, 'sectioning', 60, f'Identified {sections_count} sections for processing...')
             
-            # Step 3: Process sections with AI
-            processed_sections = []
-            
-            for i, section in enumerate(sections):
-                if self.request.called_directly:
-                    # Check if task was cancelled (only works for async tasks)
-                    pass
+            # Step 3: Process sections with AI (PARALLEL BATCHING)
+            update_bill_progress_async(bill_id, 'processing', 60, f'Starting parallel processing of {sections_count} sections...')
+
+            # Split sections into batches for parallel processing
+            batch_size = max(15, sections_count // 8)  # Create ~8 parallel batches
+            section_batches = [
+                sections[i:i + batch_size] 
+                for i in range(0, len(sections), batch_size)
+            ]
+
+            logger.info(f"Processing {sections_count} sections in {len(section_batches)} parallel batches")
+
+            # Import group for parallel task execution
+            from celery import group
+
+            # Create parallel Celery tasks
+            batch_jobs = group(
+                process_bill_section_batch.s(bill_id, batch, batch_idx) 
+                for batch_idx, batch in enumerate(section_batches)
+            )
+
+            # Use ThreadPoolExecutor for parallel processing within single task (safer approach)
+            try:
+                update_bill_progress_async(bill_id, 'processing', 65, 'Running parallel section processing...')
                 
-                section_progress = 60 + int((i / sections_count) * 25)  # 60-85% range
-                progress_callback(
-                    'processing', 
-                    section_progress, 
-                    f'Processing section {i+1} of {sections_count}: {section["title"][:50]}...'
-                )
+                from concurrent.futures import ThreadPoolExecutor, as_completed
+                import threading
                 
-                # Apply CivicAI prompt to section (Phase 1 function)
-                processed_content = apply_civicai_prompt_to_section(section['content'], section['title'])
-                processed_sections.append(processed_content)
+                # Process sections in parallel using ThreadPoolExecutor (within same task)
+                processed_sections = []
+                total_sections = len(sections)
+                completed_sections = 0
+                
+                # Use ThreadPoolExecutor with 5 concurrent threads
+                with ThreadPoolExecutor(max_workers=5) as executor:
+                    # Submit all sections for processing
+                    future_to_section = {
+                        executor.submit(apply_civicai_prompt_to_section, section['content'], section['title']): section 
+                        for section in sections
+                    }
+                    
+                    # Collect results as they complete
+                    for future in as_completed(future_to_section):
+                        section = future_to_section[future]
+                        try:
+                            result = future.result()
+                            processed_sections.append(result)
+                            completed_sections += 1
+                            
+                            # Update progress every 10 completed sections
+                            if completed_sections % 10 == 0:
+                                progress = 65 + int((completed_sections / total_sections) * 20)
+                                update_bill_progress_async(
+                                    bill_id, 
+                                    'processing', 
+                                    progress, 
+                                    f'Processed {completed_sections}/{total_sections} sections...'
+                                )
+                            
+                        except Exception as e:
+                            logger.error(f"Section processing failed: {e}")
+                            processed_sections.append(f"**{section['title']}**\n\nProcessing failed: {str(e)}")
+                            completed_sections += 1
+                
+                logger.info(f"ThreadPool processing completed: {len(processed_sections)} sections processed")
+                update_bill_progress_async(bill_id, 'processing', 85, f'Parallel processing completed: {len(processed_sections)} sections processed')
+
+            except Exception as e:
+                logger.error(f"ThreadPool processing failed, falling back to sequential: {e}")
+                # Fallback to original sequential processing
+                processed_sections = []
+                for i, section in enumerate(sections):
+                    section_progress = 65 + int((i / sections_count) * 20)  # 65-85% range
+                    update_bill_progress_async(
+                        bill_id,
+                        'processing', 
+                        section_progress, 
+                        f'Processing section {i+1} of {sections_count} (fallback): {section["title"][:50]}...'
+                    )
+                    processed_content = apply_civicai_prompt_to_section(section['content'], section['title'])
+                    processed_sections.append(processed_content)
             
-            progress_callback('formatting', 90, 'Combining sections and formatting output...')
+            update_bill_progress_async(bill_id, 'formatting', 90, 'Combining sections and formatting output...')
             
             # Step 4: Combine sections and create final output
             final_markdown, final_html = combine_sections_to_final_summary(processed_sections)
@@ -252,7 +274,7 @@ def process_bill_async(self, bill_id: str, uploaded_file_path: str) -> Dict:
             if not quality_check['overall_quality']:
                 logger.warning(f"Summary quality check failed for bill {bill_id}: {quality_check}")
             
-            progress_callback('completing', 95, 'Creating chunks for chat functionality...')
+            update_bill_progress_async(bill_id, 'completing', 95, 'Creating chunks for chat functionality...')
             
             # Step 5: Create chunks for Phase 3 chat functionality
             chunks_created = create_bill_chunks(text, bill)
@@ -266,7 +288,7 @@ def process_bill_async(self, bill_id: str, uploaded_file_path: str) -> Dict:
             
             # Mark as complete
             mark_bill_processing_complete(bill_id, success=True)
-            progress_callback('completed', 100, 'Async processing complete!')
+            update_bill_progress_async(bill_id, 'completed', 100, 'Async processing complete!')
             
             processing_time = time.time() - start_time
             
@@ -295,14 +317,14 @@ def process_bill_async(self, bill_id: str, uploaded_file_path: str) -> Dict:
         
         # Mark as failed
         mark_bill_processing_complete(bill_id, success=False, error_message=error_msg)
-        progress_callback('failed', 0, f'Processing failed: {error_msg}')
+        update_bill_progress_async(bill_id, 'failed', 0, f'Processing failed: {error_msg}')
         
         # Retry logic with exponential backoff
         if self.request.retries < self.max_retries:
             retry_countdown = 60 * (2 ** self.request.retries)
             logger.info(f"Retrying bill {bill_id} in {retry_countdown} seconds (attempt {self.request.retries + 1})")
             
-            progress_callback('pending', 0, f'Retrying in {retry_countdown} seconds...')
+            update_bill_progress_async(bill_id, 'pending', 0, f'Retrying in {retry_countdown} seconds...')
             raise self.retry(countdown=retry_countdown, exc=exc)
         
         return {
@@ -490,7 +512,6 @@ def cleanup_failed_bill_processing(bill_id: str) -> Dict:
             'error': error_msg
         }
 
-
 @app.task(bind=True, queue='ai_batch')
 def generate_bill_embeddings_async(self, bill_id: str) -> Dict:
     """
@@ -501,55 +522,33 @@ def generate_bill_embeddings_async(self, bill_id: str) -> Dict:
         dict: {'success': bool, 'embeddings_generated': int}
     """
     try:
-        from apps.projects.models import Bill, BillChunk
-        import json
-        
         logger.info(f"Generating embeddings for bill {bill_id}")
         
-        # Get bill chunks
-        chunks = BillChunk.objects.filter(
-            bill_id=bill_id,
-            is_deleted=False
-        ).order_by('chunk_index')
+        # Use the production embedding service to generate embeddings
+        result = generate_chunk_embeddings(bill_id, force_regenerate=False)
         
-        if not chunks.exists():
+        if result['success']:
+            logger.info(f"Generated {result['embeddings_generated']} embeddings for bill {bill_id}")
+            
+            return {
+                'success': True,
+                'embeddings_generated': result['embeddings_generated'],
+                'bill_id': bill_id,
+                'task_id': self.request.id,
+                'skipped': result.get('skipped', 0),
+                'total_chunks': result.get('total_chunks', 0),
+                'processing_info': result.get('processing_info', {})
+            }
+        else:
+            logger.error(f"Failed to generate embeddings for bill {bill_id}: {result.get('error', 'Unknown error')}")
+            
             return {
                 'success': False,
                 'embeddings_generated': 0,
-                'error': 'No chunks found for bill'
+                'bill_id': bill_id,
+                'error': result.get('error', 'Unknown embedding generation error'),
+                'task_id': self.request.id
             }
-        
-        embeddings_generated = 0
-        
-        # Note: This is preparation for Phase 3
-        # For now, we'll create placeholder embeddings
-        # In Phase 3, this will use actual embedding models
-        
-        for chunk in chunks:
-            if not chunk.processed_content:
-                # Create simple content hash as placeholder embedding
-                import hashlib
-                content_hash = hashlib.md5(chunk.content.encode()).hexdigest()
-                placeholder_embedding = [float(int(c, 16)) / 255.0 for c in content_hash[:32]]
-                
-                # Store as JSON in the embedding field (if exists)
-                if hasattr(chunk, 'embedding'):
-                    chunk.embedding = {
-                        'model': 'placeholder',
-                        'vector': placeholder_embedding,
-                        'generated_at': timezone.now().isoformat()
-                    }
-                    chunk.save(update_fields=['embedding'])
-                    embeddings_generated += 1
-        
-        logger.info(f"Generated {embeddings_generated} embeddings for bill {bill_id}")
-        
-        return {
-            'success': True,
-            'embeddings_generated': embeddings_generated,
-            'bill_id': bill_id,
-            'task_id': self.request.id
-        }
         
     except Exception as e:
         error_msg = f"Failed to generate embeddings for bill {bill_id}: {str(e)}"

@@ -1150,7 +1150,7 @@ def track_feedback(request, tracking_id):
                                 "department": "Ethics & Anti-Corruption Unit",
                                 "anonymous_recommended": True,
                                 "typical_response_time": "2-5 days",
-                                "examples": ["Bribery", "Misuse of funds", "Service delivery corruption"]
+                                "enum": ["Bribery", "Misuse of funds", "Service delivery corruption"]
                             },
                             {
                                 "value": "infrastructure",
@@ -1160,7 +1160,7 @@ def track_feedback(request, tracking_id):
                                 "department": "Public Works & Infrastructure",
                                 "anonymous_recommended": False,
                                 "typical_response_time": "1-3 days",
-                                "examples": ["Potholes", "Bridge damage", "Traffic signals"]
+                                "enum": ["Potholes", "Bridge damage", "Traffic signals"]
                             }
                         ]
                     }
@@ -1183,63 +1183,63 @@ def feedback_categories(request):
             'department': 'Public Works & Infrastructure',
             'typical_response_time': '1-3 days',
             'anonymous_recommended': False,
-            'examples': ['Road conditions', 'Bridge problems', 'Traffic signals', 'Public transport']
+            'enum': ['Road conditions', 'Bridge problems', 'Traffic signals', 'Public transport']
         },
         'healthcare': {
             'icon': '🏥',
             'department': 'Health & Medical Services',
             'typical_response_time': '1-2 days',
             'anonymous_recommended': False,
-            'examples': ['Hospital services', 'Clinic issues', 'Medical equipment', 'Health programs']
+            'enum': ['Hospital services', 'Clinic issues', 'Medical equipment', 'Health programs']
         },
         'education': {
             'icon': '🎓',
             'department': 'Education & Human Resources',
             'typical_response_time': '2-4 days',
             'anonymous_recommended': False,
-            'examples': ['School facilities', 'Teacher issues', 'Learning resources', 'Educational programs']
+            'enum': ['School facilities', 'Teacher issues', 'Learning resources', 'Educational programs']
         },
         'water_sanitation': {
             'icon': '💧',
             'department': 'Water, Sanitation & Environment',
             'typical_response_time': '1-3 days',
             'anonymous_recommended': False,
-            'examples': ['Water supply', 'Sewage problems', 'Sanitation facilities', 'Water quality']
+            'enum': ['Water supply', 'Sewage problems', 'Sanitation facilities', 'Water quality']
         },
         'security': {
             'icon': '🛡️',
             'department': 'Security & Emergency Services',
             'typical_response_time': '6-24 hours',
             'anonymous_recommended': True,
-            'examples': ['Crime reports', 'Public safety', 'Emergency response', 'Police services']
+            'enum': ['Crime reports', 'Public safety', 'Emergency response', 'Police services']
         },
         'environment': {
             'icon': '🌱',
             'department': 'Environment & Natural Resources',
             'typical_response_time': '2-5 days',
             'anonymous_recommended': False,
-            'examples': ['Waste management', 'Pollution', 'Environmental conservation', 'Climate issues']
+            'enum': ['Waste management', 'Pollution', 'Environmental conservation', 'Climate issues']
         },
         'governance': {
             'icon': '🏛️',
             'department': 'Ethics & Anti-Corruption Unit',
             'typical_response_time': '2-7 days',
             'anonymous_recommended': True,
-            'examples': ['Corruption reports', 'Misconduct', 'Transparency issues', 'Service delivery problems']
+            'enum': ['Corruption reports', 'Misconduct', 'Transparency issues', 'Service delivery problems']
         },
         'economic': {
             'icon': '💼',
             'department': 'Trade, Industry & Economic Development',
             'typical_response_time': '3-7 days',
             'anonymous_recommended': False,
-            'examples': ['Business environment', 'Employment issues', 'Economic policies', 'Trade problems']
+            'enum': ['Business environment', 'Employment issues', 'Economic policies', 'Trade problems']
         },
         'other': {
             'icon': '📋',
             'department': 'General Administration',
             'typical_response_time': '2-5 days',
             'anonymous_recommended': False,
-            'examples': ['General concerns', 'Administrative issues', 'Customer service', 'Other matters']
+            'enum': ['General concerns', 'Administrative issues', 'Customer service', 'Other matters']
         }
     }
     

@@ -5,8 +5,7 @@ from rest_framework import serializers
 from typing import Union
 from django.utils import timezone
 from django.db.models import Count, Avg
-from drf_spectacular.utils import extend_schema_field, extend_schema_serializer
-from drf_spectacular.openapi import OpenApiExample
+from drf_spectacular.utils import extend_schema_field, extend_schema_serializer, OpenApiExample
 from apps.users.models import County, Location
 from apps.users.anonymous import AnonymousUserHandler
 from apps.core.anonymous import AnonymousSessionManager
@@ -20,29 +19,7 @@ from .utils import FeedbackRateLimit
 # =============================================================================
 
 @extend_schema_serializer(
-    examples=[
-        OpenApiExample(
-            "Infrastructure Feedback",
-            value={
-                "value": "infrastructure",
-                "label": "Infrastructure & Roads",
-                "description": "Roads, bridges, public transport, and infrastructure maintenance issues",
-                "icon": "🏗️",
-                "department": "Public Works Department"
-            }
-        ),
-        OpenApiExample(
-            "Healthcare Feedback", 
-            value={
-                "value": "healthcare",
-                "label": "Healthcare Services",
-                "description": "Hospitals, clinics, medical services, and health facility issues",
-                "icon": "🏥",
-                "department": "Health Department"
-            }
-        )
-    ]
-)
+    )
 class FeedbackCategoryChoiceSerializer(serializers.Serializer):
     """🎯 Enhanced category choices for frontend dropdowns with department routing"""
     
@@ -64,29 +41,7 @@ class FeedbackCategoryChoiceSerializer(serializers.Serializer):
 
 
 @extend_schema_serializer(
-    examples=[
-        OpenApiExample(
-            "High Priority",
-            value={
-                "value": "high",
-                "label": "High Priority",
-                "description": "Significant issues affecting community safety or services",
-                "color": "#FF9800",
-                "response_time": "24-48 hours"
-            }
-        ),
-        OpenApiExample(
-            "Urgent Priority",
-            value={
-                "value": "urgent", 
-                "label": "Urgent",
-                "description": "Critical issues requiring immediate attention (safety hazards, emergencies)",
-                "color": "#F44336",
-                "response_time": "2-6 hours"
-            }
-        )
-    ]
-)
+    )
 class PriorityChoiceSerializer(serializers.Serializer):
     """⚡ Priority level choices with response time expectations"""
     
@@ -98,29 +53,7 @@ class PriorityChoiceSerializer(serializers.Serializer):
 
 
 @extend_schema_serializer(
-    examples=[
-        OpenApiExample(
-            "Pending Status",
-            value={
-                "value": "pending",
-                "label": "Pending Review",
-                "description": "Feedback received and awaiting initial review by government officials",
-                "color": "#9E9E9E",
-                "next_action": "Government official will review and categorize"
-            }
-        ),
-        OpenApiExample(
-            "Responded Status",
-            value={
-                "value": "responded", 
-                "label": "Official Response",
-                "description": "Government officials have provided a response or update",
-                "color": "#2196F3",
-                "next_action": "Citizen can track progress or provide additional information"
-            }
-        )
-    ]
-)
+    )
 class StatusChoiceSerializer(serializers.Serializer):
     """📊 Feedback status workflow with clear progression"""
     
@@ -136,38 +69,7 @@ class StatusChoiceSerializer(serializers.Serializer):
 # =============================================================================
 
 @extend_schema_serializer(
-    examples=[
-        OpenApiExample(
-            "Road Infrastructure Feedback",
-            summary="Citizen reporting poor road conditions",
-            description="Example of a citizen reporting infrastructure issues with complete location hierarchy",
-            value={
-                "title": "Severe potholes on Kisumu-Kakamega Highway affecting daily commute",
-                "content": "The road section between kilometer 15-20 has developed numerous large potholes that are damaging vehicles and causing traffic delays. During rainy season, these become dangerous water-filled hazards. This affects hundreds of commuters daily and local businesses are reporting reduced customer visits due to poor road access. Immediate repairs needed before the situation worsens.",
-                "category": "infrastructure",
-                "priority": "high",
-                "county_id": 1,
-                "sub_county_id": 3,
-                "ward_id": 12,
-                "village_id": 45
-            }
-        ),
-        OpenApiExample(
-            "Healthcare Service Feedback",
-            summary="Urgent healthcare facility issue",
-            description="Example of urgent healthcare feedback requiring immediate attention",
-            value={
-                "title": "Medical equipment shortage at County Hospital emergency ward",
-                "content": "The emergency ward at our county hospital has been without a functioning X-ray machine for two weeks. Patients requiring urgent diagnostics are being turned away or must travel 50km to the next facility. This is particularly challenging for accident victims and elderly patients. The broken equipment needs immediate repair or replacement to prevent potential loss of life.",
-                "category": "healthcare", 
-                "priority": "urgent",
-                "county_id": 1,
-                "sub_county_id": 2,
-                "ward_id": 8
-            }
-        )
-    ]
-)
+    )
 class FeedbackSubmissionSerializer(serializers.ModelSerializer):
     """
     📝 **Authenticated User Feedback Submission**
@@ -407,23 +309,7 @@ class FeedbackSubmissionSerializer(serializers.ModelSerializer):
 
 
 @extend_schema_serializer(
-    examples=[
-        OpenApiExample(
-            "Anonymous Infrastructure Report",
-            summary="Anonymous citizen reporting without identity",
-            description="Example of privacy-first feedback submission for sensitive issues",
-            value={
-                "session_id": "anon_sess_1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q",
-                "title": "Corruption in local government office - bribery for permits",
-                "content": "Citizens are being asked to pay unofficial fees for building permits at the county office. The official fee is KES 5000 but staff are demanding additional KES 2000 'processing fees' paid directly to them. This is happening at the permits desk during morning hours. Multiple citizens have experienced this but are afraid to report with their names due to fear of retaliation.",
-                "category": "governance",
-                "priority": "high", 
-                "county_id": 1,
-                "sub_county_id": 2
-            }
-        )
-    ]
-)
+    )
 class AnonymousFeedbackSerializer(serializers.Serializer):
     """
     👤 **Anonymous Feedback Submission**
@@ -646,43 +532,7 @@ class FeedbackResponseSerializer(serializers.ModelSerializer):
 
 
 @extend_schema_serializer(
-    examples=[
-        OpenApiExample(
-            "Pending Feedback Tracking",
-            summary="Recently submitted feedback awaiting review",
-            description="Feedback submitted but not yet reviewed by government officials",
-            value={
-                "tracking_id": "FB240815KSM001",
-                "title": "Poor road conditions on Kisumu-Kakamega highway",
-                "category": "infrastructure",
-                "category_display": "Infrastructure & Roads",
-                "status": "pending",
-                "status_display": "Pending Review",
-                "submitted_at": "2024-08-15T10:30:00Z",
-                "location_path": "Kisumu > Kisumu East > Kondele",
-                "response_count": 0,
-                "last_response_at": None
-            }
-        ),
-        OpenApiExample(
-            "Active Feedback with Response",
-            summary="Feedback with government response",
-            description="Feedback that has received official government response",
-            value={
-                "tracking_id": "FB240815KSM002",
-                "title": "Water shortage in residential area",
-                "category": "water_sanitation", 
-                "category_display": "Water & Sanitation",
-                "status": "responded",
-                "status_display": "Official Response Provided",
-                "submitted_at": "2024-08-15T08:15:00Z",
-                "location_path": "Kisumu > Kisumu West > Central Kisumu",
-                "response_count": 2,
-                "last_response_at": "2024-08-16T14:22:00Z"
-            }
-        )
-    ]
-)
+    )
 class FeedbackTrackingSerializer(serializers.ModelSerializer):
     """
     🔍 **Public Feedback Status Tracking**
@@ -782,9 +632,6 @@ class UserFeedbackListSerializer(serializers.ModelSerializer):
             'location_path', 'can_edit', 'can_delete',
             'edit_restriction_reason', 'delete_restriction_reason', 'is_anonymous'
         ]
-    def get_can_edit(self, obj):
-        can_edit, reason = obj.can_be_edited()
-        return can_edit
     
     def get_can_delete(self, obj):
         can_delete, reason = obj.can_be_deleted()

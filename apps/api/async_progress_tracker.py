@@ -50,7 +50,7 @@ def start_async_bill_processing(bill_id: str, task_id: str) -> Dict:
             'stage': 'initializing',
             'message': 'Async processing session started',
             'retries': 0,
-            'max_retries': 3,
+            'max_retries': 100,
             'websocket_channel': f'bill_progress_{bill_id}'
         }
         
@@ -214,7 +214,7 @@ def get_bill_processing_status(bill_id: str) -> Dict:
         # Determine if retry is possible
         can_retry = (
             basic_progress['status'] in ['failed', 'pending'] and
-            session_data.get('retries', 0) < session_data.get('max_retries', 3)
+            session_data.get('retries', 0) < session_data.get('max_retries', 100)
         )
         
         # Calculate estimated completion
@@ -241,7 +241,7 @@ def get_bill_processing_status(bill_id: str) -> Dict:
                 'started_at': session_data.get('started_at'),
                 'last_update': session_data.get('last_update'),
                 'retries': session_data.get('retries', 0),
-                'max_retries': session_data.get('max_retries', 3)
+                'max_retries': session_data.get('max_retries', 100)
             },
             'task_info': task_info,
             'bill_info': {
@@ -302,7 +302,7 @@ def retry_failed_bill_processing(bill_id: str) -> Dict:
         
         # Check retry limit
         current_retries = session_data.get('retries', 0)
-        max_retries = session_data.get('max_retries', 3)
+        max_retries = session_data.get('max_retries', 100)
         
         if current_retries >= max_retries:
             return {

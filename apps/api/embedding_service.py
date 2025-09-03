@@ -131,15 +131,47 @@ def generate_chunk_embeddings(bill_id: str, force_regenerate: bool = False) -> D
             # Generate placeholder embeddings for development/testing
             return generate_placeholder_embeddings(bill_id, chunks)
         
+        # Process chunks in batches to manage API costs
         embeddings_generated = 0
         embeddings_skipped = 0
-        
-        # Process chunks in batches to manage API costs
-        batch_size = 10  # Process 10 chunks at a time
+        consecutive_failures = 0
+        max_consecutive_failures = 3  # CIRCUIT BREAKER
+
+        # Process chunks in smaller batches to reduce API load and improve reliability
+        batch_size = 5  # REDUCED from 10 to 5 for better reliability
         chunk_list = list(chunks)
-        
+
+        logger.info(f"Processing {len(chunk_list)} chunks in batches of {batch_size}")
+
         for i in range(0, len(chunk_list), batch_size):
             batch = chunk_list[i:i + batch_size]
+            
+            # CIRCUIT BREAKER: Stop after too many consecutive failures
+            if consecutive_failures >= max_consecutive_failures:
+                logger.error(f"Too many consecutive failures ({consecutive_failures}), switching to placeholder embeddings for remaining chunks")
+                
+                # Generate placeholder embeddings for remaining chunks
+                remaining_chunks = chunk_list[i:]
+                for chunk in remaining_chunks:
+                    placeholder_embedding = generate_single_placeholder_embedding(chunk.processed_content or chunk.content)
+                    chunk.embedding = {
+                        'model': 'placeholder',
+                        'vector': placeholder_embedding,
+                        'generated_at': timezone.now().isoformat(),
+                        'is_placeholder': True,
+                        'content_length': len(chunk.processed_content or chunk.content)
+                    }
+                    chunk.save(update_fields=[
+                        'embedding', 
+                        'embedding_model', 
+                        'embedding_created_at', 
+                        'embedding_dimensions', 
+                        'is_placeholder_embedding',
+                        'embedding_error'
+                    ])
+                    embeddings_generated += 1
+                
+                break  # Exit the batch processing loop
             
             # Prepare batch data for embedding API
             texts_to_embed = []
@@ -147,7 +179,7 @@ def generate_chunk_embeddings(bill_id: str, force_regenerate: bool = False) -> D
             
             for chunk in batch:
                 # Skip if embedding already exists and not forcing regeneration
-                if chunk.embedding and not force_regenerate:
+                if chunk.embedding is not None and len(chunk.embedding) > 0 and not force_regenerate:
                     embeddings_skipped += 1
                     continue
                 
@@ -165,23 +197,103 @@ def generate_chunk_embeddings(bill_id: str, force_regenerate: bool = False) -> D
             if texts_to_embed:
                 try:
                     batch_embeddings = generate_batch_embeddings(texts_to_embed)
-                    
+                                        
                     if batch_embeddings and len(batch_embeddings) == len(chunks_to_update):
                         # Update chunks with their embeddings
-                        for chunk, embedding in zip(chunks_to_update, batch_embeddings):
-                            chunk.embedding = {
-                                'model': 'text-embedding-3-small',
-                                'vector': embedding,
-                                'generated_at': timezone.now().isoformat(),
-                                'content_length': len(chunk.processed_content or chunk.content)
-                            }
-                            chunk.save(update_fields=['embedding'])
+                        try:
+                            for idx, (chunk, embedding) in enumerate(zip(chunks_to_update, batch_embeddings)):
+                                # ENHANCED: Validate embedding before saving
+                                if not isinstance(embedding, list):
+                                    logger.error(f"Chunk {idx}: embedding is not a list: {type(embedding)}")
+                                    raise ValueError(f"Invalid embedding type: {type(embedding)}")
+                                
+                                if not embedding:  # Empty list
+                                    logger.error(f"Chunk {idx}: embedding is empty")
+                                    raise ValueError("Empty embedding")
+                                
+                                # Validate all elements are numbers
+                                for j, val in enumerate(embedding[:5]):  # Check first 5 values
+                                    if not isinstance(val, (int, float)):
+                                        logger.error(f"Chunk {idx}, position {j}: value is not a number: {type(val)} = {val}")
+                                        raise ValueError(f"Invalid embedding value type: {type(val)}")
+                                
+                                # Save raw vector to VectorField (ensure it's a list)
+                                chunk.embedding = embedding if isinstance(embedding, list) else embedding.tolist()
+                                
+                                chunk.embedding_model = 'text-embedding-3-small'
+                                chunk.embedding_created_at = timezone.now()
+                                chunk.embedding_dimensions = len(embedding)
+                                chunk.is_placeholder_embedding = False
+                                chunk.embedding_error = ''
+                                
+                                chunk.save(update_fields=[
+                                    'embedding', 
+                                    'embedding_model', 
+                                    'embedding_created_at', 
+                                    'embedding_dimensions', 
+                                    'is_placeholder_embedding',
+                                    'embedding_error'
+                                ])
+                                embeddings_generated += 1
+                            
+                            logger.info(f"Generated embeddings for batch {i//batch_size + 1} ({len(chunks_to_update)} chunks)")
+                            consecutive_failures = 0  # Reset failure counter on success
+                            
+                        except Exception as save_error:
+                            logger.error(f"Error saving embeddings: {save_error}")
+                            consecutive_failures += 1
+                            
+                            # Fall back to placeholder embeddings for this failed batch
+                            logger.info(f"Generating placeholder embeddings due to save error")
+                            for chunk in chunks_to_update:
+                                placeholder_embedding = generate_single_placeholder_embedding(chunk.processed_content or chunk.content)
+                                chunk.embedding = placeholder_embedding  # Just the raw vector
+                                chunk.embedding_model = 'placeholder'
+                                chunk.embedding_created_at = timezone.now()
+                                chunk.embedding_dimensions = len(placeholder_embedding)
+                                chunk.is_placeholder_embedding = True
+                                chunk.embedding_error = ''
+                                
+                                chunk.save(update_fields=[
+                                    'embedding', 
+                                    'embedding_model', 
+                                    'embedding_created_at', 
+                                    'embedding_dimensions', 
+                                    'is_placeholder_embedding',
+                                    'embedding_error'
+                                ])
+                                embeddings_generated += 1
+                            
+                    else:
+                        logger.error(f"Batch embedding generation failed or count mismatch for batch {i//batch_size + 1}")
+                        logger.error(f"batch_embeddings type: {type(batch_embeddings)}")
+                        logger.error(f"batch_embeddings length: {len(batch_embeddings) if batch_embeddings else 'None'}")
+                        logger.error(f"chunks_to_update length: {len(chunks_to_update)}")
+                        
+                        consecutive_failures += 1
+                        
+                        # Fall back to placeholder embeddings for this failed batch
+                        logger.info(f"Generating placeholder embeddings for failed batch {i//batch_size + 1}")
+                        for chunk in chunks_to_update:
+                            placeholder_embedding = generate_single_placeholder_embedding(chunk.processed_content or chunk.content)
+                            chunk.embedding = placeholder_embedding
+                            chunk.embedding_model = 'placeholder'
+                            chunk.embedding_created_at = timezone.now()
+                            chunk.embedding_dimensions = len(placeholder_embedding)
+                            chunk.is_placeholder_embedding = True
+                            chunk.embedding_error = 'Batch processing failed'   
+                            chunk.save(update_fields=[  
+                                'embedding', 
+                                'embedding_model', 
+                                'embedding_created_at', 
+                                'embedding_dimensions', 
+                                'is_placeholder_embedding',
+                                'embedding_error'
+                            ])
                             embeddings_generated += 1
                             
                         logger.info(f"Generated embeddings for batch of {len(chunks_to_update)} chunks")
-                    else:
-                        logger.error(f"Batch embedding generation failed or count mismatch")
-                        
+                    
                 except Exception as e:
                     logger.error(f"Error processing batch embeddings: {str(e)}")
                     continue
@@ -215,7 +327,7 @@ def generate_chunk_embeddings(bill_id: str, force_regenerate: bool = False) -> D
 
 def generate_batch_embeddings(texts: List[str]) -> Optional[List[List[float]]]:
     """
-    Generate embeddings for a batch of texts
+    Generate embeddings for a batch of texts with proper error handling and response validation
     
     Args:
         texts: List of text strings to embed
@@ -225,6 +337,7 @@ def generate_batch_embeddings(texts: List[str]) -> Optional[List[List[float]]]:
     try:
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
+            logger.warning("OpenAI API key not available, cannot generate embeddings")
             return None
         
         data = {
@@ -241,19 +354,93 @@ def generate_batch_embeddings(texts: List[str]) -> Optional[List[List[float]]]:
             }
         )
         
-        with urllib.request.urlopen(req, timeout=60) as response:  # Longer timeout for batch
+        with urllib.request.urlopen(req, timeout=60) as response:
             if response.status == 200:
                 result = json.loads(response.read().decode('utf-8'))
-                embeddings = [item['embedding'] for item in result['data']]
+                
+                # ENHANCED: Debug logging to see actual response structure
+                logger.debug(f"OpenAI API response keys: {result.keys()}")
+                if 'data' in result and len(result['data']) > 0:
+                    logger.debug(f"First embedding item keys: {result['data'][0].keys()}")
+                    logger.debug(f"First embedding type: {type(result['data'][0].get('embedding'))}")
+                
+                # ENHANCED: Validate response structure
+                if 'data' not in result:
+                    logger.error("OpenAI API response missing 'data' field")
+                    return None
+                
+                if not isinstance(result['data'], list) or len(result['data']) == 0:
+                    logger.error("OpenAI API response 'data' is not a valid list")
+                    return None
+                
+                embeddings = []
+                for i, item in enumerate(result['data']):
+                    # ENHANCED: Validate each item structure
+                    if not isinstance(item, dict):
+                        logger.error(f"Item {i} is not a dict: {type(item)}")
+                        return None
+                    
+                    if 'embedding' not in item:
+                        logger.error(f"Missing 'embedding' in item {i}: available keys = {item.keys()}")
+                        return None
+                    
+                    embedding = item['embedding']
+                    
+                    # ENHANCED: Validate embedding is a list of numbers
+                    if not isinstance(embedding, list):
+                        logger.error(f"Embedding {i} is not a list, it's: {type(embedding)}")
+                        logger.error(f"Embedding content preview: {str(embedding)[:200]}")
+                        return None
+                    
+                    # ENHANCED: Convert and validate each float
+                    try:
+                        float_embedding = []
+                        for j, value in enumerate(embedding):
+                            if isinstance(value, (int, float)):
+                                float_embedding.append(float(value))
+                            elif isinstance(value, str):
+                                float_embedding.append(float(value))
+                            else:
+                                logger.error(f"Embedding {i}, position {j} has invalid type: {type(value)}")
+                                return None
+                        
+                        embeddings.append(float_embedding)
+                        
+                    except (ValueError, TypeError) as e:
+                        logger.error(f"Error converting embedding {i} to floats: {e}")
+                        logger.error(f"Problematic embedding sample: {embedding[:5] if len(embedding) > 5 else embedding}")
+                        return None
+                
+                logger.info(f"Successfully generated {len(embeddings)} embeddings with {len(embeddings[0]) if embeddings else 0} dimensions")
                 return embeddings
             else:
-                logger.error(f"Batch embedding API returned status {response.status}")
+                logger.error(f"OpenAI embedding API returned status {response.status}")
+                try:
+                    error_body = response.read().decode('utf-8')
+                    logger.error(f"API error response: {error_body}")
+                except:
+                    logger.error("Could not read error response body")
                 return None
                 
-    except Exception as e:
-        logger.error(f"Error generating batch embeddings: {str(e)}")
+    except urllib.error.HTTPError as e:
+        logger.error(f"HTTP error in batch embeddings: {e.code} - {e.reason}")
+        try:
+            error_body = e.read().decode('utf-8')
+            logger.error(f"HTTP error body: {error_body}")
+        except:
+            pass
         return None
-
+    except urllib.error.URLError as e:
+        logger.error(f"URL error in batch embeddings: {e.reason}")
+        return None
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON decode error in batch embeddings: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error generating batch embeddings: {str(e)}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        return None
 
 def generate_placeholder_embeddings(bill_id: str, chunks) -> Dict:
     """
@@ -270,7 +457,7 @@ def generate_placeholder_embeddings(bill_id: str, chunks) -> Dict:
         embeddings_generated = 0
         
         for chunk in chunks:
-            if chunk.embedding:  # Skip if already has embedding
+            if chunk.embedding is not None and len(chunk.embedding) > 0:
                 continue
                 
             # Create a simple hash-based placeholder embedding
@@ -290,14 +477,20 @@ def generate_placeholder_embeddings(bill_id: str, chunks) -> Dict:
                 placeholder_embedding.append(0.0)
             
             # Store placeholder embedding
-            chunk.embedding = {
-                'model': 'placeholder',
-                'vector': placeholder_embedding[:384],
-                'generated_at': timezone.now().isoformat(),
-                'is_placeholder': True,
-                'content_length': len(content)
-            }
-            chunk.save(update_fields=['embedding'])
+            chunk.embedding = placeholder_embedding[:384]
+            chunk.embedding_model = 'placeholder'
+            chunk.embedding_created_at = timezone.now()
+            chunk.embedding_dimensions = 384
+            chunk.is_placeholder_embedding = True
+            chunk.embedding_error = ''
+            chunk.save(update_fields=[
+                'embedding', 
+                'embedding_model', 
+                'embedding_created_at', 
+                'embedding_dimensions', 
+                'is_placeholder_embedding',
+                'embedding_error'
+            ])
             embeddings_generated += 1
         
         logger.info(f"Generated {embeddings_generated} placeholder embeddings for bill {bill_id}")
@@ -386,9 +579,9 @@ def find_similar_chunks_by_embedding(bill_id: str, query_embedding: List[float],
         for chunk in chunks:
             try:
                 # Extract embedding vector from stored data
-                chunk_embedding = chunk.embedding.get('vector', [])
+                chunk_embedding = chunk.embedding  # Now it's directly the vector
                 
-                if not chunk_embedding:
+                if chunk_embedding is None or len(chunk_embedding) == 0:
                     continue
                 
                 # Calculate similarity
@@ -404,9 +597,10 @@ def find_similar_chunks_by_embedding(bill_id: str, query_embedding: List[float],
                         'chunk_order': chunk.chunk_index,
                         'character_count': len(chunk.content),
                         'embedding_info': {
-                            'model': chunk.embedding.get('model', 'unknown'),
-                            'is_placeholder': chunk.embedding.get('is_placeholder', False)
-                        }
+                            'model': chunk.embedding_model or 'unknown',
+                            'is_placeholder': chunk.is_placeholder_embedding,
+                            'dimensions': chunk.embedding_dimensions
+                        }   
                     })
                     
             except Exception as e:
@@ -443,7 +637,7 @@ def fallback_keyword_search(bill_id: str, query: str, limit: int = 5) -> List[Di
         # Get all chunks for the bill
         chunks = BillChunk.objects.filter(
             bill_id=bill_id,
-            is_deleted=False
+            is_deleted=False,
         ).order_by('chunk_index')
         
         if not chunks.exists():
@@ -659,3 +853,36 @@ def generate_embeddings_endpoint(request, bill_id):
             'error': str(e),
             'message': 'Endpoint error occurred'
         }, status=500)
+    
+
+def generate_single_placeholder_embedding(content: str) -> List[float]:
+    """
+    Generate a single placeholder embedding for content when API fails
+    
+    Args:
+        content: Text content to create embedding for
+    Returns:
+        list[float]: 384-dimensional placeholder embedding vector
+    """
+    import hashlib
+    
+    # Create a simple hash-based placeholder embedding
+    content_hash = hashlib.md5(content.encode()).hexdigest()
+    
+    # Convert hex to pseudo-embedding (384 dimensions for text-embedding-3-small)
+    placeholder_embedding = []
+    for i in range(0, min(len(content_hash), 32), 2):  # Use pairs of hex digits
+        hex_pair = content_hash[i:i+2]
+        # Convert to float in range [-1, 1]
+        value = (int(hex_pair, 16) - 127.5) / 127.5
+        placeholder_embedding.append(value)
+    
+    # Pad to 384 dimensions with deterministic values based on content
+    content_length_factor = len(content) % 1000 / 1000.0  # Normalize length
+    while len(placeholder_embedding) < 384:
+        # Create pseudo-random but deterministic values
+        seed_value = (len(placeholder_embedding) + len(content)) % 256
+        normalized_value = (seed_value - 127.5) / 127.5
+        placeholder_embedding.append(normalized_value * content_length_factor)
+    
+    return placeholder_embedding[:384]
