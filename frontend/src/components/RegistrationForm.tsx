@@ -27,6 +27,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
     email: '',
     password: '',
     county_id: 0,
+    sub_county_id: undefined,
+    ward_id: undefined,
+    village_id: undefined,
   });
 
   // UI state
@@ -77,7 +80,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
     
     setFormData(prev => ({
       ...prev,
-      [name]: name.includes('_id') ? parseInt(value) || 0 : value
+      [name]: name.includes('_id') ? (parseInt(value) || undefined) : value
     }));
 
     // Clear specific field error when user starts typing
@@ -142,7 +145,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
     setErrors({});
 
     try {
-      const response = await apiService.register(formData);
+      // Clean formData to remove undefined values before sending
+      const cleanedFormData = Object.fromEntries(
+        Object.entries(formData).filter(([_, value]) => value !== undefined && value !== 0)
+      ) as RegistrationData;
+      
+      const response = await apiService.register(cleanedFormData);
       
       if (response.success && response.user) {
         setIsSuccess(true);

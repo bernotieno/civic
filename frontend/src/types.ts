@@ -192,6 +192,9 @@ export interface RegistrationData {
   email: string;
   password: string;
   county_id: number;
+  sub_county_id?: number;
+  ward_id?: number;
+  village_id?: number;
 }
 
 export interface AuthUser {

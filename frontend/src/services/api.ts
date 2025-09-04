@@ -199,10 +199,15 @@ class CivicAIApiService {
    */
   async register(registrationData: RegistrationData): Promise<RegistrationResponse> {
     try {
+      // Clean registration data - remove undefined values
+      const cleanedData = Object.fromEntries(
+        Object.entries(registrationData).filter(([_, value]) => value !== undefined && value !== 0)
+      );
+      
       const response = await fetch(`${this.baseURL}/api/auth/register/`, {
         method: 'POST',
         headers: this.getHeaders(false),
-        body: JSON.stringify(registrationData),
+        body: JSON.stringify(cleanedData),
       });
 
       const data = await this.handleResponse<RegistrationResponse>(response);
@@ -258,7 +263,7 @@ class CivicAIApiService {
         await fetch(`${this.baseURL}/api/auth/logout/`, {
           method: 'POST',
           headers: this.getHeaders(true),
-          body: JSON.stringify({ refresh: refreshToken }),
+          body: JSON.stringify({ refresh_token: refreshToken }),
         });
       }
     } catch (error) {

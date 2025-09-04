@@ -74,9 +74,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const response = await apiService.login(nationalId, password);
       
-      if (response.success && response.user && response.tokens && response.app_config) {
+      if (response.success && response.user && response.tokens) {
         setUser(response.user);
-        setAppConfig(response.app_config);
+        if (response.app_config) {
+          setAppConfig(response.app_config);
+        }
       } else {
         throw new Error(response.message || 'Login failed');
       }
@@ -110,10 +112,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const refreshUserProfile = async (): Promise<void> => {
     try {
       const response = await apiService.getUserProfile();
-      if (response.user) {
+      if (response.success && response.user) {
         setUser(response.user);
-        // Note: app_config might not be returned from profile endpoint
-        // It's typically only returned during login
+        if (response.app_config) {
+          setAppConfig(response.app_config);
+        }
       }
     } catch (error) {
       console.error('Failed to refresh user profile:', error);
