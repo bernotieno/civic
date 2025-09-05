@@ -1266,7 +1266,9 @@ def feedback_categories(request):
     
     return Response({
         'success': True,
-        'categories': categories
+        'data': {
+            'categories': categories
+        }
     })
 
 

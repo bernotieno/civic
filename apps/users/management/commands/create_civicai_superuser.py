@@ -129,9 +129,8 @@ class Command(BaseCommand):
                 email=email or None,
                 password=password,
                 name=name or None,
-                tenant=county,
-                county=county.location,
-                home_county=county
+                user_county=county,
+                county=county.location
             )
             
             self.stdout.write('')
@@ -139,8 +138,8 @@ class Command(BaseCommand):
             self.stdout.write(f'Name: {user.name or "Not provided"}')
             self.stdout.write(f'Email: {user.email or "Not provided"}')
             self.stdout.write(f'Role: {user.get_role_display()}')
-            self.stdout.write(f'Level: {user.get_official_level_display()}')
-            self.stdout.write(f'County: {user.tenant.name}')
+            self.stdout.write(f'Level: {user.get_admin_level_display()}')
+            self.stdout.write(f'County: {user.user_county.name}')
             self.stdout.write('')
             self.stdout.write('You can now log in to the admin interface at /admin/')
             

@@ -270,6 +270,23 @@ class UserProfileSerializer(serializers.ModelSerializer):
     ))
     def get_accessible_counties(self, obj):
         """Get list of counties user can access"""
+        if obj.role == 'citizen':
+            # Citizens can only access their home county
+            if obj.user_county:
+                return [{
+                    'id': obj.user_county.id,
+                    'name': obj.user_county.name,
+                    'code': obj.user_county.code
+                }]
+        elif obj.role == 'parliament_admin':
+            # Parliament admins can access all counties
+            from apps.users.models import County
+            return [{
+                'id': county.id,
+                'name': county.name,
+                'code': county.code
+            } for county in County.objects.filter(is_active=True)]
+        
         return []
 
 

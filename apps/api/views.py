@@ -422,6 +422,7 @@ class CountyListView(generics.ListAPIView):
     filterset_fields = ['is_active']
     search_fields = ['name', 'code']
     ordering = ['name']
+    pagination_class = None  # Disable pagination to show all counties
 
 
 @extend_schema(
