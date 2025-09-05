@@ -40,29 +40,26 @@ def validate_feedback_content(content):
     """
     if not content or not content.strip():
         raise ValidationError(_("Content cannot be empty"))
-    
+
     content = content.strip()
-    
-    # Length validation
-    if len(content) < 50:
-        raise ValidationError(_("Content must be at least 50 characters long"))
-    
+
+    # Length validation - removed minimum character requirement
     if len(content) > 5000:
         raise ValidationError(_("Content cannot exceed 5000 characters"))
-    
+
     # Content quality validation
     if content.lower() in ['test', 'testing', 'hello', 'hi', 'this is a test']:
         raise ValidationError(_("Please provide detailed feedback content"))
-    
+
     # Check for repetitive characters (e.g., "aaaaaaaaaa")
     if re.search(r'(.)\1{9,}', content):
         raise ValidationError(_("Content contains excessive repetitive characters"))
-    
-    # Check for minimum word count
+
+    # Check for minimum word count - reduced to 1 word minimum
     words = len(content.split())
-    if words < 5:
-        raise ValidationError(_("Content must contain at least 5 words"))
-    
+    if words < 1:
+        raise ValidationError(_("Content must contain at least 1 word"))
+
     return content
 
 

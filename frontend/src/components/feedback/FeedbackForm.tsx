@@ -279,8 +279,6 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
     // Content validation
     if (!formData.content.trim()) {
       newErrors.content = 'Content is required';
-    } else if (formData.content.length < 50) {
-      newErrors.content = 'Content must be at least 50 characters';
     }
 
     // Category validation
@@ -553,7 +551,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
             className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.content ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
             }`}
-            placeholder="Provide detailed information about your issue (minimum 50 characters)"
+            placeholder="Provide detailed information about your issue"
             disabled={isSubmitting}
           />
           <div className="flex justify-between mt-1">

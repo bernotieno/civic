@@ -258,8 +258,6 @@ export const AnonymousFeedbackForm: React.FC<AnonymousFeedbackFormProps> = ({
 
     if (!formData.content?.trim()) {
       newErrors.content = 'Description is required';
-    } else if (formData.content.trim().length < 20) {
-      newErrors.content = 'Description must be at least 20 characters';
     } else if (formData.content.trim().length > 2000) {
       newErrors.content = 'Description must be less than 2000 characters';
     }
@@ -561,7 +559,7 @@ export const AnonymousFeedbackForm: React.FC<AnonymousFeedbackFormProps> = ({
                 className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   errors.content ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
                 }`}
-                placeholder="Provide detailed information about your feedback (20-2000 characters)"
+                placeholder="Provide detailed information about your feedback (up to 2000 characters)"
                 maxLength={2000}
                 disabled={isSubmitting}
               />

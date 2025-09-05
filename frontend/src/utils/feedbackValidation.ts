@@ -15,7 +15,7 @@ export const VALIDATION_RULES = {
     required: true,
   },
   content: {
-    minLength: 50,
+    minLength: 1,
     required: true,
   },
   category: {
@@ -85,7 +85,7 @@ export const validateContent = (content: string): string | null => {
   const trimmedContent = content.trim();
   
   if (trimmedContent.length < VALIDATION_RULES.content.minLength) {
-    return `Description must be at least ${VALIDATION_RULES.content.minLength} characters to provide sufficient detail`;
+    return `Description must be at least ${VALIDATION_RULES.content.minLength} character`;
   }
 
   // Check for spam-like content

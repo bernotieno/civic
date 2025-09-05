@@ -4,10 +4,10 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { 
-  EyeIcon, 
-  ClockIcon, 
-  CheckCircleIcon, 
+import {
+  EyeIcon,
+  ClockIcon,
+  CheckCircleIcon,
   ExclamationCircleIcon,
   FunnelIcon,
   ChevronLeftIcon,
@@ -15,6 +15,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { FeedbackItem, UserFeedbackListResponse } from '../../types';
 import { apiService } from '../../services/api';
+import FeedbackDetailModal from './FeedbackDetailModal';
 
 interface FeedbackHistoryProps {
   onViewDetails?: (feedbackId: string) => void;
@@ -34,7 +35,7 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
   const [hasPrevious, setHasPrevious] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [viewingFeedback, setViewingFeedback] = useState<FeedbackItem | null>(null);
+  const [viewingFeedbackId, setViewingFeedbackId] = useState<string | null>(null);
 
   const itemsPerPage = 10;
 
@@ -297,7 +298,7 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
           filteredFeedback.map((item) => {
             const statusConfig = getStatusConfig(item.status);
             const StatusIcon = statusConfig.icon;
-            
+
             return (
               <div key={item.id} className="px-4 sm:px-6 py-4 hover:bg-gray-50 transition-colors">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
@@ -316,9 +317,14 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
                           <StatusIcon className="h-3 w-3 mr-1" />
                           {statusConfig.label}
                         </span>
+                        {item.response_count > 0 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            💬 {item.response_count} response{item.response_count !== 1 ? 's' : ''}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    
+
                     <div className="flex flex-col sm:flex-row sm:items-center text-sm text-gray-500 gap-2 sm:gap-4">
                       <span className="flex items-center">
                         <span className="font-medium">ID:</span>
@@ -328,7 +334,7 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
                       <span className="text-xs sm:text-sm">{formatDate(item.created_at)}</span>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 sm:ml-4">
                     {onTrackFeedback && (
                       <button
@@ -339,11 +345,11 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
                       </button>
                     )}
                     <button
-                      onClick={() => setViewingFeedback(item)}
+                      onClick={() => setViewingFeedbackId(item.id)}
                       className="flex items-center text-gray-600 hover:text-gray-800 text-sm px-3 py-1 rounded border border-gray-200 hover:bg-gray-50"
                     >
                       <EyeIcon className="h-4 w-4 mr-1" />
-                      View
+                      View Details
                     </button>
                   </div>
                 </div>
@@ -400,88 +406,12 @@ export const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({
         </div>
       )}
 
-      {/* View Feedback Modal */}
-      {viewingFeedback && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-4 mx-auto p-6 border w-full max-w-3xl shadow-lg rounded-md bg-white m-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Feedback Details</h3>
-              <button
-                onClick={() => setViewingFeedback(null)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Title</label>
-                <p className="mt-1 text-sm text-gray-900">{viewingFeedback.title}</p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Content</label>
-                <div className="mt-1 p-3 bg-gray-50 rounded-md">
-                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{viewingFeedback.content}</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Category</label>
-                  <p className="mt-1 text-sm text-gray-900">{getCategoryDisplay(viewingFeedback.category)}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Status</label>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusConfig(viewingFeedback.status).bgColor} ${getStatusConfig(viewingFeedback.status).color}`}>
-                    {getStatusConfig(viewingFeedback.status).label}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Tracking ID</label>
-                  <p className="mt-1 text-gray-900 font-mono">{viewingFeedback.tracking_id}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Submission Date</label>
-                  <p className="mt-1 text-gray-900">{new Date(viewingFeedback.created_at).toLocaleString()}</p>
-                </div>
-              </div>
-              
-              {viewingFeedback.is_anonymous && (
-                <div className="p-3 bg-purple-50 rounded-md">
-                  <p className="text-sm text-purple-800">
-                    👤 This feedback was submitted anonymously
-                  </p>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex justify-end mt-6">
-              {onTrackFeedback && (
-                <button
-                  onClick={() => {
-                    onTrackFeedback(viewingFeedback.tracking_id);
-                    setViewingFeedback(null);
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 mr-3"
-                >
-                  Track This Feedback
-                </button>
-              )}
-              <button
-                onClick={() => setViewingFeedback(null)}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Enhanced Feedback Detail Modal */}
+      <FeedbackDetailModal
+        feedbackId={viewingFeedbackId}
+        onClose={() => setViewingFeedbackId(null)}
+        onTrackFeedback={onTrackFeedback}
+      />
     </div>
   );
 };

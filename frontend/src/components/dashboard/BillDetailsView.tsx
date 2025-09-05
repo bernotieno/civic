@@ -18,6 +18,7 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
     priority: 'medium',
     is_anonymous: false
   });
+  const [feedbackErrors, setFeedbackErrors] = useState<{[key: string]: string}>({});
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatHistory | null>(null);
@@ -77,9 +78,38 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
     localStorage.setItem(`chat_history_${billId}`, JSON.stringify(history));
   };
 
+  const validateFeedback = () => {
+    const errors: {[key: string]: string} = {};
+
+    if (!feedbackData.content.trim()) {
+      errors.content = 'Please enter your feedback.';
+    } else if (feedbackData.content.trim().length < 50) {
+      errors.content = 'Feedback must be at least 50 characters long.';
+    }
+
+    if (!feedbackData.category) {
+      errors.category = 'Please select a category.';
+    }
+
+    if (!feedbackData.priority) {
+      errors.priority = 'Please select a priority level.';
+    }
+
+    setFeedbackErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const submitFeedback = async () => {
-    if (!userProfile || !feedbackData.content.trim()) {
-      alert('Please enter your feedback.');
+    if (!userProfile) {
+      alert('Please log in to submit feedback.');
+      return;
+    }
+
+    // Clear previous errors
+    setFeedbackErrors({});
+
+    // Validate form
+    if (!validateFeedback()) {
       return;
     }
 
@@ -163,14 +193,37 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
           priority: 'medium',
           is_anonymous: false
         });
+        setFeedbackErrors({});
       } else {
         const errorData = await response.json();
         console.error('Feedback submission error:', errorData);
-        alert(`Failed to submit feedback: ${errorData.message || 'Unknown error'}`);
+
+        // Handle validation errors from backend
+        if (errorData.errors && typeof errorData.errors === 'object') {
+          const backendErrors: {[key: string]: string} = {};
+
+          // Process backend validation errors
+          Object.keys(errorData.errors).forEach(field => {
+            const fieldErrors = errorData.errors[field];
+            if (Array.isArray(fieldErrors) && fieldErrors.length > 0) {
+              // Remove emoji and clean up error message
+              backendErrors[field] = fieldErrors[0].replace(/^[^\w\s]+\s*/, '');
+            }
+          });
+
+          setFeedbackErrors(backendErrors);
+
+          // Show a summary alert
+          const errorMessages = Object.values(backendErrors);
+          alert(`Please fix the following errors:\n• ${errorMessages.join('\n• ')}`);
+        } else {
+          // Generic error message
+          alert(`Failed to submit feedback: ${errorData.message || 'Unknown error'}`);
+        }
       }
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      alert('Error submitting feedback: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      alert('Error submitting feedback: ' + (error instanceof Error ? error.message : 'Network error occurred'));
     } finally {
       setIsSubmittingFeedback(false);
     }
@@ -327,12 +380,20 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Your Views on This Bill</label>
                   <textarea
-                    placeholder="Share your thoughts, concerns, or suggestions about this bill..."
+                    placeholder="Share your thoughts, concerns, or suggestions about this bill... (minimum 50 characters)"
                     value={feedbackData.content}
                     onChange={(e) => setFeedbackData({...feedbackData, content: e.target.value})}
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      feedbackErrors.content ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
+                  {feedbackErrors.content && (
+                    <p className="mt-1 text-sm text-red-600">{feedbackErrors.content}</p>
+                  )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    {feedbackData.content.length}/50 characters minimum
+                  </p>
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -341,7 +402,9 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
                     <select
                       value={feedbackData.category}
                       onChange={(e) => setFeedbackData({...feedbackData, category: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        feedbackErrors.category ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     >
                       <option value="legislation">Legislation & Bills</option>
                       <option value="budget">Budget & Finance</option>
@@ -356,6 +419,9 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
                       <option value="social">Social Services</option>
                       <option value="other">Other National Issues</option>
                     </select>
+                    {feedbackErrors.category && (
+                      <p className="mt-1 text-sm text-red-600">{feedbackErrors.category}</p>
+                    )}
                   </div>
                   
                   <div>
@@ -363,13 +429,18 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
                     <select
                       value={feedbackData.priority}
                       onChange={(e) => setFeedbackData({...feedbackData, priority: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        feedbackErrors.priority ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     >
                       <option value="low">Low Priority</option>
                       <option value="medium">Medium Priority</option>
                       <option value="high">High Priority</option>
                       <option value="urgent">Urgent</option>
                     </select>
+                    {feedbackErrors.priority && (
+                      <p className="mt-1 text-sm text-red-600">{feedbackErrors.priority}</p>
+                    )}
                   </div>
                 </div>
                 

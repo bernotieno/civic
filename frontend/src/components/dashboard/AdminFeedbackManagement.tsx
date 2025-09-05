@@ -38,6 +38,12 @@ const AdminFeedbackManagement: React.FC = () => {
   const [responseText, setResponseText] = useState('');
   const [responding, setResponding] = useState(false);
 
+  // Filter and search states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+
   useEffect(() => {
     fetchFeedback();
   }, []);
@@ -136,6 +142,31 @@ const AdminFeedbackManagement: React.FC = () => {
     return colors[category] || 'bg-gray-100 text-gray-800';
   };
 
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-red-100 text-red-800';
+      case 'high': return 'bg-orange-100 text-orange-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'low': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Filter feedback based on search and filter criteria
+  const filteredFeedback = feedback.filter(item => {
+    const matchesSearch = searchTerm === '' ||
+      item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.tracking_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.user_name?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+    const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
+    const matchesPriority = priorityFilter === 'all' || item.priority === priorityFilter;
+
+    return matchesSearch && matchesStatus && matchesCategory && matchesPriority;
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -182,21 +213,112 @@ const AdminFeedbackManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Feedback Management</h2>
-        <div className="flex items-center space-x-4">
-          <div className="text-sm text-gray-600">
-            Total: {feedback.length} | 
-            Pending: {feedback.filter(f => f.status === 'pending').length} | 
-            Responded: {feedback.filter(f => f.response_count > 0).length}
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Feedback Management</h2>
+          <div className="text-sm text-gray-600 mt-1">
+            Showing {filteredFeedback.length} of {feedback.length} feedback items |
+            Pending: {filteredFeedback.filter(f => f.status === 'pending').length} |
+            Responded: {filteredFeedback.filter(f => f.response_count > 0).length}
           </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={fetchFeedback}
-            className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+            className="px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
           >
             Refresh
           </button>
         </div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="bg-white p-4 rounded-lg border border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Search */}
+          <div className="lg:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <input
+              type="text"
+              placeholder="Search by title, content, tracking ID, or user..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+          </div>
+
+          {/* Status Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            >
+              <option value="all">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="in_review">In Review</option>
+              <option value="responded">Responded</option>
+              <option value="resolved">Resolved</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+
+          {/* Category Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            >
+              <option value="all">All Categories</option>
+              <option value="infrastructure">Infrastructure</option>
+              <option value="healthcare">Healthcare</option>
+              <option value="education">Education</option>
+              <option value="water_sanitation">Water & Sanitation</option>
+              <option value="security">Security</option>
+              <option value="environment">Environment</option>
+              <option value="governance">Governance</option>
+              <option value="economic">Economic</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          {/* Priority Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            >
+              <option value="all">All Priorities</option>
+              <option value="urgent">Urgent</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Clear Filters */}
+        {(searchTerm || statusFilter !== 'all' || categoryFilter !== 'all' || priorityFilter !== 'all') && (
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setStatusFilter('all');
+                setCategoryFilter('all');
+                setPriorityFilter('all');
+              }}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              Clear all filters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Desktop Table */}
@@ -223,7 +345,22 @@ const AdminFeedbackManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {feedback.map((item) => (
+              {filteredFeedback.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center">
+                    <div className="text-gray-500">
+                      <p className="text-lg font-medium">No feedback found</p>
+                      <p className="text-sm mt-1">
+                        {feedback.length === 0
+                          ? "No feedback submissions yet."
+                          : "Try adjusting your search or filter criteria."
+                        }
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredFeedback.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div>
@@ -237,9 +374,14 @@ const AdminFeedbackManagement: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(item.category)}`}>
-                      {item.category_display || item.category.replace('_', ' ')}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(item.category)}`}>
+                        {item.category_display || item.category.replace('_', ' ')}
+                      </span>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(item.priority)}`}>
+                        {item.priority_display || item.priority}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
@@ -274,7 +416,8 @@ const AdminFeedbackManagement: React.FC = () => {
                     )}
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -282,7 +425,20 @@ const AdminFeedbackManagement: React.FC = () => {
 
       {/* Mobile Cards */}
       <div className="lg:hidden space-y-4">
-        {feedback.map((item) => (
+        {filteredFeedback.length === 0 ? (
+          <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-8 text-center">
+            <div className="text-gray-500">
+              <p className="text-lg font-medium">No feedback found</p>
+              <p className="text-sm mt-1">
+                {feedback.length === 0
+                  ? "No feedback submissions yet."
+                  : "Try adjusting your search or filter criteria."
+                }
+              </p>
+            </div>
+          </div>
+        ) : (
+          filteredFeedback.map((item) => (
           <div key={item.id} className="bg-white shadow-sm rounded-lg border border-gray-200 p-4">
             <div className="mb-3">
               <h3 className="text-sm font-medium text-gray-900 mb-1">{item.title}</h3>
@@ -293,9 +449,17 @@ const AdminFeedbackManagement: React.FC = () => {
               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(item.category)}`}>
                 {item.category_display || item.category.replace('_', ' ')}
               </span>
+              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(item.priority)}`}>
+                {item.priority_display || item.priority}
+              </span>
               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
                 {item.status_display || item.status.replace('_', ' ')}
               </span>
+              {item.response_count > 0 && (
+                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                  💬 {item.response_count} response{item.response_count !== 1 ? 's' : ''}
+                </span>
+              )}
             </div>
             
             <div className="text-xs text-gray-500 mb-3">
@@ -331,7 +495,8 @@ const AdminFeedbackManagement: React.FC = () => {
               </div>
             </div>
           </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* View Feedback Modal */}
@@ -396,15 +561,57 @@ const AdminFeedbackManagement: React.FC = () => {
                 <p className="mt-1 text-sm text-gray-900">{new Date(viewingFeedback.created_at).toLocaleString()}</p>
               </div>
               
-              {viewingFeedback.response_count > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Response Status</label>
-                  <p className="mt-1 text-sm text-green-600">
-                    {viewingFeedback.response_count} response(s) sent
-                    {viewingFeedback.last_response_at && (
-                      <span className="text-gray-500"> • Last: {new Date(viewingFeedback.last_response_at).toLocaleString()}</span>
-                    )}
-                  </p>
+              {/* Response Status and History */}
+              {viewingFeedback.response_count > 0 ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Response Status</label>
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <span className="text-green-600 text-sm">✓</span>
+                          </div>
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm font-medium text-green-800">
+                            {viewingFeedback.response_count} response(s) sent
+                          </p>
+                          {viewingFeedback.last_response_at && (
+                            <p className="text-xs text-green-600">
+                              Last response: {new Date(viewingFeedback.last_response_at).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Note: In a full implementation, you would fetch and display actual responses here */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Previous Responses</label>
+                    <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
+                      Response history would be displayed here. Click "Respond" to add another response.
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                        <span className="text-yellow-600 text-sm">⏳</span>
+                      </div>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-yellow-800">
+                        No responses sent yet
+                      </p>
+                      <p className="text-xs text-yellow-700 mt-1">
+                        This feedback is awaiting an official government response.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
