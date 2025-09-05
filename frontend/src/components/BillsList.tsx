@@ -10,7 +10,7 @@ interface Bill {
   bill_number: string;
   title: string;
   description: string;
-  summary: string;
+  summary: string; // HTML formatted summary for display
   sponsor: string;
   committee?: string;
   status: string;
@@ -360,7 +360,14 @@ const BillsList: React.FC = () => {
               {/* Title and Description */}
               <div className="px-4 mt-2">
                 <h4 className="font-semibold text-gray-900 mb-1">{bill.title}</h4>
-                <p className="text-gray-600 text-sm">{bill.summary || bill.description}</p>
+                {bill.summary ? (
+                  <div
+                    className="text-sm bill-summary-content max-w-none"
+                    dangerouslySetInnerHTML={{ __html: bill.summary }}
+                  />
+                ) : (
+                  <p className="text-gray-600 text-sm">{bill.description}</p>
+                )}
               </div>
 
               {/* Sponsor + Committee */}

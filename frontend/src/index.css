@@ -4,6 +4,56 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom styles for HTML summary content */
+@layer components {
+  .bill-summary-content {
+    @apply text-gray-700 leading-relaxed;
+  }
+
+  .bill-summary-content h1,
+  .bill-summary-content h2,
+  .bill-summary-content h3,
+  .bill-summary-content h4,
+  .bill-summary-content h5,
+  .bill-summary-content h6 {
+    @apply font-bold text-gray-900 mt-4 mb-2;
+  }
+
+  .bill-summary-content h1 { @apply text-2xl; }
+  .bill-summary-content h2 { @apply text-xl; }
+  .bill-summary-content h3 { @apply text-lg; }
+  .bill-summary-content h4 { @apply text-base; }
+
+  .bill-summary-content p {
+    @apply mb-3 text-gray-700;
+  }
+
+  .bill-summary-content strong {
+    @apply font-semibold text-gray-900;
+  }
+
+  .bill-summary-content em {
+    @apply italic text-gray-600;
+  }
+
+  .bill-summary-content ul,
+  .bill-summary-content ol {
+    @apply ml-4 mb-3;
+  }
+
+  .bill-summary-content li {
+    @apply mb-1;
+  }
+
+  .bill-summary-content ul li {
+    @apply list-disc;
+  }
+
+  .bill-summary-content ol li {
+    @apply list-decimal;
+  }
+}
 /* Mobile responsiveness utilities */
 @layer utilities {
   .line-clamp-2 {

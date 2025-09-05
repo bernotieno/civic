@@ -208,7 +208,10 @@ const BillDetails: React.FC = () => {
                 {bill.summary && (
                   <>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">AI-Generated Summary</h3>
-                    <p className="text-gray-700 leading-relaxed">{bill.summary}</p>
+                    <div
+                      className="bill-summary-content max-w-none"
+                      dangerouslySetInnerHTML={{ __html: bill.summary }}
+                    />
                   </>
                 )}
               </div>

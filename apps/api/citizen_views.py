@@ -7,6 +7,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.core.cache import cache
 from django.utils import timezone
+from django.conf import settings
 from apps.projects.models import Bill, BillChunk
 import logging
 import re
@@ -63,18 +64,19 @@ def public_bills_list(request):
         # Create cache key based on filters
         cache_key = f"{cache_key_base}_{page}_{page_size}_{status_filter}_{search_query}_{sponsor_filter}_{sort_by}"
         
-        # Try to get from cache first
-        cached_result = cache.get(cache_key)
-        if cached_result:
-            logger.debug(f"Returning cached bill list for citizen")
-            return Response(cached_result)
+        # Try to get from cache first (skip in development)
+        if not settings.DEBUG:
+            cached_result = cache.get(cache_key)
+            if cached_result:
+                logger.debug(f"Returning cached bill list for citizen")
+                return Response(cached_result)
         
-        # Base queryset - only completed processing and published bills
+        # Base queryset - show bills that are ready for public engagement
         bills_queryset = Bill.objects.filter(
             is_deleted=False,
-            processing_status='completed',  # Only fully processed bills
-            status__in=[  # Only publicly accessible bill statuses
-                'first_reading', 'committee_stage', 'second_reading', 
+            public_participation_open=True,  # Only bills open for participation
+            status__in=[  # Include draft and all public statuses
+                'draft', 'first_reading', 'committee_stage', 'second_reading',
                 'third_reading', 'presidential_assent', 'enacted'
             ]
         ).select_related('created_by')
@@ -118,14 +120,25 @@ def public_bills_list(request):
             
             bill_data = {
                 'id': str(bill.id),
+                'bill_number': bill.bill_number or f"BILL-{str(bill.id)[:8]}",
                 'title': bill.title,
                 'description': bill.description,
+                'summary': bill.summary_html or bill.summary or '',  # Use HTML version for display
+                'summary_html': bill.summary_html or '',  # Explicit HTML field
+                'summary_markdown': bill.summary or '',  # Raw markdown if needed
                 'sponsor': bill.sponsor,
+                'committee': bill.committee,
                 'status': bill.status,
                 'status_display': bill.get_status_display(),
+                'introduced_date': bill.introduced_date,
+                'first_reading_date': bill.first_reading_date,
+                'committee_deadline': bill.committee_deadline,
+                'public_participation_open': bill.public_participation_open,
                 'participation_deadline': bill.participation_deadline,
+                'document': bill.document.url if bill.document else None,
+                'image': bill.image.url if bill.image else None,
                 'created_at': bill.created_at,
-                'summary_available': bool(bill.summary_html.strip()),
+                'summary_available': bool(bill.summary_html.strip() if bill.summary_html else False),
                 'can_chat': can_chat,
                 'total_chunks': bill.total_chunks,
                 'estimated_reading_time': estimated_reading_time,
@@ -159,7 +172,7 @@ def public_bills_list(request):
         
         result = {
             'success': True,
-            'bills': bills_data,
+            'data': bills_data,  # Changed from 'bills' to 'data' to match frontend expectation
             'pagination': pagination_info,
             'filters': {
                 'available_statuses': [
@@ -177,13 +190,14 @@ def public_bills_list(request):
             'summary': {
                 'total_published_bills': paginator.count,
                 'chat_enabled_bills': len([b for b in bills_data if b['can_chat']]),
-                'recent_bills': len([b for b in bills_data if 
+                'recent_bills': len([b for b in bills_data if
                     (timezone.now() - b['created_at']).days <= 30])
             }
         }
         
-        # Cache result for 10 minutes
-        cache.set(cache_key, result, timeout=600)
+        # Cache result for 10 minutes (skip in development)
+        if not settings.DEBUG:
+            cache.set(cache_key, result, timeout=600)
         
         logger.info(f"Returned {len(bills_data)} bills to citizen (page {page})")
         return Response(result)

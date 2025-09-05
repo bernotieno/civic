@@ -709,7 +709,14 @@ def admin_bill_detail(request, bill_id):
             bill.sponsor = data.get('sponsor', bill.sponsor)
             bill.status = data.get('status', bill.status)
             bill.participation_deadline = data.get('participation_deadline', bill.participation_deadline)
-            
+
+            # Handle boolean conversion for public_participation_open
+            if 'public_participation_open' in data:
+                public_participation_open = data.get('public_participation_open')
+                if isinstance(public_participation_open, str):
+                    public_participation_open = public_participation_open.lower() in ('true', '1', 'yes', 'on')
+                bill.public_participation_open = public_participation_open
+
             if 'document' in request.FILES:
                 bill.document = request.FILES['document']
             
@@ -867,10 +874,12 @@ def admin_bills_list(request):
                 'status': b.status,
                 'status_display': b.get_status_display(),
                 'participation_deadline': b.participation_deadline,
+                'public_participation_open': b.public_participation_open,
                 'document': b.document.url if b.document else None,
                 'summary': b.summary,
                 'created_by': b.created_by.name if b.created_by else 'System',
                 'created_at': b.created_at,
+                'is_deleted': b.is_deleted,  # Add for debugging
                 # Phase 1 enhanced fields
                 'summary_html': getattr(b, 'summary_html', ''),
                 'processing_status': getattr(b, 'processing_status', 'completed'),
@@ -929,6 +938,11 @@ def admin_bills_list(request):
                 }, status=400)
         
         try:
+            # Handle boolean conversion for form data
+            public_participation_open = data.get('public_participation_open', True)
+            if isinstance(public_participation_open, str):
+                public_participation_open = public_participation_open.lower() in ('true', '1', 'yes', 'on')
+
             # Create bill instance
             bill = Bill.objects.create(
                 title=data.get('title'),
@@ -936,40 +950,51 @@ def admin_bills_list(request):
                 sponsor=data.get('sponsor'),
                 status=data.get('status', 'draft'),
                 participation_deadline=data.get('participation_deadline'),
+                public_participation_open=public_participation_open,
                 document=uploaded_doc,
                 summary='',
                 created_by=user,
                 processing_status='pending' if uploaded_doc else 'completed',
                 processing_progress=0 if uploaded_doc else 100,
-                processing_message='Waiting to start bulletproof processing...' if uploaded_doc else 'No document to process',
+                processing_message='Waiting to start bulletproof processing...' if uploaded_doc else 'Bill ready for public engagement',
             )
             
             logger.info(f"Created bill {bill.id}: {bill.title}")
-            
-            # Process document if provided
-            if uploaded_doc and use_async and not force_sync:
+
+            # ALWAYS trigger processing for bills (Phase 2/3 requirement)
+            # This ensures summary generation, chunking, and progress tracking
+            if use_async and not force_sync:
                 # NEW: Use bulletproof async processing
                 try:
-                    # Save file for async processing
-                    file_path = save_uploaded_file_for_async(uploaded_doc, str(bill.id))
-                    
-                    # Start bulletproof async task
+                    from .tasks import process_bill_async
+                    from .async_progress_tracker import start_async_bill_processing
+
+                    # Save file for async processing (if document provided)
+                    file_path = None
+                    if uploaded_doc:
+                        file_path = save_uploaded_file_for_async(uploaded_doc, str(bill.id))
+
+                    # Start bulletproof async task (works with or without document)
                     task = process_bill_async.delay(str(bill.id), file_path)
-                    
+
                     # Setup progress tracking
                     session_result = start_async_bill_processing(str(bill.id), task.id)
                     
                     if session_result['success']:
                         return Response({
                             'success': True,
-                            'message': 'Bill created and bulletproof processing started',
+                            'message': f'Bill created and processing started{"" if uploaded_doc else " (summary generation and chunking)"}',
                             'bill_id': str(bill.id),
                             'processing_async': True,
                             'processing_method': 'bulletproof_hierarchical',
                             'task_id': task.id,
                             'session_id': session_result['session_id'],
                             'websocket_channel': session_result['websocket_channel'],
-                            'estimated_time': '2-3 minutes',  # Much faster with new approach
+                            'estimated_time': '1-2 minutes' if not uploaded_doc else '2-3 minutes',
+                            'summary_generated': False,  # Will be updated during processing
+                            'used_enhanced': True,
+                            'sections_count': 0,  # Will be updated during processing
+                            'chunks_created': 0,  # Will be updated during processing
                             'progress_endpoints': {
                                 'status': f'/api/admin/bills/{bill.id}/status/',
                                 'websocket': f'/ws/bills/{bill.id}/progress/',
@@ -985,18 +1010,48 @@ def admin_bills_list(request):
                     use_async = False
             
             # Sync processing fallback (if needed)
-            if uploaded_doc and (not use_async or force_sync):
-                return Response({
-                    'success': False,
-                    'message': 'Sync processing not supported with bulletproof processor',
-                    'bill_id': str(bill.id),
-                    'error': 'Please use async processing for document processing'
-                }, status=400)
-            
-            # No document to process
+            if not use_async or force_sync:
+                # For sync processing, we still need to generate basic summary and chunks
+                try:
+                    from .bill_processor import create_bill_chunks
+
+                    # Create basic chunks from title and description for chat functionality
+                    basic_text = f"{bill.title}\n\n{bill.description}"
+                    chunks_created = create_bill_chunks(basic_text, bill, max_chunk_size=1000)
+
+                    # Update bill status
+                    bill.is_chunked = True
+                    bill.total_chunks = chunks_created
+                    bill.processing_status = 'completed'
+                    bill.processing_progress = 100
+                    bill.processing_message = 'Basic processing completed'
+                    bill.save()
+
+                    return Response({
+                        'success': True,
+                        'message': 'Bill created with basic processing completed',
+                        'bill_id': str(bill.id),
+                        'processing_async': False,
+                        'summary_generated': False,
+                        'used_enhanced': False,
+                        'sections_count': 1,
+                        'chunks_created': chunks_created
+                    })
+
+                except Exception as e:
+                    logger.error(f"Sync processing failed: {str(e)}")
+                    return Response({
+                        'success': True,
+                        'message': 'Bill created but processing failed',
+                        'bill_id': str(bill.id),
+                        'processing_async': False,
+                        'error': str(e)
+                    })
+
+            # This should not be reached due to logic above
             return Response({
                 'success': True,
-                'message': 'Bill created successfully (no document)',
+                'message': 'Bill created successfully',
                 'bill_id': str(bill.id),
                 'processing_async': False
             })

@@ -932,9 +932,9 @@ def bill_chat_context(request, bill_id):
             'supports_context': True,
             'supports_followups': True,
             'supports_search': bill.is_chunked,
-            'embedding_enabled': bill.is_chunked and any(
-                chunk.embedding for chunk in BillChunk.objects.filter(bill=bill)[:5]
-            ),
+            'embedding_enabled': bill.is_chunked and BillChunk.objects.filter(
+                bill=bill, embedding__isnull=False
+            ).exists(),
             'max_questions_per_session': 5,
             'response_languages': ['English']  # Could be extended
         }

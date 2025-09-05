@@ -1,10 +1,47 @@
 from .base import *
+from decouple import config
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
+# DEVELOPMENT CACHING - Use Redis for sessions, dummy for others
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/1'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'SERIALIZER': 'django_redis.serializers.json.JSONSerializer',
+        },
+        'TIMEOUT': 300,  # 5 minutes for development
+        'KEY_PREFIX': 'civicai_dev',
+    },
+    'ai_cache': {
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+    },
+    'async_sessions': {
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+    },
+    'channels': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/0'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'TIMEOUT': 3600,  # 1 hour for channels
+        'KEY_PREFIX': 'civicai_channels_dev',
+    },
+}
+
+# Disable AI caching in development
+AI_ENABLE_CACHING = False
+AI_CACHE_TTL = 0
+
+# Disable AI caching
+AI_ENABLE_CACHING = False
+AI_CACHE_TTL = 0
 
 # Development-specific apps
 INSTALLED_APPS += [

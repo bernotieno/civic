@@ -18,6 +18,7 @@ class BillCreateRequestSerializer(serializers.Serializer):
         required=False
     )
     participation_deadline = serializers.DateField(required=False)
+    public_participation_open = serializers.BooleanField(default=True, required=False)
     document = serializers.FileField(
         required=False,
         help_text="Upload PDF document"

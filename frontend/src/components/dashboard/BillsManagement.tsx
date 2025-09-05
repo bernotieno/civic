@@ -8,6 +8,7 @@ interface Bill {
   status: string;
   status_display: string;
   participation_deadline?: string;
+  public_participation_open?: boolean;
   document?: string;
   summary?: string;
   created_at: string;
@@ -26,6 +27,7 @@ const BillsManagement: React.FC = () => {
     sponsor: '',
     status: 'draft',
     participation_deadline: '',
+    public_participation_open: true,
   });
   const [selectedDocument, setSelectedDocument] = useState<File | null>(null);
 
@@ -115,6 +117,7 @@ const BillsManagement: React.FC = () => {
       sponsor: bill.sponsor,
       status: bill.status,
       participation_deadline: bill.participation_deadline || '',
+      public_participation_open: bill.public_participation_open ?? true,
     });
     setShowEditForm(true);
   };
@@ -159,7 +162,12 @@ const BillsManagement: React.FC = () => {
       
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== '') {
-          formDataToSend.append(key, value);
+          // Handle boolean values properly
+          if (typeof value === 'boolean') {
+            formDataToSend.append(key, value.toString());
+          } else {
+            formDataToSend.append(key, value);
+          }
         }
       });
       
@@ -186,6 +194,7 @@ const BillsManagement: React.FC = () => {
             sponsor: '',
             status: 'draft',
             participation_deadline: '',
+            public_participation_open: true,
           });
           setSelectedDocument(null);
           fetchBills();
@@ -212,7 +221,12 @@ const BillsManagement: React.FC = () => {
       
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== '') {
-          formDataToSend.append(key, value);
+          // Handle boolean values properly
+          if (typeof value === 'boolean') {
+            formDataToSend.append(key, value.toString());
+          } else {
+            formDataToSend.append(key, value);
+          }
         }
       });
       
@@ -238,6 +252,7 @@ const BillsManagement: React.FC = () => {
             sponsor: '',
             status: 'draft',
             participation_deadline: '',
+            public_participation_open: true,
           });
           setSelectedDocument(null);
           fetchBills();
@@ -505,6 +520,18 @@ const BillsManagement: React.FC = () => {
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                   />
                 </div>
+
+                <div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.public_participation_open}
+                      onChange={(e) => setFormData({...formData, public_participation_open: e.target.checked})}
+                      className="mr-2"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Public Participation Open</span>
+                  </label>
+                </div>
               </div>
 
               <div className="flex justify-end space-x-3 mt-6">
@@ -604,6 +631,18 @@ const BillsManagement: React.FC = () => {
                     onChange={(e) => setFormData({...formData, participation_deadline: e.target.value})}
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                   />
+                </div>
+
+                <div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.public_participation_open}
+                      onChange={(e) => setFormData({...formData, public_participation_open: e.target.checked})}
+                      className="mr-2"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Public Participation Open</span>
+                  </label>
                 </div>
               </div>
 

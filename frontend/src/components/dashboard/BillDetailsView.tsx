@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { Bill } from '../../types';
+import { Bill, ChatHistory } from '../../types';
+import ChatTab from '../ChatTab';
 
 interface BillDetailsViewProps {
   billId: string;
@@ -19,10 +20,21 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
   });
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const [chatHistory, setChatHistory] = useState<ChatHistory | null>(null);
 
   useEffect(() => {
     fetchBill();
     fetchUserProfile();
+
+    // Load existing chat history from localStorage
+    const savedHistory = localStorage.getItem(`chat_history_${billId}`);
+    if (savedHistory) {
+      try {
+        setChatHistory(JSON.parse(savedHistory));
+      } catch (error) {
+        console.error('Failed to parse saved chat history:', error);
+      }
+    }
   }, [billId]);
 
   const fetchUserProfile = async () => {
@@ -57,6 +69,12 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleChatHistoryUpdate = (history: ChatHistory) => {
+    setChatHistory(history);
+    // Optionally save to localStorage for persistence
+    localStorage.setItem(`chat_history_${billId}`, JSON.stringify(history));
   };
 
   const submitFeedback = async () => {
@@ -239,8 +257,8 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
             {[
               { id: 'original' as const, name: 'Description', shortName: 'Details', description: 'Full bill details' },
               { id: 'summary' as const, name: 'AI Summary', shortName: 'Summary', description: 'Key points & overview' },
-              { id: 'feedback' as const, name: 'Submit Feedback', shortName: 'Feedback', description: 'Share your views' },
-              { id: 'chat' as const, name: 'AI Chat', shortName: 'Chat', description: 'Ask questions about this bill' }
+              { id: 'chat' as const, name: 'AI Chat', shortName: 'Chat', description: 'Ask questions about this bill' },
+              { id: 'feedback' as const, name: 'Submit Feedback', shortName: 'Feedback', description: 'Share your views' }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -289,9 +307,10 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
             <div>
               <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">AI-Generated Summary</h3>
               {bill.summary ? (
-                <div className="prose max-w-none">
-                  <p className="text-gray-700 leading-relaxed text-sm sm:text-base">{bill.summary}</p>
-                </div>
+                <div
+                  className="bill-summary-content max-w-none text-sm sm:text-base"
+                  dangerouslySetInnerHTML={{ __html: bill.summary }}
+                />
               ) : (
                 <div className="text-center py-6 sm:py-8">
                   <p className="text-gray-500 text-sm sm:text-base">AI summary not available for this bill.</p>
@@ -393,11 +412,11 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
 
           {activeTab === 'chat' && (
             <div>
-              <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">AI Chat Assistant</h3>
-              <div className="bg-gray-50 rounded-lg p-4 sm:p-6 text-center">
-                <p className="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base">Chat with AI about this bill to get answers to your questions.</p>
-                <p className="text-xs sm:text-sm text-gray-500">AI Chat feature coming soon...</p>
-              </div>
+              <ChatTab
+                billId={billId}
+                initialHistory={chatHistory}
+                onHistoryUpdate={handleChatHistoryUpdate}
+              />
             </div>
           )}
         </div>

@@ -23,15 +23,15 @@ except ImportError as e:
     ProcessingLimits = None
 
 
-@app.task(bind=True, max_retries=3, retry_backoff=True, retry_backoff_max=700, retry_jitter=False, queue='ai_responses') 
-def process_bill_async(self, bill_id: str, file_path: str) -> dict:
+@app.task(bind=True, max_retries=3, retry_backoff=True, retry_backoff_max=700, retry_jitter=False, queue='ai_responses')
+def process_bill_async(self, bill_id: str, file_path: str = None) -> dict:
     """
     Process bill using bulletproof hierarchical approach
-    
+
     Args:
         bill_id: UUID string of the bill
-        file_path: Path to uploaded PDF file
-    
+        file_path: Path to uploaded PDF file (optional - if None, processes title/description only)
+
     Returns:
         dict: Processing results
     """
@@ -45,18 +45,25 @@ def process_bill_async(self, bill_id: str, file_path: str) -> dict:
         # Get bill instance
         from apps.projects.models import Bill
         bill = Bill.objects.get(id=bill_id, is_deleted=False)
-        
-        # PHASE 1: Extract text from PDF
-        update_bill_progress_async(bill_id, 'extracting', 10, 'Extracting text from PDF...')
-        
-        def progress_callback(stage, percentage, message):
-            # Map PDF extraction progress to 10-30% range
-            adjusted_percentage = 10 + int((percentage / 100) * 20)
-            update_bill_progress_async(bill_id, stage, adjusted_percentage, message)
-        
-        with open(file_path, 'rb') as pdf_file:
-            text, page_count = extract_pdf_text_with_progress(pdf_file, progress_callback)
-        
+
+        # PHASE 1: Extract text (from PDF or use title/description)
+        if file_path:
+            update_bill_progress_async(bill_id, 'extracting', 10, 'Extracting text from PDF...')
+
+            def progress_callback(stage, percentage, message):
+                # Map PDF extraction progress to 10-30% range
+                adjusted_percentage = 10 + int((percentage / 100) * 20)
+                update_bill_progress_async(bill_id, stage, adjusted_percentage, message)
+
+            with open(file_path, 'rb') as pdf_file:
+                text, page_count = extract_pdf_text_with_progress(pdf_file, progress_callback)
+        else:
+            # No document - use title and description for processing
+            update_bill_progress_async(bill_id, 'preparing', 10, 'Preparing bill content for processing...')
+            text = f"{bill.title}\n\n{bill.description}"
+            page_count = 1
+            update_bill_progress_async(bill_id, 'preparing', 30, 'Bill content prepared for AI processing...')
+
         if not text.strip():
             raise ProcessingException("No text could be extracted from PDF")
         
