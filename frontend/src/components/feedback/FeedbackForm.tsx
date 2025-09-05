@@ -107,15 +107,13 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
         setRateLimitInfo(rateLimitStatus);
 
         // Set user's county as default only for authenticated mode
-        if (user?.accessible_counties && !isAnonymous) {
-          console.log('🏛️ Setting default county:', {
-            userAccessibleCounties: user.accessible_counties,
-            availableCounties: counties
-          });
+        if (user && !isAnonymous) {
+          console.log('🏛️ Setting default county for user:', user);
           
-          if (user.accessible_counties.length > 0 && counties.length > 0) {
-            const userCountyData = user.accessible_counties[0];
-            const userCounty = counties.find(c => c.id === userCountyData.id);
+          // For citizens, use their home county
+          if (user.role === 'citizen' && counties.length > 0) {
+            // Find user's county by name since backend provides county_name
+            const userCounty = counties.find(c => c.name === user.county_name);
             console.log('🎯 Found user county:', userCounty);
             
             if (userCounty) {
@@ -192,9 +190,8 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
       setAnonymousSession(null);
       apiService.clearAnonymousSession();
       // Restore user's default county if available
-      if (user?.accessible_counties && user.accessible_counties.length > 0 && counties.length > 0) {
-        const userCountyData = user.accessible_counties[0];
-        const userCounty = counties.find(c => c.id === userCountyData.id);
+      if (user && user.role === 'citizen' && counties.length > 0) {
+        const userCounty = counties.find(c => c.name === user.county_name);
         if (userCounty) {
           const locationCounty = {
             id: userCounty.id,
@@ -297,16 +294,15 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
     }
 
     // Check county access only for authenticated users
-    if (!isAnonymous && formData.county_id && user?.accessible_counties) {
-      const hasAccess = user.accessible_counties.some(c => c.id === formData.county_id);
-      console.log('🏛️ County access check:', {
-        selectedCounty: formData.county_id,
-        accessibleCounties: user.accessible_counties,
-        hasAccess
-      });
-      if (!hasAccess) {
-        newErrors.county_id = 'You do not have access to submit feedback for this county';
+    if (!isAnonymous && formData.county_id && user) {
+      // For citizens, they can only submit to their home county
+      if (user.role === 'citizen') {
+        const userCounty = counties.find(c => c.name === user.county_name);
+        if (userCounty && userCounty.id !== formData.county_id) {
+          newErrors.county_id = 'Citizens can only submit feedback to their home county';
+        }
       }
+      // Parliament admins can submit to any county (no restriction)
     }
 
     console.log('🔍 Validation errors:', newErrors);

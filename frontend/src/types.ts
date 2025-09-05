@@ -207,6 +207,11 @@ export interface AuthUser {
   level_display?: string;
   county_name: string;
   date_joined: string;
+  accessible_counties?: Array<{
+    id: number;
+    name: string;
+    code: string;
+  }>;
 }
 
 export interface AuthTokens {
@@ -325,8 +330,9 @@ export interface CitizenDashboardData {
 export interface FeedbackCategoryOption {
   value: string;
   label: string;
-  department: string;
+  department?: string;
   description: string;
+  icon?: string;
 }
 
 // Priority Levels with Time Expectations
@@ -430,9 +436,10 @@ export interface LocationSelectionState {
 // Feedback Categories Response
 export interface FeedbackCategoriesResponse {
   success: boolean;
-  data: {
+  data?: {
     categories: FeedbackCategoryOption[];
   };
+  categories?: FeedbackCategoryOption[];
 }
 
 // User Feedback List Response

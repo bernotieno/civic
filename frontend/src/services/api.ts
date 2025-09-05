@@ -417,7 +417,22 @@ class CivicAIApiService {
       console.log('📡 Response status:', response.status);
       console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
 
-      return this.handleResponse<UserFeedbackListResponse>(response);
+      const data = await this.handleResponse<any>(response);
+      
+      // Handle different backend response formats
+      if (data.success && data.data) {
+        return {
+          success: true,
+          data: {
+            results: data.data.results || data.data,
+            count: data.data.count || data.data.length || 0,
+            next: data.data.next,
+            previous: data.data.previous
+          }
+        };
+      }
+      
+      return data;
     } catch (error) {
       console.error('❌ Error fetching user feedback list:', error);
       if (error instanceof Error) {
@@ -499,8 +514,20 @@ class CivicAIApiService {
 
       const data = await this.handleResponse<FeedbackCategoriesResponse>(response);
 
-      // If API doesn't return categories in expected format, provide defaults
-      if (!data.data?.categories) {
+      // Handle different response formats from backend
+      if (data.success && data.categories) {
+        // Backend returns categories directly in success response
+        return {
+          success: true,
+          data: {
+            categories: data.categories
+          }
+        };
+      } else if (data.success && data.data?.categories) {
+        // Backend returns categories in data wrapper
+        return data;
+      } else {
+        // Fallback to default categories
         return {
           success: true,
           data: {
@@ -508,8 +535,6 @@ class CivicAIApiService {
           }
         };
       }
-
-      return data;
     } catch (error) {
       console.error('Error fetching feedback categories:', error);
       // Return default categories on error
@@ -523,63 +548,81 @@ class CivicAIApiService {
   }
 
   /**
-   * Get default feedback categories with department routing
+   * Get default feedback categories aligned with backend
    */
   private getDefaultFeedbackCategories(): FeedbackCategoryOption[] {
     return [
       {
-        value: 'infrastructure',
-        label: 'Infrastructure & Roads',
-        department: 'Public Works',
-        description: 'Road maintenance, bridges, public buildings'
+        value: 'legislation',
+        label: 'Legislation & Bills',
+        department: 'Parliament',
+        description: 'Parliamentary bills, legislation, and law-making'
+      },
+      {
+        value: 'budget',
+        label: 'Budget & Finance',
+        department: 'Treasury',
+        description: 'National budget, financial policies, taxation'
       },
       {
         value: 'healthcare',
-        label: 'Healthcare Services',
+        label: 'Healthcare Policy',
         department: 'Health',
-        description: 'Hospitals, clinics, medical equipment'
+        description: 'National healthcare policies and programs'
       },
       {
         value: 'education',
-        label: 'Education & Schools',
+        label: 'Education Policy',
         department: 'Education',
-        description: 'Schools, teachers, educational resources'
+        description: 'National education policies and programs'
       },
       {
-        value: 'water_sanitation',
-        label: 'Water & Sanitation',
-        department: 'Water',
-        description: 'Water supply, sewerage, waste management'
+        value: 'infrastructure',
+        label: 'Infrastructure Development',
+        department: 'Public Works',
+        description: 'National infrastructure projects and development'
       },
       {
-        value: 'security',
-        label: 'Security & Safety',
-        department: 'Security',
-        description: 'Police services, public safety, crime'
+        value: 'agriculture',
+        label: 'Agriculture & Food Security',
+        department: 'Agriculture',
+        description: 'Agricultural policies and food security'
       },
       {
         value: 'environment',
-        label: 'Environment & Waste',
+        label: 'Environment & Climate',
         department: 'Environment',
-        description: 'Pollution, waste collection, environmental protection'
+        description: 'Environmental policies and climate change'
+      },
+      {
+        value: 'security',
+        label: 'National Security',
+        department: 'Security',
+        description: 'National security and defense policies'
       },
       {
         value: 'governance',
-        label: 'Governance & Corruption',
-        department: 'Ethics',
-        description: 'Government services, corruption, transparency'
+        label: 'Governance & Oversight',
+        department: 'Parliament',
+        description: 'Government oversight and governance issues'
       },
       {
         value: 'economic',
-        label: 'Economic Development',
-        department: 'Development',
-        description: 'Business permits, economic opportunities, markets'
+        label: 'Economic Policy',
+        department: 'Treasury',
+        description: 'Economic policies and development'
+      },
+      {
+        value: 'social',
+        label: 'Social Services',
+        department: 'Social Services',
+        description: 'Social welfare and community services'
       },
       {
         value: 'other',
-        label: 'Other Issues',
+        label: 'Other National Issues',
         department: 'General Administration',
-        description: 'Issues not covered by other categories'
+        description: 'Other national issues not covered by specific categories'
       }
     ];
   }

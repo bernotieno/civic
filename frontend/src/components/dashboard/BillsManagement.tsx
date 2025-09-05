@@ -45,7 +45,15 @@ const BillsManagement: React.FC = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setBills(data.data);
+        // Handle different response formats from backend
+        if (data.success && data.data) {
+          setBills(data.data);
+        } else if (Array.isArray(data)) {
+          setBills(data);
+        } else {
+          console.error('Unexpected response format:', data);
+          setBills([]);
+        }
       }
     } catch (error) {
       console.error('Error fetching bills:', error);
@@ -79,9 +87,13 @@ const BillsManagement: React.FC = () => {
       if (!response.ok) {
         console.error('Failed to update status:', responseData);
         fetchBills();
-        alert(`Failed to update bill status: ${responseData.error || 'Unknown error'}`);
-      } else {
+        alert(`Failed to update bill status: ${responseData.message || responseData.error || 'Unknown error'}`);
+      } else if (responseData.success) {
         console.log('Status updated successfully');
+      } else {
+        console.error('Update failed:', responseData);
+        fetchBills();
+        alert(`Failed to update bill status: ${responseData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error updating bill status:', error);
@@ -120,10 +132,16 @@ const BillsManagement: React.FC = () => {
       });
 
       if (response.ok) {
-        fetchBills();
-        alert('Bill deleted successfully!');
+        const responseData = await response.json();
+        if (responseData.success) {
+          fetchBills();
+          alert('Bill deleted successfully!');
+        } else {
+          alert(`Failed to delete bill: ${responseData.message || 'Unknown error'}`);
+        }
       } else {
-        alert('Failed to delete bill');
+        const errorData = await response.json().catch(() => ({}));
+        alert(`Failed to delete bill: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error deleting bill:', error);
@@ -158,20 +176,26 @@ const BillsManagement: React.FC = () => {
       });
 
       if (response.ok) {
-        setShowEditForm(false);
-        setSelectedBill(null);
-        setFormData({
-          title: '',
-          description: '',
-          sponsor: '',
-          status: 'draft',
-          participation_deadline: '',
-        });
-        setSelectedDocument(null);
-        fetchBills();
-        alert('Bill updated successfully!');
+        const responseData = await response.json();
+        if (responseData.success) {
+          setShowEditForm(false);
+          setSelectedBill(null);
+          setFormData({
+            title: '',
+            description: '',
+            sponsor: '',
+            status: 'draft',
+            participation_deadline: '',
+          });
+          setSelectedDocument(null);
+          fetchBills();
+          alert('Bill updated successfully!');
+        } else {
+          alert(`Failed to update bill: ${responseData.message || 'Unknown error'}`);
+        }
       } else {
-        alert('Failed to update bill');
+        const errorData = await response.json().catch(() => ({}));
+        alert(`Failed to update bill: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error updating bill:', error);
@@ -205,20 +229,25 @@ const BillsManagement: React.FC = () => {
       });
 
       if (response.ok) {
-        setShowCreateForm(false);
-        setFormData({
-          title: '',
-          description: '',
-          sponsor: '',
-          status: 'draft',
-          participation_deadline: '',
-        });
-        setSelectedDocument(null);
-        fetchBills();
-        alert('Bill created successfully!');
+        const responseData = await response.json();
+        if (responseData.success) {
+          setShowCreateForm(false);
+          setFormData({
+            title: '',
+            description: '',
+            sponsor: '',
+            status: 'draft',
+            participation_deadline: '',
+          });
+          setSelectedDocument(null);
+          fetchBills();
+          alert('Bill created successfully!');
+        } else {
+          alert(`Failed to create bill: ${responseData.message || 'Unknown error'}`);
+        }
       } else {
-        const errorText = await response.text();
-        alert(`Failed to create bill: ${errorText}`);
+        const errorData = await response.json().catch(() => ({}));
+        alert(`Failed to create bill: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error creating bill:', error);
