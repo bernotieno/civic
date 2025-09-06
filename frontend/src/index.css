@@ -1,5 +1,6 @@
 /* Import accessibility and responsive styles */
 @import './styles/accessibility.css';
+@import './styles/popup-animations.css';
 
 @tailwind base;
 @tailwind components;

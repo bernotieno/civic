@@ -1,0 +1,206 @@
+/**
+ * Popup Animations
+ * Custom animations for popup components
+ */
+
+/* Keyframe animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes zoom-in {
+  from {
+    transform: scale(0.95);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes zoom-out {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(0.95);
+  }
+}
+
+@keyframes slide-in-from-bottom {
+  from {
+    transform: translateY(16px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-out-to-bottom {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(16px);
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-2px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(2px);
+  }
+}
+
+/* Animation utility classes */
+.animate-in {
+  animation-duration: 200ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: both;
+}
+
+.animate-out {
+  animation-duration: 150ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
+  animation-fill-mode: both;
+}
+
+.fade-in-0 {
+  animation-name: fade-in;
+}
+
+.fade-out-0 {
+  animation-name: fade-out;
+}
+
+.zoom-in-95 {
+  animation-name: zoom-in;
+}
+
+.zoom-out-95 {
+  animation-name: zoom-out;
+}
+
+.slide-in-from-bottom-2 {
+  animation-name: slide-in-from-bottom;
+}
+
+.slide-out-to-bottom-2 {
+  animation-name: slide-out-to-bottom;
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Backdrop animations */
+.backdrop-blur-sm {
+  backdrop-filter: blur(4px);
+}
+
+/* Popup container styles */
+.popup-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  transition: all 200ms ease-out;
+}
+
+.popup-backdrop.entering {
+  opacity: 0;
+}
+
+.popup-backdrop.entered {
+  opacity: 1;
+}
+
+.popup-backdrop.exiting {
+  opacity: 0;
+}
+
+/* Popup content styles */
+.popup-content {
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.popup-content.entering {
+  opacity: 0;
+  transform: scale(0.95) translateY(16px);
+}
+
+.popup-content.entered {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.popup-content.exiting {
+  opacity: 0;
+  transform: scale(0.95) translateY(16px);
+}
+
+/* Button hover effects */
+.popup-button {
+  transition: all 150ms ease-in-out;
+  transform: translateY(0);
+}
+
+.popup-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.popup-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Focus styles for accessibility */
+.popup-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
+/* Responsive animations */
+@media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .animate-out,
+  .popup-backdrop,
+  .popup-content,
+  .popup-button {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  .popup-button:hover {
+    transform: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .popup-backdrop {
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: none;
+  }
+  
+  .popup-content {
+    border: 2px solid #000;
+  }
+}

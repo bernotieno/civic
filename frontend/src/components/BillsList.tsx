@@ -5,6 +5,7 @@ import Header from './Header';
 import Footer from './Footer';
 import LoadingSkeleton from './LoadingSkeleton';
 import { getBillStatusColor, getBillStatusStyle, getBillStatusOptions } from '../constants/billStatuses';
+import { useCustomPopup } from '../hooks/useCustomPopup';
 
 interface Bill {
   id: string;
@@ -27,6 +28,7 @@ interface Bill {
 }
 
 const BillsList: React.FC = () => {
+  const { showSuccess, showError } = useCustomPopup();
   const [bills, setBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -201,7 +203,7 @@ const BillsList: React.FC = () => {
 
   const submitFeedback = async (billId: string) => {
     if (!userProfile) {
-      alert('User profile not loaded. Please refresh the page.');
+      showError('User profile not loaded. Please refresh the page.');
       return;
     }
 
@@ -214,7 +216,7 @@ const BillsList: React.FC = () => {
       const userCounty = countiesData.find((county: any) => county.name === userProfile.county_name);
       
       if (!userCounty) {
-        alert('Could not determine your county. Please contact support.');
+        showError('Could not determine your county. Please contact support.');
         return;
       }
 
@@ -235,7 +237,7 @@ const BillsList: React.FC = () => {
 
       if (response.ok) {
         const result = await response.json();
-        alert(`Feedback submitted successfully! Tracking ID: ${result.data.tracking_id}`);
+        showSuccess(`Feedback submitted successfully! Tracking ID: ${result.data.tracking_id}`);
         setExpandedFeedback(null);
         setFeedbackData({
           content: '',
@@ -246,11 +248,11 @@ const BillsList: React.FC = () => {
       } else {
         const errorData = await response.json();
         console.error('Feedback submission error:', errorData);
-        alert(`Failed to submit feedback: ${errorData.message || 'Unknown error'}`);
+        showError(`Failed to submit feedback: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      alert('Error submitting feedback');
+      showError('Error submitting feedback');
     }
   };
 

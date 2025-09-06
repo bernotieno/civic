@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Bill, ChatHistory } from '../../types';
 import ChatTab from '../ChatTab';
+import { useCustomPopup } from '../../hooks/useCustomPopup';
 
 interface BillDetailsViewProps {
   billId: string;
@@ -9,6 +10,7 @@ interface BillDetailsViewProps {
 }
 
 const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => {
+  const { showSuccess, showError } = useCustomPopup();
   const [bill, setBill] = useState<Bill | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'original' | 'summary' | 'feedback' | 'chat'>('original');
@@ -101,7 +103,7 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
 
   const submitFeedback = async () => {
     if (!userProfile) {
-      alert('Please log in to submit feedback.');
+      showError('Please log in to submit feedback.');
       return;
     }
 
@@ -124,7 +126,7 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
       const userCounty = counties.find((county: any) => county.name === userProfile.county_name);
       
       if (!userCounty) {
-        alert('Could not determine your county. Please contact support.');
+        showError('Could not determine your county. Please contact support.');
         return;
       }
 
@@ -186,7 +188,7 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
       if (response.ok) {
         const result = await response.json();
         const trackingId = result.data?.tracking_id || result.tracking_id;
-        alert(`${feedbackData.is_anonymous ? 'Anonymous ' : ''}Feedback submitted successfully! Tracking ID: ${trackingId}`);
+        showSuccess(`${feedbackData.is_anonymous ? 'Anonymous ' : ''}Feedback submitted successfully! Tracking ID: ${trackingId}`);
         setFeedbackData({
           content: '',
           category: 'legislation',
@@ -213,17 +215,17 @@ const BillDetailsView: React.FC<BillDetailsViewProps> = ({ billId, onBack }) => 
 
           setFeedbackErrors(backendErrors);
 
-          // Show a summary alert
+          // Show a summary error
           const errorMessages = Object.values(backendErrors);
-          alert(`Please fix the following errors:\n• ${errorMessages.join('\n• ')}`);
+          showError(`Please fix the following errors:\n• ${errorMessages.join('\n• ')}`);
         } else {
           // Generic error message
-          alert(`Failed to submit feedback: ${errorData.message || 'Unknown error'}`);
+          showError(`Failed to submit feedback: ${errorData.message || 'Unknown error'}`);
         }
       }
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      alert('Error submitting feedback: ' + (error instanceof Error ? error.message : 'Network error occurred'));
+      showError('Error submitting feedback: ' + (error instanceof Error ? error.message : 'Network error occurred'));
     } finally {
       setIsSubmittingFeedback(false);
     }

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/api';
+import { useCustomPopup } from '../../hooks/useCustomPopup';
 
 interface UserProfileProps {
   onBack?: () => void;
@@ -54,6 +55,7 @@ interface NotificationSettings {
 
 const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
   const { user, logout } = useAuth();
+  const { confirmDangerousAction } = useCustomPopup();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'data'>('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -524,9 +526,15 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
                     </div>
                     <button
                       onClick={() => {
-                        if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-                          // Handle account deletion
-                        }
+                        confirmDangerousAction(
+                          'Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.',
+                          () => {
+                            // Handle account deletion
+                            console.log('Account deletion confirmed');
+                          },
+                          undefined,
+                          'Delete Account'
+                        );
                       }}
                       className="flex items-center px-3 py-2 text-red-600 hover:text-red-700 border border-red-300 rounded-md hover:bg-red-100"
                     >

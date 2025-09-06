@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useCustomPopup } from '../../hooks/useCustomPopup';
 
 interface Bill {
   id: string;
@@ -15,6 +16,7 @@ interface Bill {
 }
 
 const BillsManagement: React.FC = () => {
+  const { showSuccess, showError, confirmDelete } = useCustomPopup();
   const [bills, setBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -89,18 +91,18 @@ const BillsManagement: React.FC = () => {
       if (!response.ok) {
         console.error('Failed to update status:', responseData);
         fetchBills();
-        alert(`Failed to update bill status: ${responseData.message || responseData.error || 'Unknown error'}`);
+        showError(`Failed to update bill status: ${responseData.message || responseData.error || 'Unknown error'}`);
       } else if (responseData.success) {
         console.log('Status updated successfully');
       } else {
         console.error('Update failed:', responseData);
         fetchBills();
-        alert(`Failed to update bill status: ${responseData.message || 'Unknown error'}`);
+        showError(`Failed to update bill status: ${responseData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error updating bill status:', error);
       fetchBills();
-      alert('Error updating bill status');
+      showError('Error updating bill status');
     }
   };
 
@@ -123,33 +125,36 @@ const BillsManagement: React.FC = () => {
   };
 
   const handleDeleteBill = async (billId: string) => {
-    if (!confirm('Are you sure you want to delete this bill?')) return;
-    
-    try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch(`http://127.0.0.1:8000/api/admin/bills/${billId}/`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+    const bill = bills.find(b => b.id === billId);
+    const billTitle = bill?.title || 'this bill';
 
-      if (response.ok) {
-        const responseData = await response.json();
-        if (responseData.success) {
-          fetchBills();
-          alert('Bill deleted successfully!');
+    confirmDelete(billTitle, async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`http://127.0.0.1:8000/api/admin/bills/${billId}/`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const responseData = await response.json();
+          if (responseData.success) {
+            fetchBills();
+            showSuccess('Bill deleted successfully!');
+          } else {
+            showError(`Failed to delete bill: ${responseData.message || 'Unknown error'}`);
+          }
         } else {
-          alert(`Failed to delete bill: ${responseData.message || 'Unknown error'}`);
+          const errorData = await response.json().catch(() => ({}));
+          showError(`Failed to delete bill: ${errorData.message || 'Unknown error'}`);
         }
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        alert(`Failed to delete bill: ${errorData.message || 'Unknown error'}`);
+      } catch (error) {
+        console.error('Error deleting bill:', error);
+        showError('Error deleting bill');
       }
-    } catch (error) {
-      console.error('Error deleting bill:', error);
-      alert('Error deleting bill');
-    }
+    });
   };
 
   const handleUpdateBill = async (e: React.FormEvent) => {
@@ -198,17 +203,17 @@ const BillsManagement: React.FC = () => {
           });
           setSelectedDocument(null);
           fetchBills();
-          alert('Bill updated successfully!');
+          showSuccess('Bill updated successfully!');
         } else {
-          alert(`Failed to update bill: ${responseData.message || 'Unknown error'}`);
+          showError(`Failed to update bill: ${responseData.message || 'Unknown error'}`);
         }
       } else {
         const errorData = await response.json().catch(() => ({}));
-        alert(`Failed to update bill: ${errorData.message || 'Unknown error'}`);
+        showError(`Failed to update bill: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error updating bill:', error);
-      alert('Error updating bill');
+      showError('Error updating bill');
     }
   };
 
@@ -256,17 +261,17 @@ const BillsManagement: React.FC = () => {
           });
           setSelectedDocument(null);
           fetchBills();
-          alert('Bill created successfully!');
+          showSuccess('Bill created successfully!');
         } else {
-          alert(`Failed to create bill: ${responseData.message || 'Unknown error'}`);
+          showError(`Failed to create bill: ${responseData.message || 'Unknown error'}`);
         }
       } else {
         const errorData = await response.json().catch(() => ({}));
-        alert(`Failed to create bill: ${errorData.message || 'Unknown error'}`);
+        showError(`Failed to create bill: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error creating bill:', error);
-      alert('Error creating bill');
+      showError('Error creating bill');
     }
   };
 
