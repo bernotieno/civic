@@ -129,60 +129,57 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onError }) => {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+    <div className="w-full bg-white rounded-lg shadow-md p-3 sm:p-4 lg:p-6 card-mobile">
       {/* Header */}
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Welcome Back</h2>
-        <p className="text-gray-600 mt-2">Sign in to your CivicAI account</p>
+      <div className="text-center mb-3 sm:mb-4 lg:mb-6">
+        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mobile-text-adjust">Welcome Back</h2>
+        <p className="text-gray-600 mt-1 sm:mt-2 text-xs sm:text-sm lg:text-base">Sign in to your CivicAI account</p>
       </div>
 
       {/* General Error Message */}
       {errors.general && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center">
-          <AlertCircle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0" />
-          <span className="text-red-700 text-sm">{errors.general}</span>
+        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-red-50 border border-red-200 rounded-md flex items-start">
+          <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" />
+          <span className="text-red-700 text-xs sm:text-sm break-words">{errors.general}</span>
         </div>
       )}
 
       {/* Login Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 form-mobile">
         {/* National ID Field */}
         <div>
-          <label htmlFor="national_id" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="national_id" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
             National ID *
           </label>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              id="national_id"
-              name="national_id"
-              value={formData.national_id}
-              onChange={handleInputChange}
-              placeholder="12345678"
-              maxLength={8}
-              className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 transition-colors ${
-                errors.national_id 
-                  ? 'border-red-500 focus:ring-red-500' 
-                  : 'border-gray-300 focus:ring-green-500'
-              }`}
-            />
-          </div>
+          <input
+            type="text"
+            id="national_id"
+            name="national_id"
+            value={formData.national_id}
+            onChange={handleInputChange}
+            placeholder="12345678"
+            maxLength={8}
+            className={`w-full px-3 py-2.5 sm:py-3 border rounded-md focus:outline-none focus:ring-2 transition-colors text-base ${
+              errors.national_id
+                ? 'border-red-500 focus:ring-red-500'
+                : 'border-gray-300 focus:ring-green-500'
+            }`}
+            style={{ fontSize: '16px' }} // Prevents zoom on iOS
+          />
           {errors.national_id && (
-            <p className="mt-1 text-sm text-red-600 flex items-center">
-              <AlertCircle className="h-4 w-4 mr-1" />
-              {errors.national_id}
+            <p className="mt-1 text-xs sm:text-sm text-red-600 flex items-start">
+              <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0 mt-0.5" />
+              <span className="break-words">{errors.national_id}</span>
             </p>
           )}
         </div>
 
         {/* Password Field */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="password" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
             Password *
           </label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type={showPassword ? 'text' : 'password'}
               id="password"
@@ -190,24 +187,25 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onError }) => {
               value={formData.password}
               onChange={handleInputChange}
               placeholder="••••••••"
-              className={`w-full pl-10 pr-10 py-2 border rounded-md focus:outline-none focus:ring-2 transition-colors ${
-                errors.password 
-                  ? 'border-red-500 focus:ring-red-500' 
+              className={`w-full pl-3 pr-10 sm:pr-12 py-2.5 sm:py-3 border rounded-md focus:outline-none focus:ring-2 transition-colors text-base ${
+                errors.password
+                  ? 'border-red-500 focus:ring-red-500'
                   : 'border-gray-300 focus:ring-green-500'
               }`}
+              style={{ fontSize: '16px' }} // Prevents zoom on iOS
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors touch-target p-1"
             >
-              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              {showPassword ? <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Eye className="h-4 w-4 sm:h-5 sm:w-5" />}
             </button>
           </div>
           {errors.password && (
-            <p className="mt-1 text-sm text-red-600 flex items-center">
-              <AlertCircle className="h-4 w-4 mr-1" />
-              {errors.password}
+            <p className="mt-1 text-xs sm:text-sm text-red-600 flex items-start">
+              <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0 mt-0.5" />
+              <span className="break-words">{errors.password}</span>
             </p>
           )}
         </div>
@@ -216,12 +214,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onError }) => {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+          className="w-full bg-green-600 text-white py-3 sm:py-3.5 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center text-base font-medium btn-mobile touch-target min-h-[44px]"
         >
           {isLoading ? (
             <>
-              <Loader2 className="animate-spin h-5 w-5 mr-2" />
-              Logging in...
+              <Loader2 className="animate-spin h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+              <span>Logging in...</span>
             </>
           ) : (
             'Sign In'
@@ -230,8 +228,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onError }) => {
       </form>
 
       {/* Footer */}
-      <div className="mt-6 text-center">
-        <p className="text-xs text-gray-500">
+      <div className="mt-3 sm:mt-4 lg:mt-6 text-center">
+        <p className="text-xs sm:text-sm text-gray-500">
           🇰🇪 Secure login with your Kenyan National ID
         </p>
       </div>

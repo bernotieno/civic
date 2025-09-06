@@ -256,13 +256,13 @@ const BillsList: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 safe-area-padding prevent-horizontal-scroll">
         <Header />
-        <div className="py-8 pt-24">
+        <div className="py-6 sm:py-8 pt-20 sm:pt-24">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">Parliamentary Bills</h1>
-              <p className="text-xl text-gray-600">Loading bills...</p>
+            <div className="text-center mb-6 sm:mb-8">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 mobile-text-adjust">Parliamentary Bills</h1>
+              <p className="text-lg sm:text-xl text-gray-600">Loading bills...</p>
             </div>
             <LoadingSkeleton />
           </div>
@@ -273,13 +273,13 @@ const BillsList: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 safe-area-padding prevent-horizontal-scroll">
       <Header />
-      <div className="py-8 pt-24">
+      <div className="py-6 sm:py-8 pt-20 sm:pt-24">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Parliamentary Bills</h1>
-          <p className="text-xl text-gray-600">Engage with current parliamentary bills and legislation</p>
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 mobile-text-adjust">Parliamentary Bills</h1>
+          <p className="text-base sm:text-lg lg:text-xl text-gray-600">Engage with current parliamentary bills and legislation</p>
         </div>
 
         {/* Search and Filter Section */}

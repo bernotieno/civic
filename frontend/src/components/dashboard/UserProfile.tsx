@@ -185,16 +185,16 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
   return (
     <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md">
       {/* Header */}
-      <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Profile Settings</h2>
-            <p className="text-gray-600 mt-1">Manage your account and preferences</p>
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mobile-text-adjust">Profile Settings</h2>
+            <p className="text-gray-600 mt-1 text-xs sm:text-sm lg:text-base">Manage your account and preferences</p>
           </div>
           {onBack && (
             <button
               onClick={onBack}
-              className="self-start sm:self-auto px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50"
+              className="self-start sm:self-auto px-3 sm:px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-xs sm:text-sm touch-target"
             >
               ← Back to Dashboard
             </button>
@@ -204,21 +204,22 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
-        <nav className="flex overflow-x-auto">
+        <nav className="flex overflow-x-auto scrollbar-hide">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 ${
+                className={`flex items-center px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium whitespace-nowrap border-b-2 transition-colors touch-target ${
                   activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
+                    ? 'border-green-500 text-green-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                <Icon className="h-4 w-4 mr-2" />
-                {tab.label}
+                <Icon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">{tab.label}</span>
+                <span className="xs:hidden">{tab.label.split(' ')[0]}</span>
               </button>
             );
           })}
@@ -226,93 +227,95 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
       </div>
 
       {/* Content */}
-      <div className="p-4 sm:p-6">
+      <div className="p-3 sm:p-4 lg:p-6">
         {/* Success/Error Messages */}
         {success && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
-            <p className="text-green-800 text-sm">{success}</p>
+          <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-green-50 border border-green-200 rounded-md">
+            <p className="text-green-800 text-xs sm:text-sm break-words">{success}</p>
           </div>
         )}
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-800 text-sm">{error}</p>
+          <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-800 text-xs sm:text-sm break-words">{error}</p>
           </div>
         )}
 
         {/* Profile Tab */}
         {activeTab === 'profile' && profileData && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="h-20 w-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-2xl font-bold">
+          <div className="space-y-4 sm:space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div className="h-16 w-16 sm:h-20 sm:w-20 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto sm:mx-0">
+                <span className="text-white text-lg sm:text-2xl font-bold">
                   {profileData.name?.charAt(0).toUpperCase() || 'U'}
                 </span>
               </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-medium text-gray-900">{profileData.name}</h3>
-                <p className="text-gray-600">{profileData.email}</p>
-                <p className="text-sm text-gray-500">{profileData.county_name} County</p>
+              <div className="flex-1 text-center sm:text-left">
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mobile-text-adjust">{profileData.name}</h3>
+                <p className="text-gray-600 text-sm sm:text-base break-words">{profileData.email}</p>
+                <p className="text-xs sm:text-sm text-gray-500">{profileData.county_name} County</p>
               </div>
               <button
                 onClick={() => setIsEditing(!isEditing)}
-                className="self-start sm:self-auto flex items-center px-3 py-2 text-blue-600 hover:text-blue-700 border border-blue-200 rounded-md hover:bg-blue-50"
+                className="self-start sm:self-auto flex items-center px-3 py-2 text-green-600 hover:text-green-700 border border-green-200 rounded-md hover:bg-green-50 transition-colors text-xs sm:text-sm touch-target"
               >
-                {isEditing ? <X className="h-4 w-4 mr-1" /> : <Edit3 className="h-4 w-4 mr-1" />}
+                {isEditing ? <X className="h-3 w-3 sm:h-4 sm:w-4 mr-1" /> : <Edit3 className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />}
                 {isEditing ? 'Cancel' : 'Edit'}
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Full Name</label>
                 {isEditing ? (
                   <input
                     type="text"
                     value={editData.name}
                     onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2.5 sm:py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors text-base"
+                    style={{ fontSize: '16px' }} // Prevents zoom on iOS
                   />
                 ) : (
-                  <p className="text-gray-900">{profileData.name}</p>
+                  <p className="text-gray-900 text-sm sm:text-base break-words">{profileData.name}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                 {isEditing ? (
                   <input
                     type="tel"
                     value={editData.phone}
                     onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2.5 sm:py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors text-base"
                     placeholder="Enter phone number"
+                    style={{ fontSize: '16px' }} // Prevents zoom on iOS
                   />
                 ) : (
-                  <p className="text-gray-900">{profileData.phone || 'Not provided'}</p>
+                  <p className="text-gray-900 text-sm sm:text-base break-words">{profileData.phone || 'Not provided'}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <p className="text-gray-900">{profileData.email}</p>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Email</label>
+                <p className="text-gray-900 text-sm sm:text-base break-words">{profileData.email}</p>
                 <p className="text-xs text-gray-500 mt-1">Contact support to change email</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">County</label>
-                <p className="text-gray-900">{profileData.county_name}</p>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">County</label>
+                <p className="text-gray-900 text-sm sm:text-base">{profileData.county_name}</p>
                 <p className="text-xs text-gray-500 mt-1">Contact support to change county</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">User ID</label>
-                <p className="text-gray-900 font-mono text-sm">{profileData.id}</p>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">User ID</label>
+                <p className="text-gray-900 font-mono text-xs sm:text-sm break-all">{profileData.id}</p>
                 <p className="text-xs text-gray-500 mt-1">Your unique account identifier</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
-                <p className="text-gray-900">{profileData.role_display}</p>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Account Type</label>
+                <p className="text-gray-900 text-sm sm:text-base">{profileData.role_display}</p>
                 {profileData.level_display && (
                   <p className="text-xs text-gray-500 mt-1">Level: {profileData.level_display}</p>
                 )}
@@ -324,7 +327,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
                 <button
                   onClick={handleSaveProfile}
                   disabled={loading}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  className="flex items-center px-4 py-2.5 sm:py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors text-sm sm:text-base font-medium touch-target min-h-[44px]"
                 >
                   <Save className="h-4 w-4 mr-1" />
                   {loading ? 'Saving...' : 'Save Changes'}

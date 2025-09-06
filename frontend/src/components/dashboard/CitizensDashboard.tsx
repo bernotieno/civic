@@ -224,26 +224,26 @@ const CitizensDashboard: React.FC = () => {
 
   if (dashboardData.loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your dashboard...</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center safe-area-padding">
+        <div className="text-center space-mobile">
+          <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-sm sm:text-base">Loading your dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 prevent-horizontal-scroll">
+    <div className="min-h-screen bg-gray-50 prevent-horizontal-scroll safe-area-padding">
       {/* Fixed Header */}
       <div className="fixed top-0 left-0 right-0 z-30">
-        <DashboardHeader 
+        <DashboardHeader
           onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           onViewChange={handleViewChange}
         />
       </div>
 
-      <div className="flex pt-16">
+      <div className="flex pt-14 sm:pt-16">
         {/* Fixed Left Sidebar */}
         <DashboardSidebar
           isMobileMenuOpen={isMobileMenuOpen}

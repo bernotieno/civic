@@ -192,48 +192,46 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Register for CivicAI</h2>
-        <p className="text-gray-600 mt-2">Create your account to engage with the National Assembly</p>
+    <div className="w-full bg-white rounded-lg shadow-md p-3 sm:p-4 lg:p-6 card-mobile">
+      <div className="text-center mb-3 sm:mb-4 lg:mb-6">
+        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mobile-text-adjust">Register for CivicAI</h2>
+        <p className="text-gray-600 mt-1 sm:mt-2 text-xs sm:text-sm lg:text-base">Create your account to engage with the National Assembly</p>
       </div>
 
       {errors.general && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center">
-          <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-          <span className="text-red-700 text-sm">{errors.general}</span>
+        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-red-50 border border-red-200 rounded-md flex items-start">
+          <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" />
+          <span className="text-red-700 text-xs sm:text-sm break-words">{errors.general}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 form-mobile">
         {/* National ID Field */}
         <div>
-          <label htmlFor="national_id" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="national_id" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
             Kenyan National ID *
           </label>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              id="national_id"
-              name="national_id"
-              value={formData.national_id}
-              onChange={handleInputChange}
-              placeholder="12345678"
-              maxLength={8}
-              className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.national_id ? 'border-red-500' : 'border-gray-300'
-              }`}
-            />
-          </div>
+          <input
+            type="text"
+            id="national_id"
+            name="national_id"
+            value={formData.national_id}
+            onChange={handleInputChange}
+            placeholder="12345678"
+            maxLength={8}
+            className={`w-full px-3 py-2.5 sm:py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors text-base ${
+              errors.national_id ? 'border-red-500' : 'border-gray-300'
+            }`}
+            style={{ fontSize: '16px' }} // Prevents zoom on iOS
+          />
           {errors.national_id && (
-            <p className="mt-1 text-sm text-red-600">{errors.national_id}</p>
+            <p className="mt-1 text-xs sm:text-sm text-red-600 break-words">{errors.national_id}</p>
           )}
         </div>
 
         {/* Name Field */}
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="name" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
             Full Name *
           </label>
           <input
@@ -243,46 +241,44 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
             value={formData.name}
             onChange={handleInputChange}
             placeholder="John Doe Kiprop"
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-3 py-2.5 sm:py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors text-base ${
               errors.name ? 'border-red-500' : 'border-gray-300'
             }`}
+            style={{ fontSize: '16px' }} // Prevents zoom on iOS
           />
           {errors.name && (
-            <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+            <p className="mt-1 text-xs sm:text-sm text-red-600 break-words">{errors.name}</p>
           )}
         </div>
 
         {/* Email Field */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="email" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
             Email Address *
           </label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              placeholder="john.kiprop@gmail.com"
-              className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.email ? 'border-red-500' : 'border-gray-300'
-              }`}
-            />
-          </div>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            placeholder="john.kiprop@gmail.com"
+            className={`w-full px-3 py-2.5 sm:py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors text-base ${
+              errors.email ? 'border-red-500' : 'border-gray-300'
+            }`}
+            style={{ fontSize: '16px' }} // Prevents zoom on iOS
+          />
           {errors.email && (
-            <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+            <p className="mt-1 text-xs sm:text-sm text-red-600 break-words">{errors.email}</p>
           )}
         </div>
 
         {/* Password Field */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="password" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
             Password *
           </label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type={showPassword ? 'text' : 'password'}
               id="password"
@@ -290,53 +286,52 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
               value={formData.password}
               onChange={handleInputChange}
               placeholder="••••••••"
-              className={`w-full pl-10 pr-10 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full pl-3 pr-10 sm:pr-12 py-2.5 sm:py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors text-base ${
                 errors.password ? 'border-red-500' : 'border-gray-300'
               }`}
+              style={{ fontSize: '16px' }} // Prevents zoom on iOS
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors touch-target p-1"
             >
-              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              {showPassword ? <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Eye className="h-4 w-4 sm:h-5 sm:w-5" />}
             </button>
           </div>
           {errors.password && (
-            <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+            <p className="mt-1 text-xs sm:text-sm text-red-600 break-words">{errors.password}</p>
           )}
           <p className="mt-1 text-xs text-gray-500">Minimum 6 characters</p>
         </div>
 
         {/* County Selection */}
         <div>
-          <label htmlFor="county_id" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="county_id" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
             County *
           </label>
-          <div className="relative">
-            <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <select
-              id="county_id"
-              name="county_id"
-              value={formData.county_id}
-              onChange={handleInputChange}
-              disabled={loadingCounties}
-              className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.county_id ? 'border-red-500' : 'border-gray-300'
-              }`}
-            >
-              <option value="">
-                {loadingCounties ? 'Loading counties...' : 'Select your county'}
+          <select
+            id="county_id"
+            name="county_id"
+            value={formData.county_id}
+            onChange={handleInputChange}
+            disabled={loadingCounties}
+            className={`w-full px-3 py-2.5 sm:py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors text-base ${
+              errors.county_id ? 'border-red-500' : 'border-gray-300'
+            }`}
+            style={{ fontSize: '16px' }} // Prevents zoom on iOS
+          >
+            <option value="">
+              {loadingCounties ? 'Loading counties...' : 'Select your county'}
+            </option>
+            {Array.isArray(counties) && counties.map((county) => (
+              <option key={county.id} value={county.id}>
+                {county.name}
               </option>
-              {Array.isArray(counties) && counties.map((county) => (
-                <option key={county.id} value={county.id}>
-                  {county.name}
-                </option>
-              ))}
-            </select>
-          </div>
+            ))}
+          </select>
           {errors.county_id && (
-            <p className="mt-1 text-sm text-red-600">{errors.county_id}</p>
+            <p className="mt-1 text-xs sm:text-sm text-red-600 break-words">{errors.county_id}</p>
           )}
         </div>
 
@@ -346,20 +341,20 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onError 
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full bg-green-600 text-white py-3 sm:py-3.5 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center text-base font-medium btn-mobile touch-target min-h-[44px]"
         >
-          {isLoading ? 'Creating Account...' : 'Create Account'}
+          {isLoading ? (
+            <>
+              <Loader2 className="animate-spin h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+              <span>Creating Account...</span>
+            </>
+          ) : (
+            'Create Account'
+          )}
         </button>
       </form>
 
-      <div className="mt-6 text-center">
-        <p className="text-sm text-gray-600">
-          Already have an account?{' '}
-          <a href="/login" className="text-blue-600 hover:text-blue-500 font-medium">
-            Sign in here
-          </a>
-        </p>
-      </div>
+
     </div>
   );
 };

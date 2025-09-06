@@ -424,11 +424,11 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
   }
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-4 sm:p-6">
-      <div className="mb-6">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Submit Feedback</h2>
-        <p className="text-gray-600">
-          {isAnonymous 
+    <div className="w-full max-w-4xl mx-auto bg-white rounded-lg shadow-md p-4 sm:p-6 card-mobile">
+      <div className="mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 mobile-text-adjust">Submit Feedback</h2>
+        <p className="text-gray-600 text-sm sm:text-base">
+          {isAnonymous
             ? 'Submit anonymous feedback to your county government. Your identity will remain completely private.'
             : `Share your concerns with ${user?.county_name || 'your'} County Government. Your feedback will be routed to the appropriate department for review.`
           }

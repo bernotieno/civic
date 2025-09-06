@@ -30,15 +30,15 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8" style={{ backgroundColor: '#E2FCF7' }}>
+    <div className="min-h-screen flex flex-col justify-center py-6 sm:py-8 lg:py-12 px-3 sm:px-4 lg:px-8 safe-area-padding prevent-horizontal-scroll" style={{ backgroundColor: '#E2FCF7' }}>
       {/* Header */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="mx-auto w-full max-w-xs sm:max-w-sm lg:max-w-md">
         <div className="text-center">
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-3 sm:mb-4 lg:mb-6">
             <img
               src="/logo.png"
               alt="CivicAI Logo"
-              className="h-16 w-auto"
+              className="h-10 sm:h-12 lg:h-16 w-auto"
               onError={(e) => {
                 // Fallback if logo.png doesn't exist
                 const target = e.target as HTMLImageElement;
@@ -46,21 +46,21 @@ const RegisterPage: React.FC = () => {
                 target.nextElementSibling?.classList.remove('hidden');
               }}
             />
-            <div className="hidden w-16 h-16 rounded-lg items-center justify-center" style={{ backgroundColor: '#0D3C43' }}>
-              <span className="text-white font-bold text-2xl">C</span>
+            <div className="hidden w-10 sm:w-12 lg:w-16 h-10 sm:h-12 lg:h-16 rounded-lg items-center justify-center" style={{ backgroundColor: '#0D3C43' }}>
+              <span className="text-white font-bold text-lg sm:text-xl lg:text-2xl">C</span>
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 mobile-text-adjust">
             Join CivicAI
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-sm sm:text-base lg:text-lg text-gray-600">
             Kenya's Premier Civic Engagement Platform
           </p>
         </div>
       </div>
 
       {/* Registration Form */}
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="mt-4 sm:mt-6 lg:mt-8 mx-auto w-full max-w-xs sm:max-w-sm lg:max-w-md">
         <RegistrationForm
           onSuccess={handleRegistrationSuccess}
           onError={handleRegistrationError}
@@ -68,12 +68,12 @@ const RegisterPage: React.FC = () => {
       </div>
 
       {/* Navigation */}
-      <div className="mt-6 text-center space-y-3">
-        <p className="text-sm text-gray-600">
+      <div className="mt-4 sm:mt-6 text-center space-y-2 sm:space-y-3 px-3 sm:px-0">
+        <p className="text-xs sm:text-sm text-gray-600">
           Already have an account?{' '}
           <button
             onClick={() => navigate('/login')}
-            className="font-medium transition-colors"
+            className="font-medium transition-colors touch-target inline-block py-1 px-2 -mx-2 rounded"
             style={{ color: '#0D3C43' }}
           >
             Sign In
@@ -82,7 +82,7 @@ const RegisterPage: React.FC = () => {
         <div>
           <button
             onClick={() => navigate('/')}
-            className="text-gray-500 hover:text-gray-700 text-sm transition-colors"
+            className="text-gray-500 hover:text-gray-700 text-xs sm:text-sm transition-colors touch-target inline-block py-2 px-3 -mx-3 rounded"
           >
             ← Back to Home
           </button>
@@ -90,7 +90,7 @@ const RegisterPage: React.FC = () => {
       </div>
 
       {/* Footer */}
-      <div className="mt-12 text-center">
+      <div className="mt-6 sm:mt-8 lg:mt-12 text-center space-mobile">
         <p className="text-xs text-gray-500">
           By registering, you agree to our Terms of Service and Privacy Policy
         </p>

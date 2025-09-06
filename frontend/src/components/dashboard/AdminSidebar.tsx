@@ -18,10 +18,10 @@ const AdminSidebar: React.FC = () => {
       {/* Mobile menu button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-white border border-gray-300 shadow-sm"
+        className="lg:hidden fixed top-3 sm:top-4 left-3 sm:left-4 z-50 p-2 rounded-md bg-white border border-gray-300 shadow-sm touch-target"
       >
         <span className="sr-only">Open sidebar</span>
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
@@ -37,18 +37,18 @@ const AdminSidebar: React.FC = () => {
       {/* Sidebar */}
       <aside className={`
         fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200
-        transform transition-transform duration-300 ease-in-out
+        transform transition-transform duration-300 ease-in-out safe-area-padding
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="h-full pt-16 overflow-y-auto">
-          <nav className="p-4 space-y-1">
+        <div className="h-full pt-14 sm:pt-16 overflow-y-auto">
+          <nav className="p-3 sm:p-4 space-y-1">
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
                 onClick={() => setIsOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  `flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-2 sm:py-3 rounded-md text-xs sm:text-sm font-medium transition-colors touch-target ${
                     isActive
                       ? 'text-white border-r-2'
                       : 'text-gray-700 hover:bg-gray-100'
@@ -75,7 +75,7 @@ const AdminSidebar: React.FC = () => {
                   }
                 }}
               >
-                <span className="text-lg">{item.icon}</span>
+                <span className="text-base sm:text-lg flex-shrink-0">{item.icon}</span>
                 <span className="truncate">{item.label}</span>
               </NavLink>
             ))}

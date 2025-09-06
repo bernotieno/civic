@@ -369,10 +369,10 @@ export const AnonymousFeedbackForm: React.FC<AnonymousFeedbackFormProps> = ({
   // Show loading state while data is being fetched
   if (loadingData) {
     return (
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-600">Loading counties and categories...</span>
+      <div className="w-full max-w-4xl mx-auto bg-white rounded-lg shadow-md p-4 sm:p-6 card-mobile">
+        <div className="flex items-center justify-center py-8 sm:py-12 space-mobile">
+          <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-600 text-sm sm:text-base">Loading counties and categories...</span>
         </div>
       </div>
     );
@@ -381,16 +381,16 @@ export const AnonymousFeedbackForm: React.FC<AnonymousFeedbackFormProps> = ({
   // Show error state if data loading failed
   if (dataError) {
     return (
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+      <div className="w-full max-w-4xl mx-auto bg-white rounded-lg shadow-md p-4 sm:p-6 card-mobile">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
           <div className="flex items-start">
-            <ExclamationTriangleIcon className="h-5 w-5 text-red-600 mr-2 mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-red-800">
+            <ExclamationTriangleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 mr-2 mt-0.5 flex-shrink-0" />
+            <div className="text-xs sm:text-sm text-red-800">
               <p className="font-medium mb-1">Failed to Load Data</p>
               <p>{dataError}</p>
               <button
                 onClick={loadInitialData}
-                className="mt-2 text-red-700 hover:text-red-900 underline text-sm"
+                className="mt-2 text-red-700 hover:text-red-900 underline text-xs sm:text-sm touch-target"
               >
                 Try Again
               </button>
@@ -402,14 +402,14 @@ export const AnonymousFeedbackForm: React.FC<AnonymousFeedbackFormProps> = ({
   }
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
+    <div className="w-full max-w-4xl mx-auto bg-white rounded-lg shadow-md p-4 sm:p-6 card-mobile">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <div className="flex items-center mb-3">
-          <UserIcon className="h-8 w-8 text-gray-600 mr-3" />
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Anonymous Feedback</h2>
-            <p className="text-gray-600">
+          <UserIcon className="h-6 w-6 sm:h-8 sm:w-8 text-gray-600 mr-2 sm:mr-3 flex-shrink-0" />
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mobile-text-adjust">Anonymous Feedback</h2>
+            <p className="text-gray-600 text-sm sm:text-base">
               Submit feedback without revealing your identity. Your privacy is completely protected.
             </p>
           </div>
