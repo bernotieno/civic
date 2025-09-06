@@ -5,11 +5,8 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  MessageSquare, 
-  UserX, 
-  TrendingUp, 
-  Clock,
+import {
+  MessageSquare,
   ArrowRight,
   Sparkles
 } from 'lucide-react';
@@ -23,7 +20,6 @@ interface WelcomeSectionProps {
 
 const WelcomeSection: React.FC<WelcomeSectionProps> = ({ user }) => {
   const userName = user?.name || 'Citizen';
-  const monthlyResolved = 47; // This could come from dashboard data
   const navigate = useNavigate();
 
   const getGreeting = () => {
@@ -53,15 +49,9 @@ const WelcomeSection: React.FC<WelcomeSectionProps> = ({ user }) => {
               </h1>
             </div>
 
-            <p className="text-blue-100 text-sm sm:text-base mb-4 leading-relaxed">
+            <p className="text-blue-100 text-sm sm:text-base leading-relaxed">
               Your voice matters. Engage with Parliament and shape national policy.
             </p>
-
-            {/* Single Key Stat */}
-            <div className="flex items-center bg-white/10 rounded-full px-3 sm:px-4 py-2 text-xs sm:text-sm w-fit">
-              <TrendingUp className="h-4 w-4 mr-2 text-green-300 flex-shrink-0" />
-              <span className="font-semibold">{monthlyResolved} bills open for public participation</span>
-            </div>
           </div>
 
           {/* Right Side - Primary Action */}

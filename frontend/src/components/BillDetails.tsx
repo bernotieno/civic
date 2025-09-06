@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
+import { getBillStatusColor, getBillStatusStyle } from '../constants/billStatuses';
 
 interface Bill {
   id: string;
@@ -173,19 +174,29 @@ const BillDetails: React.FC = () => {
 
           <div className="bg-white rounded-lg shadow-lg overflow-hidden">
             <div className="p-8">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{bill.title}</h1>
-                </div>
+              {/* Bill Title */}
+              <div className="mb-6">
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">{bill.title}</h1>
               </div>
 
+              {/* Bill Status */}
+              <div className="mb-6">
+                <span
+                  className="inline-block px-4 py-2 rounded-full text-sm font-medium text-white"
+                  style={{ backgroundColor: '#0D3C43' }}
+                >
+                  {bill.status_display || 'Active'}
+                </span>
+              </div>
+
+              {/* Key Information Grid */}
               <div className="grid md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-gray-900 mb-1">Sponsor</h3>
+                <div className="p-4 rounded-lg" style={{ backgroundColor: '#E2FCF7' }}>
+                  <h3 className="font-semibold mb-2" style={{ color: '#0D3C43' }}>Sponsor</h3>
                   <p className="text-lg text-gray-700">{bill.sponsor}</p>
                 </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-gray-900 mb-1">Participation Deadline</h3>
+                <div className="p-4 rounded-lg" style={{ backgroundColor: '#E2FCF7' }}>
+                  <h3 className="font-semibold mb-2" style={{ color: '#0D3C43' }}>Participation Deadline</h3>
                   <p className="text-lg text-gray-700">
                     {bill.participation_deadline ? new Date(bill.participation_deadline).toLocaleDateString() : 'No deadline set'}
                   </p>
@@ -202,19 +213,26 @@ const BillDetails: React.FC = () => {
                 </div>
               )}
 
+              {/* Description Section */}
               <div className="mb-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Bill Description</h2>
-                <p className="text-gray-700 leading-relaxed mb-4">{bill.description}</p>
-                {bill.summary && (
-                  <>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">AI-Generated Summary</h3>
+                <h2 className="text-2xl font-bold mb-4" style={{ color: '#0D3C43' }}>Description</h2>
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <p className="text-gray-700 leading-relaxed text-base">{bill.description}</p>
+                </div>
+              </div>
+
+              {/* AI Summary Section */}
+              {bill.summary && (
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold mb-4" style={{ color: '#0D3C43' }}>AI Summary</h2>
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
                     <div
-                      className="bill-summary-content max-w-none"
+                      className="bill-summary-content max-w-none prose prose-gray"
                       dangerouslySetInnerHTML={{ __html: bill.summary }}
                     />
-                  </>
-                )}
-              </div>
+                  </div>
+                </div>
+              )}
 
               {bill.document && (
                 <div className="mb-8">

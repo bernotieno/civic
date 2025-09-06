@@ -29,14 +29,20 @@ interface UserProfileProps {
 }
 
 interface ProfileData {
+  id: number;
   name: string;
   email: string;
   county_name: string;
-  phone?: string;
+  role: string;
+  role_display: string;
+  admin_level?: string;
+  level_display?: string;
   date_joined: string;
-  last_login: string;
-  feedback_count: number;
-  resolved_count: number;
+  accessible_counties: Array<{
+    id: number;
+    name: string;
+    code: string;
+  }>;
 }
 
 interface NotificationSettings {
@@ -80,11 +86,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
     try {
       setLoading(true);
       const response = await apiService.getUserProfile();
-      if (response.success) {
-        setProfileData(response.data);
+      if (response.success && response.user) {
+        setProfileData(response.user);
         setEditData({
-          name: response.data.name || '',
-          phone: response.data.phone || ''
+          name: response.user.name || '',
+          phone: '' // Phone is not currently in the API response
         });
       }
     } catch (err) {
@@ -297,6 +303,20 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
                 <p className="text-gray-900">{profileData.county_name}</p>
                 <p className="text-xs text-gray-500 mt-1">Contact support to change county</p>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">User ID</label>
+                <p className="text-gray-900 font-mono text-sm">{profileData.id}</p>
+                <p className="text-xs text-gray-500 mt-1">Your unique account identifier</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
+                <p className="text-gray-900">{profileData.role_display}</p>
+                {profileData.level_display && (
+                  <p className="text-xs text-gray-500 mt-1">Level: {profileData.level_display}</p>
+                )}
+              </div>
             </div>
 
             {isEditing && (
@@ -312,22 +332,41 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
               </div>
             )}
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-gray-200">
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <p className="text-2xl font-bold text-blue-600">{profileData.feedback_count}</p>
-                <p className="text-sm text-blue-700">Total Feedback</p>
+            {/* Account Information */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t border-gray-200">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <div className="flex items-center">
+                  <Shield className="h-5 w-5 text-blue-600 mr-2" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-900">Account Role</p>
+                    <p className="text-sm text-blue-700">{profileData.role_display}</p>
+                  </div>
+                </div>
               </div>
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <p className="text-2xl font-bold text-green-600">{profileData.resolved_count}</p>
-                <p className="text-sm text-green-700">Resolved Issues</p>
+              <div className="p-4 bg-green-50 rounded-lg">
+                <div className="flex items-center">
+                  <Calendar className="h-5 w-5 text-green-600 mr-2" />
+                  <div>
+                    <p className="text-sm font-medium text-green-900">Member Since</p>
+                    <p className="text-sm text-green-700">
+                      {new Date(profileData.date_joined).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <p className="text-2xl font-bold text-purple-600">
-                  {profileData.feedback_count > 0 ? Math.round((profileData.resolved_count / profileData.feedback_count) * 100) : 0}%
-                </p>
-                <p className="text-sm text-purple-700">Success Rate</p>
-              </div>
+              {profileData.accessible_counties && profileData.accessible_counties.length > 0 && (
+                <div className="p-4 bg-purple-50 rounded-lg sm:col-span-2">
+                  <div className="flex items-start">
+                    <MapPin className="h-5 w-5 text-purple-600 mr-2 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-purple-900">Accessible Counties</p>
+                      <p className="text-sm text-purple-700">
+                        {profileData.accessible_counties.map(county => county.name).join(', ')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

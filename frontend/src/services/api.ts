@@ -922,15 +922,6 @@ class CivicAIApiService {
       averageResponseTime: number;
     };
     recentFeedback: any[];
-    communityStats: {
-      resolvedInArea: number;
-      monthlyTrend: number;
-      governmentResponses: Array<{
-        title: string;
-        date: string;
-        department: string;
-      }>;
-    };
   }> {
     try {
       // Make API calls to get real data
@@ -989,22 +980,6 @@ class CivicAIApiService {
       return {
         stats,
         recentFeedback,
-        communityStats: {
-          resolvedInArea: 47, // Mock data - would come from API
-          monthlyTrend: 15,
-          governmentResponses: [
-            {
-              title: 'New water pumps installed in Eastlands',
-              date: '2024-01-12',
-              department: 'Water & Sanitation',
-            },
-            {
-              title: 'Road repairs completed on Mombasa Road',
-              date: '2024-01-10',
-              department: 'Infrastructure',
-            },
-          ],
-        },
       };
     } catch (error) {
       console.error('Error fetching dashboard data:', error);

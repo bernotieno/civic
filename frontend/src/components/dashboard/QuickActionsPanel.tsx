@@ -5,11 +5,9 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  MessageSquare, 
-  Search, 
-  UserX, 
-  AlertTriangle,
+import {
+  MessageSquare,
+  Search,
   ArrowRight,
   Zap
 } from 'lucide-react';
@@ -35,8 +33,8 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onViewChange }) =
 
   const quickActions = [
     {
-      title: 'Engage with Parliament',
-      description: 'Share your views on parliamentary bills',
+      title: 'Submit Feedback',
+      description: 'Share your views on government issues',
       icon: MessageSquare,
       color: 'bg-blue-600 hover:bg-blue-700',
       textColor: 'text-white',
@@ -44,21 +42,12 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onViewChange }) =
       isPrimary: true
     },
     {
-      title: 'Anonymous Participation',
-      description: 'Participate in public consultation anonymously',
-      icon: UserX,
+      title: 'View Bills & Projects',
+      description: 'Explore parliamentary bills and government projects',
+      icon: Search,
       color: 'bg-gray-100 hover:bg-gray-200 border border-gray-300',
       textColor: 'text-gray-700',
-      action: () => navigate('/anonymous-feedback'),
-      isPrimary: false
-    },
-    {
-      title: 'Urgent National Issue',
-      description: 'Report urgent national matters to Parliament',
-      icon: AlertTriangle,
-      color: 'bg-red-100 hover:bg-red-200 border border-red-300',
-      textColor: 'text-red-700',
-      action: () => navigate('/emergency-report'),
+      action: () => onViewChange ? onViewChange('bills-projects') : navigate('/bills'),
       isPrimary: false
     }
   ];
@@ -138,19 +127,7 @@ const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({ onViewChange }) =
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="border-t border-gray-200 pt-6 mt-6">
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 text-center">
-          <div className="bg-blue-50 rounded-lg p-2 sm:p-3">
-            <p className="text-xl sm:text-2xl font-bold text-blue-600">2.5</p>
-            <p className="text-xs text-blue-600">Avg Response Days</p>
-          </div>
-          <div className="bg-green-50 rounded-lg p-2 sm:p-3">
-            <p className="text-xl sm:text-2xl font-bold text-green-600">87%</p>
-            <p className="text-xs text-green-600">Resolution Rate</p>
-          </div>
-        </div>
-      </div>
+
     </div>
   );
 };

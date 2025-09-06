@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Users } from "lucide-react";
+import { getBillStatusColor, getBillStatusStyle } from '../constants/billStatuses';
 
 interface Bill {
   id: string;
@@ -118,66 +119,55 @@ const Bills: React.FC = () => {
         <div className="grid gap-6 md:grid-cols-3 justify-center">
           {bills.length > 0 ? (
             bills.map((bill) => {
-              const getStatusColor = (status: string) => {
-                switch (status) {
-                  case 'draft': return 'bg-gray-100 text-gray-700';
-                  case 'first_reading': return 'bg-blue-100 text-blue-700';
-                  case 'committee_stage': return 'bg-yellow-100 text-yellow-700';
-                  case 'second_reading': return 'bg-orange-100 text-orange-700';
-                  case 'third_reading': return 'bg-purple-100 text-purple-700';
-                  case 'presidential_assent': return 'bg-indigo-100 text-indigo-700';
-                  case 'enacted': return 'bg-green-100 text-green-700';
-                  case 'withdrawn': return 'bg-red-100 text-red-700';
-                  default: return 'bg-gray-100 text-gray-700';
-                }
-              };
+
 
               return (
                 <div
                   key={bill.id}
                   className="bg-white shadow-md rounded-2xl overflow-hidden border border-gray-200 w-full max-w-sm"
                 >
-                  {/* Header */}
-                  <div className="flex justify-between items-center px-4 pt-4">
-                    <h3 className="font-bold text-lg text-gray-800">{bill.bill_number}</h3>
-                    <span className={`text-xs font-medium px-3 py-1 rounded-full ${getStatusColor(bill.status)}`}>
+                  {/* Bill Title */}
+                  <div className="px-4 pt-4">
+                    <h3 className="font-bold text-lg text-gray-900 mb-2">{bill.title}</h3>
+                  </div>
+
+                  {/* Bill Status */}
+                  <div className="px-4 mb-3">
+                    <span
+                      className={`text-xs font-medium px-3 py-1 rounded-full ${getBillStatusColor(bill.status)}`}
+                      style={getBillStatusStyle(bill.status)}
+                    >
                       {bill.status_display}
                     </span>
                   </div>
 
-                  {/* Image */}
-                  {bill.image && (
-                    <div className="mt-2">
-                      <img
-                        src={`http://127.0.0.1:8000${bill.image}`}
-                        alt={bill.title}
-                        className="w-full h-36 object-cover rounded-md px-4"
-                      />
-                    </div>
-                  )}
-
-                  {/* Title and Description */}
-                  <div className="px-4 mt-2">
-                    <h4 className="font-semibold text-gray-900 mb-1">{bill.title}</h4>
-                    <p className="text-gray-600 text-sm">{bill.summary || bill.description}</p>
+                  {/* Description */}
+                  <div className="px-4 mb-4">
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      {bill.description.length > 150
+                        ? `${bill.description.substring(0, 150)}...`
+                        : bill.description
+                      }
+                    </p>
                   </div>
 
-                  {/* Sponsor + Committee */}
-                  <div className="px-4 mt-3 text-sm text-gray-700">
-                    <div className="flex items-center gap-1 mb-1">
-                      <Users size={16} />
-                      <span>Sponsor: {bill.sponsor}</span>
+                  {/* Sponsor */}
+                  <div className="px-4 mb-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <Users size={16} className="text-gray-500" />
+                      <span className="font-medium">Sponsor:</span>
+                      <span>{bill.sponsor}</span>
                     </div>
-                    {bill.committee && (
-                      <div className="text-xs text-gray-500">
-                        Committee: {bill.committee}
-                      </div>
-                    )}
+                  </div>
+
+                  {/* View Details Link */}
+                  <div className="px-4 pb-4">
                     <button
                       onClick={() => navigate(`/bill/${bill.id}`)}
-                      className="text-blue-600 hover:underline font-medium flex items-center gap-1 mt-2"
+                      className="font-medium transition-colors hover:underline flex items-center gap-1"
+                      style={{ color: '#0D3C43' }}
                     >
-                      View Full Details →
+                      View Details →
                     </button>
                   </div>
 

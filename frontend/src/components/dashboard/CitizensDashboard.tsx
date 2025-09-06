@@ -12,11 +12,8 @@ import { useRealTimeUpdates } from '../../hooks/useRealTimeUpdates';
 import DashboardHeader from './DashboardHeader';
 import DashboardSidebar from './DashboardSidebar';
 import WelcomeSection from './WelcomeSection';
-import FeedbackOverviewCards from './FeedbackOverviewCards';
 import RecentFeedbackStatus from './RecentFeedbackStatus';
 import QuickActionsPanel from './QuickActionsPanel';
-import CommunityImpactSection from './CommunityImpactSection';
-import TransparencySection from './TransparencySection';
 // Import feedback components
 import FeedbackForm from '../feedback/FeedbackForm';
 import FeedbackSuccess from '../feedback/FeedbackSuccess';
@@ -59,11 +56,6 @@ const CitizensDashboard: React.FC = () => {
       averageResponseTime: 0,
     },
     recentFeedback: [],
-    communityStats: {
-      resolvedInArea: 0,
-      monthlyTrend: 0,
-      governmentResponses: [],
-    },
     loading: true,
   });
 
@@ -71,7 +63,7 @@ const CitizensDashboard: React.FC = () => {
   useEffect(() => {
     const viewParam = searchParams.get('view');
     const billIdParam = searchParams.get('billId');
-    if (viewParam && ['home', 'submit-feedback', 'my-feedback', 'track-feedback', 'bills-projects', 'bill-details', 'community-impact'].includes(viewParam)) {
+    if (viewParam && ['home', 'submit-feedback', 'my-feedback', 'track-feedback', 'bills-projects', 'bill-details'].includes(viewParam)) {
       setCurrentView(viewParam as DashboardView);
       if (viewParam === 'bill-details' && billIdParam) {
         setSelectedBillId(billIdParam);
@@ -213,22 +205,6 @@ const CitizensDashboard: React.FC = () => {
             is_anonymous: false,
           },
         ],
-        communityStats: {
-          resolvedInArea: 47,
-          monthlyTrend: 15,
-          governmentResponses: [
-            {
-              title: 'New water pumps installed in Eastlands',
-              date: '2024-01-12',
-              department: 'Water & Sanitation',
-            },
-            {
-              title: 'Road repairs completed on Mombasa Road',
-              date: '2024-01-10',
-              department: 'Infrastructure',
-            },
-          ],
-        },
         loading: false,
       });
     }
@@ -286,13 +262,9 @@ const CitizensDashboard: React.FC = () => {
             {currentView === 'home' && (
               <div className="space-y-6">
                 <WelcomeSection user={user} />
-                <FeedbackOverviewCards stats={dashboardData.stats} />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                   <RecentFeedbackStatus recentFeedback={dashboardData.recentFeedback} />
                   <QuickActionsPanel onViewChange={handleViewChange} />
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                  <TransparencySection />
                 </div>
               </div>
             )}
@@ -335,15 +307,7 @@ const CitizensDashboard: React.FC = () => {
               />
             )}
 
-            {currentView === 'community-impact' && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h1 className="text-2xl font-bold text-gray-900 mb-2">Community Impact</h1>
-                  <p className="text-gray-600 mb-6">See how citizen feedback is creating real change in your community</p>
-                </div>
-                <CommunityImpactSection communityStats={dashboardData.communityStats} />
-              </div>
-            )}
+
 
             {currentView === 'profile' && (
               <UserProfile onBack={handleBackToHome} />
