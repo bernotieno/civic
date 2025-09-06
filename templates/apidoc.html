@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CivicAI API Development Roadmap</title>
+    <style>
+        @page {
+            margin: 0.75in;
+            size: A4;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: white;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #2E7D32;
+            padding-bottom: 20px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            color: #2E7D32;
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            font-size: 1.2rem;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .header .vision {
+            background: #E8F5E8;
+            padding: 15px;
+            border-left: 4px solid #4CAF50;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+        
+        .overview-section {
+            margin-bottom: 30px;
+        }
+        
+        .overview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .overview-table th {
+            background: #2E7D32;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .overview-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .overview-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        .phase-section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+        
+        .phase-header {
+            background: linear-gradient(135deg, #2E7D32, #4CAF50);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .phase-header h2 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        
+        .phase-header .description {
+            opacity: 0.9;
+            font-style: italic;
+        }
+        
+        .endpoint-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 0.9rem;
+        }
+        
+        .endpoint-table th {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .endpoint-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            vertical-align: top;
+        }
+        
+        .priority-critical {
+            background: #ffebee;
+            color: #c62828;
+            font-weight: bold;
+        }
+        
+        .priority-high {
+            background: #fff3e0;
+            color: #ef6c00;
+            font-weight: bold;
+        }
+        
+        .priority-medium {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        
+        .priority-low {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        
+        .method {
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8rem;
+            display: inline-block;
+            min-width: 45px;
+            text-align: center;
+        }
+        
+        .method-get { background: #4CAF50; }
+        .method-post { background: #2196F3; }
+        .method-put { background: #FF9800; }
+        .method-delete { background: #F44336; }
+        
+        .endpoint-path {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        
+        .demo-section {
+            background: #fff3e0;
+            border: 2px solid #ff9800;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        
+        .demo-section h3 {
+            color: #e65100;
+            margin-bottom: 15px;
+        }
+        
+        .demo-flow {
+            background: #263238;
+            color: #4CAF50;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+            margin: 15px 0;
+        }
+        
+        .strategy-section {
+            background: #e3f2fd;
+            border-left: 4px solid #1976d2;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        
+        .strategy-section h3 {
+            color: #1565c0;
+            margin-bottom: 15px;
+        }
+        
+        .priority-legend {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .legend-critical {
+            background: #ffebee;
+            border-left: 4px solid #c62828;
+        }
+        
+        .legend-high {
+            background: #fff3e0;
+            border-left: 4px solid #ef6c00;
+        }
+        
+        .legend-medium {
+            background: #f3e5f5;
+            border-left: 4px solid #7b1fa2;
+        }
+        
+        .legend-low {
+            background: #e8f5e8;
+            border-left: 4px solid #2e7d32;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #2E7D32;
+            color: #666;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        @media print {
+            .phase-section {
+                break-inside: avoid;
+            }
+            
+            .endpoint-table {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🇰🇪 CivicAI API Development Roadmap</h1>
+        <div class="subtitle">Empowering 47 Counties, 47 Million Voices</div>
+        <div class="vision">
+            <strong>Vision:</strong> Secure, scalable civic engagement platform prioritizing anonymous feedback, role-based access, and data-driven insights for Kenya's digital democracy.
+        </div>
+    </div>
+
+    <div class="overview-section">
+        <h2>📊 Roadmap Overview</h2>
+        <table class="overview-table">
+            <thead>
+                <tr>
+                    <th>Phase</th>
+                    <th>Focus Area</th>
+                    <th>Endpoints</th>
+                    <th>Timeline</th>
+                    <th>Demo Impact</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Phase 1</strong></td>
+                    <td>🏆 Core MVP</td>
+                    <td>8 endpoints</td>
+                    <td>Week 1</td>
+                    <td class="priority-critical">CRITICAL</td>
+                </tr>
+                <tr>
+                    <td><strong>Phase 2</strong></td>
+                    <td>🏛️ Government Features</td>
+                    <td>10 endpoints</td>
+                    <td>Week 2</td>
+                    <td class="priority-high">HIGH</td>
+                </tr>
+                <tr>
+                    <td><strong>Phase 3</strong></td>
+                    <td>📈 Analytics & Insights</td>
+                    <td>10 endpoints</td>
+                    <td>Week 3</td>
+                    <td class="priority-medium">MEDIUM</td>
+                </tr>
+                <tr>
+                    <td><strong>Phase 4</strong></td>
+                    <td>👥 Administration</td>
+                    <td>11 endpoints</td>
+                    <td>Week 4</td>
+                    <td class="priority-medium">MEDIUM</td>
+                </tr>
+                <tr>
+                    <td><strong>Phase 5</strong></td>
+                    <td>🚀 Advanced Features</td>
+                    <td>11 endpoints</td>
+                    <td>Future</td>
+                    <td class="priority-low">LOW</td>
+                </tr>
+            </tbody>
+        </table>
+        <p><strong>Total: 50 Endpoints | Demo-Ready: 8 Critical Endpoints</strong></p>
+    </div>
+
+    <div class="phase-section">
+        <div class="phase-header">
+            <h2>🏆 Phase 1: Core MVP (Week 1)</h2>
+            <div class="description">Foundation for hackathon demo - MUST IMPLEMENT</div>
+        </div>
+
+        <h3>🎯 Feedback System</h3>
+        <table class="endpoint-table">
+            <thead>
+                <tr>
+                    <th>Priority</th>
+                    <th>Method</th>
+                    <th>Endpoint</th>
+                    <th>Description</th>
+                    <th>Demo Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="priority-critical">🔥 CRITICAL</td>
+                    <td><span class="method method-post">POST</span></td>
+                    <td><span class="endpoint-path">/api/feedback/submit/</span></td>
+                    <td>Citizens submit feedback</td>
+                    <td><strong>Core Flow</strong></td>
+                </tr>
+                <tr>
+                    <td class="priority-critical">🔥 CRITICAL</td>
+                    <td><span class="method method-post">POST</span></td>
+                    <td><span class="endpoint-path">/api/feedback/anonymous/</span></td>
+                    <td>Anonymous users submit feedback</td>
+                    <td><strong>Privacy Feature</strong></td>
+                </tr>
+                <tr>
+                    <td class="priority-critical">🔥 CRITICAL</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/feedback/track/{tracking_id}/</span></td>
+                    <td>Track anonymous feedback status</td>
+                    <td><strong>Transparency</strong></td>
+                </tr>
+                <tr>
+                    <td class="priority-high">⚡ HIGH</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/feedback/categories/</span></td>
+                    <td>Get feedback categories list</td>
+                    <td><strong>Data Structure</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>👤 User Management</h3>
+        <table class="endpoint-table">
+            <thead>
+                <tr>
+                    <th>Priority</th>
+                    <th>Method</th>
+                    <th>Endpoint</th>
+                    <th>Description</th>
+                    <th>Demo Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="priority-critical">🔥 CRITICAL</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/feedback/my-submissions/</span></td>
+                    <td>Citizens view their own feedback</td>
+                    <td><strong>User Dashboard</strong></td>
+                </tr>
+                <tr>
+                    <td class="priority-high">⚡ HIGH</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/feedback/my-submissions/{id}/</span></td>
+                    <td>Get specific submission details</td>
+                    <td><strong>Detail View</strong></td>
+                </tr>
+                <tr>
+                    <td class="priority-medium">🔺 MEDIUM</td>
+                    <td><span class="method method-put">PUT</span></td>
+                    <td><span class="endpoint-path">/api/feedback/my-submissions/{id}/</span></td>
+                    <td>Update own feedback (if allowed)</td>
+                    <td><strong>User Control</strong></td>
+                </tr>
+                <tr>
+                    <td class="priority-medium">🔺 MEDIUM</td>
+                    <td><span class="method method-delete">DELETE</span></td>
+                    <td><span class="endpoint-path">/api/feedback/my-submissions/{id}/</span></td>
+                    <td>Soft delete own feedback</td>
+                    <td><strong>User Control</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page-break"></div>
+
+    <div class="phase-section">
+        <div class="phase-header">
+            <h2>🏛️ Phase 2: Government Features (Week 2)</h2>
+            <div class="description">Essential government official functionality</div>
+        </div>
+
+        <h3>🏢 County-Level Management (Local Officials)</h3>
+        <table class="endpoint-table">
+            <thead>
+                <tr>
+                    <th>Priority</th>
+                    <th>Method</th>
+                    <th>Endpoint</th>
+                    <th>Description</th>
+                    <th>Demo Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="priority-critical">🔥 CRITICAL</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/county/feedback/</span></td>
+                    <td>View all county feedback</td>
+                    <td><strong>Admin Dashboard</strong></td>
+                </tr>
+                <tr>
+                    <td class="priority-critical">🔥 CRITICAL</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/county/feedback/{id}/</span></td>
+                    <td>View specific feedback details</td>
+                    <td><strong>Case Management</strong></td>
+                </tr>
+                <tr>
+                    <td class="priority-critical">🔥 CRITICAL</td>
+                    <td><span class="method method-post">POST</span></td>
+                    <td><span class="endpoint-path">/api/county/feedback/{id}/respond/</span></td>
+                    <td>Respond to citizen feedback</td>
+                    <td><strong>Government Response</strong></td>
+                </tr>
+                <tr>
+                    <td class="priority-high">⚡ HIGH</td>
+                    <td><span class="method method-put">PUT</span></td>
+                    <td><span class="endpoint-path">/api/county/feedback/{id}/status/</span></td>
+                    <td>Update feedback status</td>
+                    <td><strong>Workflow Management</strong></td>
+                </tr>
+                <tr>
+                    <td class="priority-high">⚡ HIGH</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/county/dashboard/</span></td>
+                    <td>County overview stats</td>
+                    <td><strong>Data Visualization</strong></td>
+                </tr>
+                <tr>
+                    <td class="priority-high">⚡ HIGH</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/county/pending/</span></td>
+                    <td>Pending feedback requiring action</td>
+                    <td><strong>Action Items</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>🌍 Regional Management (Regional Officials)</h3>
+        <table class="endpoint-table">
+            <thead>
+                <tr>
+                    <th>Priority</th>
+                    <th>Method</th>
+                    <th>Endpoint</th>
+                    <th>Description</th>
+                    <th>Demo Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="priority-high">⚡ HIGH</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/regional/feedback/</span></td>
+                    <td>View multi-county feedback</td>
+                    <td><strong>Regional View</strong></td>
+                </tr>
+                <tr>
+                    <td class="priority-high">⚡ HIGH</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/regional/analytics/</span></td>
+                    <td>Regional performance metrics</td>
+                    <td><strong>Regional Insights</strong></td>
+                </tr>
+                <tr>
+                    <td class="priority-medium">🔺 MEDIUM</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/regional/comparison/</span></td>
+                    <td>Compare counties performance</td>
+                    <td><strong>Benchmarking</strong></td>
+                </tr>
+                <tr>
+                    <td class="priority-medium">🔺 MEDIUM</td>
+                    <td><span class="method method-post">POST</span></td>
+                    <td><span class="endpoint-path">/api/regional/reports/generate/</span></td>
+                    <td>Generate regional reports</td>
+                    <td><strong>Reporting</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="demo-section">
+        <h3>🏆 Demo-Ready Strategy</h3>
+        <p><strong>Judge Demo Flow (5 Critical Endpoints):</strong></p>
+        
+        <div class="demo-flow">
+# 1. Citizen Experience
+POST /api/feedback/submit/              # 👤 Citizen submits feedback
+POST /api/feedback/anonymous/           # 🔒 Anonymous submission
+
+# 2. Government Response  
+GET  /api/county/dashboard/             # 📊 Official sees dashboard
+POST /api/county/feedback/{id}/respond/ # 💬 Official responds to citizen
+
+# 3. Data Insights
+GET  /api/analytics/county/{id}/        # 📈 Show data-driven insights
+        </div>
+
+        <h4>🎯 Demo Showcases:</h4>
+        <ul>
+            <li>✅ <strong>Citizen Engagement:</strong> Easy feedback submission</li>
+            <li>✅ <strong>Privacy Protection:</strong> Anonymous participation</li>
+            <li>✅ <strong>Government Responsiveness:</strong> Official dashboard & responses</li>
+            <li>✅ <strong>Data-Driven Insights:</strong> Analytics and trends</li>
+            <li>✅ <strong>Role-Based Access:</strong> Different user experiences</li>
+        </ul>
+    </div>
+
+    <div class="strategy-section">
+        <h3>🚀 Strategic Implementation Plan</h3>
+        
+        <h4>Week 1: MVP Foundation (MUST HAVE)</h4>
+        <p>✅ Authentication & Location (Already Complete)<br>
+        🔥 Core Feedback System (8 endpoints)<br>
+        🎯 Goal: Working demo for judges</p>
+        
+        <h4>Week 2: Government Dashboard (SHOULD HAVE)</h4>
+        <p>🏛️ County Management (6 endpoints)<br>
+        📊 Basic Analytics (4 endpoints)<br>
+        🎯 Goal: Government official workflow</p>
+        
+        <h4>Week 3: Data Intelligence (COULD HAVE)</h4>
+        <p>📈 Advanced Analytics (6 endpoints)<br>
+        📄 Basic Reporting (4 endpoints)<br>
+        🎯 Goal: Data-driven insights</p>
+        
+        <h4>Week 4: System Polish (NICE TO HAVE)</h4>
+        <p>👥 User Administration (7 endpoints)<br>
+        ⚙️ System Configuration (4 endpoints)<br>
+        🎯 Goal: Production-ready system</p>
+    </div>
+
+    <div class="page-break"></div>
+
+    <div class="phase-section">
+        <div class="phase-header">
+            <h2>📈 Phase 3: Analytics & Insights (Week 3)</h2>
+            <div class="description">Data-driven decision making tools</div>
+        </div>
+
+        <h3>📊 Dashboard Analytics</h3>
+        <table class="endpoint-table">
+            <thead>
+                <tr>
+                    <th>Priority</th>
+                    <th>Method</th>
+                    <th>Endpoint</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="priority-high">⚡ HIGH</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/analytics/county/{county_id}/</span></td>
+                    <td>County-specific analytics</td>
+                </tr>
+                <tr>
+                    <td class="priority-high">⚡ HIGH</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/analytics/national/</span></td>
+                    <td>National overview (for nationals)</td>
+                </tr>
+                <tr>
+                    <td class="priority-medium">🔺 MEDIUM</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/analytics/trends/</span></td>
+                    <td>Feedback trends over time</td>
+                </tr>
+                <tr>
+                    <td class="priority-medium">🔺 MEDIUM</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/analytics/categories/</span></td>
+                    <td>Category-wise breakdown</td>
+                </tr>
+                <tr>
+                    <td class="priority-medium">🔺 MEDIUM</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/analytics/response-times/</span></td>
+                    <td>Average response time metrics</td>
+                </tr>
+                <tr>
+                    <td class="priority-low">🔻 LOW</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/analytics/sentiment/</span></td>
+                    <td>Sentiment analysis of feedback</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>📈 Performance Metrics</h3>
+        <table class="endpoint-table">
+            <thead>
+                <tr>
+                    <th>Priority</th>
+                    <th>Method</th>
+                    <th>Endpoint</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="priority-medium">🔺 MEDIUM</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/metrics/county-performance/</span></td>
+                    <td>County performance rankings</td>
+                </tr>
+                <tr>
+                    <td class="priority-medium">🔺 MEDIUM</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/metrics/official-productivity/</span></td>
+                    <td>Official response metrics</td>
+                </tr>
+                <tr>
+                    <td class="priority-medium">🔺 MEDIUM</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/metrics/citizen-satisfaction/</span></td>
+                    <td>Satisfaction scores</td>
+                </tr>
+                <tr>
+                    <td class="priority-medium">🔺 MEDIUM</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/metrics/resolution-rates/</span></td>
+                    <td>Issue resolution statistics</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="phase-section">
+        <div class="phase-header">
+            <h2>👥 Phase 4: Administration (Week 4)</h2>
+            <div class="description">System administration and user management</div>
+        </div>
+
+        <h3>🔧 User Management (Super Admins)</h3>
+        <table class="endpoint-table">
+            <thead>
+                <tr>
+                    <th>Priority</th>
+                    <th>Method</th>
+                    <th>Endpoint</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="priority-high">⚡ HIGH</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/admin/users/</span></td>
+                    <td>List all users (paginated)</td>
+                </tr>
+                <tr>
+                    <td class="priority-high">⚡ HIGH</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/admin/users/{id}/</span></td>
+                    <td>Get user details</td>
+                </tr>
+                <tr>
+                    <td class="priority-critical">🔥 CRITICAL</td>
+                    <td><span class="method method-put">PUT</span></td>
+                    <td><span class="endpoint-path">/api/admin/users/{id}/role/</span></td>
+                    <td>Assign/change user roles</td>
+                </tr>
+                <tr>
+                    <td class="priority-high">⚡ HIGH</td>
+                    <td><span class="method method-put">PUT</span></td>
+                    <td><span class="endpoint-path">/api/admin/users/{id}/counties/</span></td>
+                    <td>Assign accessible counties</td>
+                </tr>
+                <tr>
+                    <td class="priority-high">⚡ HIGH</td>
+                    <td><span class="method method-post">POST</span></td>
+                    <td><span class="endpoint-path">/api/admin/users/create-official/</span></td>
+                    <td>Create government official account</td>
+                </tr>
+                <tr>
+                    <td class="priority-medium">🔺 MEDIUM</td>
+                    <td><span class="method method-put">PUT</span></td>
+                    <td><span class="endpoint-path">/api/admin/users/{id}/deactivate/</span></td>
+                    <td>Deactivate user account</td>
+                </tr>
+                <tr>
+                    <td class="priority-medium">🔺 MEDIUM</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/admin/audit-logs/</span></td>
+                    <td>View system audit logs</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>⚙️ System Configuration</h3>
+        <table class="endpoint-table">
+            <thead>
+                <tr>
+                    <th>Priority</th>
+                    <th>Method</th>
+                    <th>Endpoint</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="priority-medium">🔺 MEDIUM</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/admin/system-stats/</span></td>
+                    <td>Overall system statistics</td>
+                </tr>
+                <tr>
+                    <td class="priority-medium">🔺 MEDIUM</td>
+                    <td><span class="method method-put">PUT</span></td>
+                    <td><span class="endpoint-path">/api/admin/settings/</span></td>
+                    <td>Update system settings</td>
+                </tr>
+                <tr>
+                    <td class="priority-low">🔻 LOW</td>
+                    <td><span class="method method-get">GET</span></td>
+                    <td><span class="endpoint-path">/api/admin/health-detailed/</span></td>
+                    <td>Detailed system health check</td>
+                </tr>
+                <tr>
+                    <td class="priority-low">🔻 LOW</td>
+                    <td><span class="method method-post">POST</span></td>
+                    <td><span class="endpoint-path">/api/admin/maintenance/</span></td>
+                    <td>Enable/disable maintenance mode</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page-break"></div>
+
+    <div class="phase-section">
+        <div class="phase-header">
+            <h2>🚀 Phase 5: Advanced Features (Future)</h2>
+            <div class="description">Competition-winning enhancements</div>
+        </div>
+
+        <p><em>This phase includes Real-time Features, Reporting & Export, and Integration & External APIs with 11 total endpoints focused on advanced functionality for future development.</em></p>
+    </div>
+
+    <div class="priority-legend">
+        <div class="legend-item legend-critical">
+            <strong>🔥 CRITICAL:</strong> Must Have - Essential for demo
+        </div>
+        <div class="legend-item legend-high">
+            <strong>⚡ HIGH:</strong> Should Have - Important functionality
+        </div>
+        <div class="legend-item legend-medium">
+            <strong>🔺 MEDIUM:</strong> Could Have - Nice to have features
+        </div>
+        <div class="legend-item legend-low">
+            <strong>🔻 LOW:</strong> Won't Have - Future enhancements
+        </div>
+    </div>
+
+    <div class="strategy-section">
+        <h3>📋 Technical Notes</h3>
+        
+        <h4>🔧 Setup Requirements</h4>
+        <ul>
+            <li>✅ PostgreSQL with md5 authentication for 127.0.0.1</li>
+            <li>✅ Run <code>python manage.py migrate</code> for database setup</li>
+            <li>✅ Populate data with <code>python manage.py setup_counties</code></li>
+            <li>✅ Secure endpoints with <code>@invisible_permission_required</code> decorator</li>
+        </ul>
+        
+        <h4>🛡️ Security Considerations</h4>
+        <ul>
+            <li>JWT authentication for all protected endpoints</li>
+            <li>Role-based access control enforcement</li>
+            <li>Rate limiting on submission endpoints</li>
+            <li>Anonymous session management and cleanup</li>
+            <li>Audit logging for administrative actions</li>
+        </ul>
+        
+        <h4>📞 Support</h4>
+        <ul>
+            <li><strong>Documentation:</strong> Swagger UI at <code>/api/docs/</code></li>
+            <li><strong>Contact:</strong> support@civicai.ke</li>
+            <li><strong>Repository:</strong> GitHub Repository</li>
+        </ul>
+    </div>
+
+    <div class="footer">
+        <p><strong>🇰🇪 Built with ❤️ for Kenya's Digital Democracy</strong></p>
+        <p><em>This roadmap ensures a strategic, demo-ready approach to winning the hackathon while building a production-scale civic engagement platform.</em></p>
+    </div>
+</body>
+</html>

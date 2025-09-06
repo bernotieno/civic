@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Anonymous Feedback</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, textarea, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .toggle { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 4px; }
+        .session-info { background: #e7f3ff; border: 1px solid #b3d7ff; padding: 10px; border-radius: 4px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Test Anonymous Feedback System</h1>
+    
+    <div class="toggle">
+        <label>
+            <input type="checkbox" id="anonymousToggle"> Submit as Anonymous
+        </label>
+        <div id="sessionInfo" class="session-info" style="display: none;">
+            <p><strong>Anonymous Session:</strong> <span id="sessionId"></span></p>
+            <p><strong>Submissions Remaining:</strong> <span id="submissionsRemaining"></span></p>
+        </div>
+    </div>
+
+    <form id="feedbackForm">
+        <div class="form-group">
+            <label for="county">County:</label>
+            <select id="county" required>
+                <option value="">Select County</option>
+                <option value="1">Baringo</option>
+                <option value="2">Bomet</option>
+                <option value="3">Bungoma</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="title">Title:</label>
+            <input type="text" id="title" required minlength="10" maxlength="200" 
+                   placeholder="Brief description (10-200 characters)">
+        </div>
+
+        <div class="form-group">
+            <label for="content">Content:</label>
+            <textarea id="content" required minlength="50" rows="6" 
+                      placeholder="Detailed description (minimum 50 characters)"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="category">Category:</label>
+            <select id="category" required>
+                <option value="">Select Category</option>
+                <option value="governance">Governance & Corruption</option>
+                <option value="infrastructure">Infrastructure & Roads</option>
+                <option value="healthcare">Healthcare Services</option>
+                <option value="education">Education & Schools</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="priority">Priority:</label>
+            <select id="priority">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+            </select>
+        </div>
+
+        <button type="submit" id="submitBtn">Submit Feedback</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:8000/api';
+        let anonymousSession = null;
+
+        const anonymousToggle = document.getElementById('anonymousToggle');
+        const sessionInfo = document.getElementById('sessionInfo');
+        const sessionId = document.getElementById('sessionId');
+        const submissionsRemaining = document.getElementById('submissionsRemaining');
+        const form = document.getElementById('feedbackForm');
+        const result = document.getElementById('result');
+
+        // Handle anonymous toggle
+        anonymousToggle.addEventListener('change', async function() {
+            if (this.checked) {
+                // Create anonymous session
+                const countySelect = document.getElementById('county');
+                if (!countySelect.value) {
+                    alert('Please select a county first');
+                    this.checked = false;
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_BASE}/auth/anonymous/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ county_id: parseInt(countySelect.value) })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        anonymousSession = {
+                            session_id: data.session_id,
+                            max_submissions: data.max_submissions,
+                            county_id: parseInt(countySelect.value)
+                        };
+                        
+                        sessionId.textContent = data.session_id;
+                        submissionsRemaining.textContent = data.max_submissions;
+                        sessionInfo.style.display = 'block';
+                        
+                        showMessage('Anonymous session created successfully!', 'success');
+                    } else {
+                        throw new Error(data.message || 'Failed to create session');
+                    }
+                } catch (error) {
+                    showMessage('Error creating anonymous session: ' + error.message, 'error');
+                    this.checked = false;
+                }
+            } else {
+                // Clear anonymous session
+                anonymousSession = null;
+                sessionInfo.style.display = 'none';
+                showMessage('Switched back to authenticated mode', 'success');
+            }
+        });
+
+        // Handle form submission
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = {
+                title: document.getElementById('title').value,
+                content: document.getElementById('content').value,
+                category: document.getElementById('category').value,
+                priority: document.getElementById('priority').value,
+                county_id: parseInt(document.getElementById('county').value)
+            };
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            try {
+                let response;
+                
+                if (anonymousToggle.checked && anonymousSession) {
+                    // Submit anonymous feedback
+                    response = await fetch(`${API_BASE}/feedback/anonymous/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            session_id: anonymousSession.session_id,
+                            ...formData
+                        })
+                    });
+                } else {
+                    // Submit authenticated feedback (would need auth token in real scenario)
+                    showMessage('Authenticated submission would require login token', 'error');
+                    return;
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(`Feedback submitted successfully! Tracking ID: ${data.data.tracking_id}`, 'success');
+                    form.reset();
+                    
+                    // Update session info
+                    if (anonymousSession) {
+                        anonymousSession.max_submissions--;
+                        submissionsRemaining.textContent = anonymousSession.max_submissions;
+                    }
+                } else {
+                    showMessage('Submission failed: ' + (data.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showMessage('Error submitting feedback: ' + error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Feedback';
+            }
+        });
+
+        function showMessage(message, type) {
+            result.innerHTML = `<div class="${type}">${message}</div>`;
+            setTimeout(() => {
+                result.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
