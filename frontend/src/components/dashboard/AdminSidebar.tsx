@@ -51,7 +51,7 @@ const AdminSidebar: React.FC = () => {
                   `flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     isActive
                       ? 'text-white border-r-2'
-                      : 'text-gray-700 hover:text-white hover:opacity-90'
+                      : 'text-gray-700 hover:bg-gray-100'
                   }`
                 }
                 style={({ isActive }) => ({
@@ -59,13 +59,19 @@ const AdminSidebar: React.FC = () => {
                   borderColor: isActive ? '#0D3C43' : undefined,
                 })}
                 onMouseEnter={(e) => {
-                  if (!e.currentTarget.classList.contains('text-white')) {
-                    e.currentTarget.style.backgroundColor = '#E2FCF7';
+                  const target = e.currentTarget;
+                  const isActive = target.classList.contains('text-white');
+                  if (!isActive) {
+                    target.style.backgroundColor = '#0D3C43';
+                    target.style.color = 'white';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!e.currentTarget.classList.contains('text-white')) {
-                    e.currentTarget.style.backgroundColor = '';
+                  const target = e.currentTarget;
+                  const isActive = target.classList.contains('text-white');
+                  if (!isActive) {
+                    target.style.backgroundColor = '';
+                    target.style.color = '';
                   }
                 }}
               >
