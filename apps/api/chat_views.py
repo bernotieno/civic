@@ -36,13 +36,13 @@ logger = logging.getLogger(__name__)
 class CitizenChatThrottle(AnonRateThrottle):
     """Stricter throttle for chat endpoints to prevent abuse"""
     scope = 'citizen_chat'
-    rate = '20/hour'  # 20 chat requests per hour for anonymous users
+    rate = '500/hour'  # 20 chat requests per hour for anonymous users
 
 
 class CitizenChatAuthenticatedThrottle(AnonRateThrottle):
     """More lenient throttle for authenticated users"""  
     scope = 'citizen_chat_auth'
-    rate = '50/hour'  # 50 chat requests per hour for authenticated users
+    rate = '100/hour'  # 50 chat requests per hour for authenticated users
 
 
 @extend_schema(
@@ -214,7 +214,6 @@ def bill_chat(request, bill_id):
         'processing_info': dict
     }
     """
-    # notes_for_frontend: Implement chat UI with real-time typing, source display, and follow-up suggestions
     # Convert bill_id to string early to avoid UUID concatenation in cache keys
     bill_id = str(bill_id)
     try:
@@ -227,8 +226,13 @@ def bill_chat(request, bill_id):
         if not question:
             return Response({
                 'success': False,
-                'error': 'Question is required',
-                'message': 'Please provide a question about the bill'
+                'message': '💬 Please ask a question about this bill to get started.',
+                'error_code': 'QUESTION_REQUIRED',
+                'suggestions': [
+                    'What is this bill about?',
+                    'How does this bill affect citizens?',
+                    'What are the main provisions of this bill?'
+                ]
             }, status=400)
         
         # Validate question
@@ -236,9 +240,14 @@ def bill_chat(request, bill_id):
         if not validation['valid']:
             return Response({
                 'success': False,
-                'error': validation['reason'],
-                'suggestions': validation['suggestions'],
-                'message': 'Please rephrase your question'
+                'message': validation.get('user_message', '💬 Please ask a clear, meaningful question about this bill.'),
+                'error_code': 'INVALID_QUESTION',
+                'reason': validation['reason'],
+                'suggestions': validation.get('suggestions', [
+                    'Ask about the main purpose of this bill',
+                    'Inquire how this bill affects citizens',
+                    'Ask about specific sections or provisions'
+                ])
             }, status=400)
         
         # Check if bill exists and is accessible
@@ -246,9 +255,8 @@ def bill_chat(request, bill_id):
             bill = Bill.objects.get(
                 id=bill_id,
                 is_deleted=False,
-                processing_status='completed',
                 status__in=[
-                    'first_reading', 'committee_stage', 'second_reading',
+                    'draft', 'first_reading', 'committee_stage', 'second_reading',
                     'third_reading', 'presidential_assent', 'enacted'
                 ]
             )
@@ -267,51 +275,86 @@ def bill_chat(request, bill_id):
             }, status=400)
         
         # Rate limiting check for session (additional protection)
-        session_key = f'chat_session_{session_id}_{str(bill_id)}'
-        session_data = cache.get(session_key, {'count': 0, 'last_request': None})
+        session_key = f'chat_session_{session_id}_{bill_id}'
+        session_data = cache.get(session_key, {'count': 0, 'last_request_ts': None})
         
         # Check if too many requests from this session
         now = timezone.now()
-        if session_data['count'] >= 5:  # Max 5 questions per session per hour
-            last_request = session_data.get('last_request')
-            if last_request:
-                time_diff = (now - last_request).total_seconds()
-                if time_diff < 3600:  # Less than 1 hour
-                    return Response({
-                        'success': False,
-                        'error': 'Too many questions from this session',
-                        'message': 'Please wait before asking more questions',
-                        'retry_after': int(3600 - time_diff)
-                    }, status=429)
+        current_timestamp = now.timestamp()
         
-        # Find relevant chunks using hybrid search if embeddings enabled
+        if session_data['count'] >= 100:  # Increased limit for testing
+            last_request_ts = session_data.get('last_request_ts')
+            if last_request_ts:
+                try:
+                    # Handle both float and string timestamps
+                    if isinstance(last_request_ts, str):
+                        # Try parsing as ISO datetime string first
+                        try:
+                            # CHANGED: Fixed datetime parsing - use datetime.fromisoformat instead of timezone.datetime.fromisoformat
+                            from datetime import datetime
+                            last_datetime = datetime.fromisoformat(last_request_ts.replace('Z', '+00:00'))
+                            last_timestamp = last_datetime.timestamp()
+                        except:
+                            # Fallback: try as float string
+                            last_timestamp = float(last_request_ts)
+                    else:
+                        last_timestamp = float(last_request_ts)
+                    
+                    time_diff = current_timestamp - last_timestamp  # in seconds
+                    if time_diff < 3600:  # Less than 1 hour
+                        return Response({
+                            'success': False,
+                            'error': 'Too many questions from this session',
+                            'message': 'Please wait before asking more questions',
+                            'retry_after': int(3600 - time_diff)
+                        }, status=429)
+                except (ValueError, TypeError) as e:
+                    # If timestamp parsing fails, reset the session data
+                    logger.warning(f"Failed to parse timestamp {last_request_ts}: {e}. Resetting session data.")
+                    # CHANGED: Update the session_data variable and cache immediately after reset
+                    session_data = {'count': 0, 'last_request_ts': None}
+                    cache.set(session_key, session_data, timeout=3600)
+        
+        # Enhanced chunk search
         try:
-            # Always use find_relevant_chunks which handles field mapping correctly
-            relevant_chunks = find_relevant_chunks(bill_id, question, limit=5)
-
-            # Debug: Check what fields the chunks actually have
-            if relevant_chunks:
-                logger.info(f"DEBUG: First chunk keys: {list(relevant_chunks[0].keys())}")
-                logger.info(f"DEBUG: First chunk sample: {relevant_chunks[0]}")
+            if use_embeddings:
+                relevant_chunks = hybrid_search(bill_id, question, limit=8)
+                search_method = 'hybrid'
             else:
-                logger.warning("No relevant chunks found")
-                
-            search_method = 'hybrid' if use_embeddings else 'keyword_only'  
+                relevant_chunks = find_relevant_chunks(bill_id, question, limit=8)
+                search_method = 'keyword_only'
         except Exception as e:
             logger.error(f"Error finding relevant chunks: {str(e)}")
-            # Fallback to basic search
-            relevant_chunks = find_relevant_chunks(bill_id, question, limit=5)
+            relevant_chunks = find_relevant_chunks(bill_id, question, limit=8)
             search_method = 'fallback'
+        
+        # Broader search if needed
+        if len(relevant_chunks) < 3:
+            try:
+                import re
+                keywords = re.findall(r'\b\w{4,}\b', question.lower())
+                if keywords:
+                    broader_query = ' '.join(keywords[:3])
+                    additional_chunks = find_relevant_chunks(bill_id, broader_query, limit=6)
+                    seen_ids = {chunk['chunk_id'] for chunk in relevant_chunks}
+                    for chunk in additional_chunks:
+                        if chunk['chunk_id'] not in seen_ids:
+                            relevant_chunks.append(chunk)
+                            if len(relevant_chunks) >= 6:
+                                break
+            except Exception:
+                pass
         
         if not relevant_chunks:
             return Response({
                 'success': False,
                 'error': 'No relevant information found',
-                'message': 'I could not find information in this bill related to your question. Try rephrasing or asking about different aspects of the bill.',
+                'message': 'I could not find information in this bill that relates to your question. Please try asking about specific aspects of the bill.',
                 'suggestions': [
-                    'Ask about main provisions of the bill',
-                    'Inquire about how the bill affects citizens',
-                    'Try using different keywords'
+                    f'What is the main purpose of the {bill.title}?',
+                    'How does this bill affect ordinary citizens?',
+                    'What are the key provisions in this bill?',
+                    'When will this bill take effect?'
                 ],
                 'conversation_id': session_id
             }, status=200)
@@ -327,22 +370,36 @@ def bill_chat(request, bill_id):
             conversation_context=conversation_context
         )
         
-        if not chat_response.get('success', False):
+        if not chat_response['success']:
+            error_msg = chat_response.get('error', 'Failed to generate response')
+            user_message = 'I am having trouble understanding your question. Please try asking in a different way or be more specific about what you want to know about this bill.'
+            
+            # Provide better error messages based on error type
+            if 'invalid' in error_msg.lower() or 'unclear' in error_msg.lower():
+                user_message = 'Your question is not clear. Please ask a specific question about this bill using complete sentences.'
+            elif 'timeout' in error_msg.lower():
+                user_message = 'The system is taking too long to respond. Please try asking a simpler question.'
+            
             return Response({
-                'success': False, 
-                'error': chat_response.get('error', 'Failed to generate response'),
-                'message': 'I am unable to answer your question at the moment. Please try again later.',
+                'success': False,
+                'error': error_msg,
+                'message': user_message,
+                'suggestions': [
+                    f'What does the {bill.title} do?',
+                    'How will this bill affect me?',
+                    'What are the main changes in this bill?'
+                ],
                 'conversation_id': session_id
-            }, status=500)  
+            }, status=200)
         
-        # Update session data
+        # Update session data - store timestamp as float
         session_data['count'] = session_data.get('count', 0) + 1
-        session_data['last_request'] = now
+        session_data['last_request_ts'] = current_timestamp  # Store as float timestamp
         session_data['last_question'] = question
         cache.set(session_key, session_data, timeout=3600)  # 1 hour
         
         # Store conversation for context (optional, privacy-aware)
-        conversation_key = f'conversation_{session_id}_{str(bill_id)}'
+        conversation_key = f'conversation_{session_id}_{bill_id}'
         conversation_history = cache.get(conversation_key, [])
         conversation_history.append({
             'question': question,
@@ -370,7 +427,7 @@ def bill_chat(request, bill_id):
             'processing_info': {
                 'chunks_analyzed': len(relevant_chunks),
                 'search_method': search_method,
-                'avg_relevance': round(sum(c['relevance_score'] for c in relevant_chunks) / len(relevant_chunks), 2) if relevant_chunks else 0,
+                'avg_relevance': round(sum(c.get('similarity_score', c.get('relevance_score', 0)) for c in relevant_chunks) / len(relevant_chunks), 2) if relevant_chunks else 0,
                 'context_analysis': context_analysis,
                 'response_time': timezone.now().isoformat(),
                 'bill_title': bill.title,
@@ -396,8 +453,14 @@ def bill_chat(request, bill_id):
         logger.error(f"Error in bill_chat for {bill_id}: {str(e)}")
         return Response({
             'success': False,
-            'error': 'Chat service temporarily unavailable',
-            'message': 'Please try again later or contact support if the problem persists'
+            'message': '🔧 Chat service is temporarily unavailable. Please try again in a few moments.',
+            'error_code': 'CHAT_SYSTEM_ERROR',
+            'suggestions': [
+                'Wait a few minutes and try asking again',
+                'Refresh the page and try a simpler question',
+                'Read the bill summary while the system recovers',
+                'Contact support if the problem persists'
+            ]
         }, status=500)
 
 

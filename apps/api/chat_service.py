@@ -342,7 +342,7 @@ def generate_citizen_chat_response(bill_id: str, user_question: str, relevant_ch
                                       if chunk['section_title'].strip()]))
                     
                     # Calculate confidence based on relevance scores
-                    avg_relevance = sum(chunk['relevance_score'] for chunk in relevant_chunks) / len(relevant_chunks)
+                    avg_relevance = sum(chunk.get('similarity_score', chunk.get('relevance_score', 0)) for chunk in relevant_chunks) / len(relevant_chunks)
                     confidence = min(0.95, max(0.3, avg_relevance / 10.0))  # Scale to 0.3-0.95 range
                     
                     # Generate follow-up suggestions
