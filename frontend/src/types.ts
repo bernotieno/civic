@@ -479,6 +479,7 @@ export interface ChatMessage {
   id: string;
   question: string;
   response: string;
+  sources?: string[];
   timestamp: string;
 }
 

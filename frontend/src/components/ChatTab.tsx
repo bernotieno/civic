@@ -157,6 +157,7 @@ const ChatTab: React.FC<ChatTabProps> = ({ billId, initialHistory, onHistoryUpda
           id: (Date.now() + 1).toString(),
           question,
           response: data.response,
+          sources: data.sources,
           timestamp: new Date().toISOString()
         };
 
@@ -261,6 +262,21 @@ const ChatTab: React.FC<ChatTabProps> = ({ billId, initialHistory, onHistoryUpda
                         className="text-gray-900 whitespace-pre-wrap bill-summary-content"
                         dangerouslySetInnerHTML={{ __html: message.response }}
                       />
+
+                      {/* Sources */}
+                      {message.sources && message.sources.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-green-200">
+                          <p className="text-xs font-medium text-gray-600 mb-2">Sources:</p>
+                          <div className="space-y-1">
+                            {message.sources.map((source, index) => (
+                              <div key={index} className="text-xs text-gray-500 bg-white rounded px-2 py-1 border border-green-100">
+                                {source}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       <p className="text-xs text-gray-500 mt-2">
                         {new Date(message.timestamp).toLocaleString()}
                       </p>
