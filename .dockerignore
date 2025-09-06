@@ -1,0 +1,67 @@
+# Git
+.git
+.gitignore
+*.md
+docs/
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.coverage
+.pytest_cache
+.mypy_cache
+
+# Virtual environments
+env/
+venv/
+ENV/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3*
+
+# Development
+.env
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Large directories (mounted as volumes)
+media/
+staticfiles/
+logs/
+celerybeat-schedule*
+
+# Test files
+tests/
+**/test_*.py
+**/*_test.py
+
+# Frontend build
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# Docker files (not needed in image)
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Backup files
+*.bak
+*.backup
+*.sql
