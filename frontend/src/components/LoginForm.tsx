@@ -229,14 +229,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onError }) => {
         </button>
       </form>
 
-      {/* Footer Links */}
-      <div className="mt-6 text-center space-y-2">
-        <p className="text-sm text-gray-600">
-          Don't have an account?{' '}
-          <a href="/register" className="text-green-600 hover:text-green-500 font-medium transition-colors">
-            Register here
-          </a>
-        </p>
+      {/* Footer */}
+      <div className="mt-6 text-center">
         <p className="text-xs text-gray-500">
           🇰🇪 Secure login with your Kenyan National ID
         </p>

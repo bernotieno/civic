@@ -96,7 +96,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMobileMenuToggle, o
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Mobile menu button and Page Title */}
+          {/* Mobile menu button, Logo and Page Title */}
           <div className="flex items-center min-w-0 flex-1">
             <button
               onClick={onMobileMenuToggle}
@@ -105,7 +105,25 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMobileMenuToggle, o
             >
               <Menu className="h-5 w-5" />
             </button>
-            <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">Citizens Dashboard</h1>
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className="flex-shrink-0">
+                <img
+                  src="/logo.png"
+                  alt="CivicAI Logo"
+                  className="h-8 w-auto"
+                  onError={(e) => {
+                    // Fallback if logo.png doesn't exist
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+                <div className="hidden w-8 h-8 rounded-lg items-center justify-center" style={{ backgroundColor: '#0D3C43' }}>
+                  <span className="text-white font-bold text-sm">C</span>
+                </div>
+              </div>
+              <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">Citizens Dashboard</h1>
+            </div>
           </div>
 
           {/* Search Bar - Optional */}

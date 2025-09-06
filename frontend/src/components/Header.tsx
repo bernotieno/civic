@@ -17,18 +17,18 @@ const Header: React.FC = () => {
           {/* Logo */}
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0">
-              <img 
-                src="/logo.jpg" 
-                alt="CivicAI Logo" 
+              <img
+                src="/logo.png"
+                alt="CivicAI Logo"
                 className="h-10 w-auto"
                 onError={(e) => {
-                  // Fallback if logo.jpg doesn't exist
+                  // Fallback if logo.png doesn't exist
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
                   target.nextElementSibling?.classList.remove('hidden');
                 }}
               />
-              <div className="hidden w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
+              <div className="hidden w-10 h-10 rounded-lg items-center justify-center" style={{ backgroundColor: '#0D3C43' }}>
                 <span className="text-white font-bold text-lg">C</span>
               </div>
             </div>

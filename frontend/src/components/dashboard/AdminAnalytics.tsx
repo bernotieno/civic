@@ -32,19 +32,19 @@ const AdminAnalytics: React.FC = () => {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="text-2xl font-bold text-blue-600">{analyticsData.totalFeedback}</div>
+          <div className="text-2xl font-bold" style={{ color: '#0D3C43' }}>{analyticsData.totalFeedback}</div>
           <div className="text-sm text-gray-600">Total Feedback</div>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="text-2xl font-bold text-green-600">{analyticsData.resolvedFeedback}</div>
+          <div className="text-2xl font-bold text-teal-600">{analyticsData.resolvedFeedback}</div>
           <div className="text-sm text-gray-600">Resolved Issues</div>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="text-2xl font-bold text-orange-600">{analyticsData.avgResponseTime}</div>
+          <div className="text-2xl font-bold text-teal-700">{analyticsData.avgResponseTime}</div>
           <div className="text-sm text-gray-600">Avg Response Time</div>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="text-2xl font-bold text-purple-600">{analyticsData.satisfactionRate}</div>
+          <div className="text-2xl font-bold" style={{ color: '#0D3C43' }}>{analyticsData.satisfactionRate}</div>
           <div className="text-sm text-gray-600">Satisfaction Rate</div>
         </div>
       </div>

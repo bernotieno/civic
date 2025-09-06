@@ -118,8 +118,19 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         {/* Sidebar Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-600">
           <div className={`flex items-center ${isCollapsed ? 'lg:hidden' : ''}`}>
-            <div className="h-8 w-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">CA</span>
+            <img
+              src="/logo.png"
+              alt="CivicAI Logo"
+              className="h-8 w-auto"
+              onError={(e) => {
+                // Fallback if logo.png doesn't exist
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+            <div className="hidden h-8 w-8 rounded-lg items-center justify-center" style={{ backgroundColor: '#E2FCF7' }}>
+              <span className="font-bold text-sm" style={{ color: '#0D3C43' }}>C</span>
             </div>
             <span className="ml-3 text-lg font-semibold text-white">CivicAI</span>
           </div>
@@ -140,8 +151,8 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         {/* User Info */}
         <div className={`p-4 border-b border-gray-600 ${isCollapsed ? 'lg:hidden' : ''}`}>
           <div className="flex items-center">
-            <div className="h-10 w-10 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-medium text-sm">
+            <div className="h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#E2FCF7' }}>
+              <span className="font-medium text-sm" style={{ color: '#0D3C43' }}>
                 {user?.name?.charAt(0).toUpperCase() || 'U'}
               </span>
             </div>
@@ -176,14 +187,21 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                       onClick={() => handleNavigation(item)}
                       className={`group flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                         item.current
-                          ? 'bg-blue-600 text-white border-r-2 border-blue-400'
+                          ? 'text-white border-r-2'
                           : 'text-gray-300 hover:text-white hover:bg-gray-700'
                       }`}
+                      style={{
+                        backgroundColor: item.current ? '#E2FCF7' : undefined,
+                        borderColor: item.current ? '#E2FCF7' : undefined,
+                        color: item.current ? '#0D3C43' : undefined,
+                      }}
                       aria-current={item.current ? 'page' : undefined}
                     >
-                      <Icon className={`flex-shrink-0 h-5 w-5 ${
-                        item.current ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'
-                      }`} />
+                      <Icon className={`flex-shrink-0 h-5 w-5`}
+                        style={{
+                          color: item.current ? '#0D3C43' : undefined
+                        }}
+                      />
                       <span className={`ml-3 truncate ${isCollapsed ? 'lg:hidden' : ''}`}>{item.name}</span>
                       {item.badge && (
                         <span className={`ml-auto inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 ${isCollapsed ? 'lg:hidden' : ''}`}>

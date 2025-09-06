@@ -30,12 +30,28 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8" style={{ backgroundColor: '#E2FCF7' }}>
       {/* Header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
+          <div className="flex justify-center mb-6">
+            <img
+              src="/logo.png"
+              alt="CivicAI Logo"
+              className="h-16 w-auto"
+              onError={(e) => {
+                // Fallback if logo.png doesn't exist
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+            <div className="hidden w-16 h-16 rounded-lg items-center justify-center" style={{ backgroundColor: '#0D3C43' }}>
+              <span className="text-white font-bold text-2xl">C</span>
+            </div>
+          </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            🇰🇪 CivicAI
+            Join CivicAI
           </h1>
           <p className="text-lg text-gray-600">
             Kenya's Premier Civic Engagement Platform
@@ -45,20 +61,32 @@ const RegisterPage: React.FC = () => {
 
       {/* Registration Form */}
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <RegistrationForm 
+        <RegistrationForm
           onSuccess={handleRegistrationSuccess}
           onError={handleRegistrationError}
         />
       </div>
 
-      {/* Navigation Links */}
-      <div className="mt-6 text-center">
-        <button
-          onClick={() => navigate('/')}
-          className="text-blue-600 hover:text-blue-500 font-medium text-sm"
-        >
-          ← Back to Home
-        </button>
+      {/* Navigation */}
+      <div className="mt-6 text-center space-y-3">
+        <p className="text-sm text-gray-600">
+          Already have an account?{' '}
+          <button
+            onClick={() => navigate('/login')}
+            className="font-medium transition-colors"
+            style={{ color: '#0D3C43' }}
+          >
+            Sign In
+          </button>
+        </p>
+        <div>
+          <button
+            onClick={() => navigate('/')}
+            className="text-gray-500 hover:text-gray-700 text-sm transition-colors"
+          >
+            ← Back to Home
+          </button>
+        </div>
       </div>
 
       {/* Footer */}

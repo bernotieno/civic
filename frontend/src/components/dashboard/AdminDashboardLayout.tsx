@@ -8,7 +8,7 @@ const AdminDashboardLayout: React.FC = () => {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ backgroundColor: '#f8fffe' }}>
       <AdminHeader />
       <div className="flex">
         <AdminSidebar />

@@ -63,10 +63,26 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8" style={{ backgroundColor: '#E2FCF7' }}>
       {/* Header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
+          <div className="flex justify-center mb-6">
+            <img
+              src="/logo.png"
+              alt="CivicAI Logo"
+              className="h-16 w-auto"
+              onError={(e) => {
+                // Fallback if logo.png doesn't exist
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+            <div className="hidden w-16 h-16 rounded-lg items-center justify-center" style={{ backgroundColor: '#0D3C43' }}>
+              <span className="text-white font-bold text-2xl">C</span>
+            </div>
+          </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             {t('auth.welcomeBack')}
           </h1>
@@ -97,23 +113,26 @@ const LoginPage: React.FC = () => {
         />
       </div>
 
-      {/* Navigation Links */}
-      <div className="mt-6 text-center">
+      {/* Navigation */}
+      <div className="mt-6 text-center space-y-3">
         <p className="text-sm text-gray-600">
           {t('auth.dontHaveAccount')}{' '}
           <button
             onClick={() => navigate('/register')}
-            className="text-blue-600 hover:text-blue-500 font-medium transition-colors"
+            className="font-medium transition-colors"
+            style={{ color: '#0D3C43' }}
           >
             {t('auth.signUp')}
           </button>
         </p>
-        <button
-          onClick={() => navigate('/')}
-          className="text-gray-500 hover:text-gray-700 text-sm mt-2 transition-colors"
-        >
-          ← {t('navigation.home')}
-        </button>
+        <div>
+          <button
+            onClick={() => navigate('/')}
+            className="text-gray-500 hover:text-gray-700 text-sm transition-colors"
+          >
+            ← {t('navigation.home')}
+          </button>
+        </div>
       </div>
 
 

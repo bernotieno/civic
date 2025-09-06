@@ -9,9 +9,9 @@ export default function Footer() {
           {/* Logo and description */}
           <div className="md:col-span-1">
             <div className="flex items-center mb-4">
-              <img 
-                src="/logo.jpg" 
-                alt="CivicAI Logo" 
+              <img
+                src="/logo.png"
+                alt="CivicAI Logo"
                 className="w-10 h-10 mr-3 rounded-lg"
               />
             </div>

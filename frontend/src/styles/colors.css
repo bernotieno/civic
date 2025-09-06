@@ -1,0 +1,136 @@
+/* CivicAI Color Scheme */
+:root {
+  /* Primary Colors */
+  --civic-primary: #0D3C43;
+  --civic-primary-light: #1B636F;
+  --civic-secondary: #E2FCF7;
+  --civic-accent: #14B8A6; /* teal-500 */
+  --civic-accent-light: #5EEAD4; /* teal-300 */
+  
+  /* Background Colors */
+  --civic-bg-primary: #f8fffe;
+  --civic-bg-secondary: #E2FCF7;
+  
+  /* Text Colors */
+  --civic-text-primary: #0D3C43;
+  --civic-text-secondary: #6B7280;
+  --civic-text-light: #9CA3AF;
+  
+  /* Status Colors */
+  --civic-success: #10B981; /* emerald-500 */
+  --civic-warning: #F59E0B; /* amber-500 */
+  --civic-error: #EF4444; /* red-500 */
+  --civic-info: #3B82F6; /* blue-500 */
+}
+
+/* Utility Classes */
+.civic-primary {
+  color: var(--civic-primary);
+}
+
+.civic-bg-primary {
+  background-color: var(--civic-primary);
+}
+
+.civic-secondary {
+  color: var(--civic-secondary);
+}
+
+.civic-bg-secondary {
+  background-color: var(--civic-secondary);
+}
+
+.civic-accent {
+  color: var(--civic-accent);
+}
+
+.civic-bg-accent {
+  background-color: var(--civic-accent);
+}
+
+/* Button Styles */
+.civic-btn-primary {
+  background-color: var(--civic-primary);
+  color: white;
+  border: 1px solid var(--civic-primary);
+  transition: all 0.2s ease-in-out;
+}
+
+.civic-btn-primary:hover {
+  background-color: var(--civic-primary-light);
+  border-color: var(--civic-primary-light);
+}
+
+.civic-btn-secondary {
+  background-color: var(--civic-secondary);
+  color: var(--civic-primary);
+  border: 1px solid var(--civic-secondary);
+  transition: all 0.2s ease-in-out;
+}
+
+.civic-btn-secondary:hover {
+  background-color: var(--civic-accent-light);
+  border-color: var(--civic-accent-light);
+}
+
+/* Card Styles */
+.civic-card {
+  background-color: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.civic-card-header {
+  background-color: var(--civic-bg-secondary);
+  border-bottom: 1px solid #E5E7EB;
+  padding: 1rem;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+/* Status Indicators */
+.civic-status-pending {
+  background-color: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #F59E0B;
+}
+
+.civic-status-in-review {
+  background-color: var(--civic-primary);
+  color: white;
+  border: 1px solid var(--civic-primary);
+}
+
+.civic-status-resolved {
+  background-color: #D1FAE5;
+  color: #065F46;
+  border: 1px solid var(--civic-success);
+}
+
+.civic-status-responded {
+  background-color: #CCFBF1;
+  color: #134E4A;
+  border: 1px solid var(--civic-accent);
+}
+
+/* Loading Spinner */
+.civic-spinner {
+  border-color: var(--civic-primary);
+}
+
+/* Focus States */
+.civic-focus:focus {
+  outline: none;
+  ring: 2px;
+  ring-color: var(--civic-accent);
+  ring-offset: 2px;
+}
+
+/* Gradient Backgrounds */
+.civic-gradient-primary {
+  background: linear-gradient(to right, var(--civic-primary), var(--civic-primary-light));
+}
+
+.civic-gradient-secondary {
+  background: linear-gradient(to right, var(--civic-secondary), var(--civic-accent-light));
+}

@@ -78,18 +78,25 @@ const AdminOverview: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'in_review': return 'bg-blue-100 text-blue-800';
-      case 'responded': return 'bg-green-100 text-green-800';
-      case 'resolved': return 'bg-green-100 text-green-800';
+      case 'in_review': return 'text-white';
+      case 'responded': return 'bg-teal-100 text-teal-800';
+      case 'resolved': return 'bg-teal-100 text-teal-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const getStatusStyle = (status: string) => {
+    if (status === 'in_review') {
+      return { backgroundColor: '#0D3C43' };
+    }
+    return {};
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-4" style={{ borderColor: '#0D3C43' }}></div>
           <p className="text-gray-600">Loading dashboard...</p>
         </div>
       </div>

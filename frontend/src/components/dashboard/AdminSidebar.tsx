@@ -36,7 +36,7 @@ const AdminSidebar: React.FC = () => {
 
       {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 
+        fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
@@ -50,10 +50,24 @@ const AdminSidebar: React.FC = () => {
                 className={({ isActive }) =>
                   `flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'text-white border-r-2'
+                      : 'text-gray-700 hover:text-white hover:opacity-90'
                   }`
                 }
+                style={({ isActive }) => ({
+                  backgroundColor: isActive ? '#0D3C43' : undefined,
+                  borderColor: isActive ? '#0D3C43' : undefined,
+                })}
+                onMouseEnter={(e) => {
+                  if (!e.currentTarget.classList.contains('text-white')) {
+                    e.currentTarget.style.backgroundColor = '#E2FCF7';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!e.currentTarget.classList.contains('text-white')) {
+                    e.currentTarget.style.backgroundColor = '';
+                  }
+                }}
               >
                 <span className="text-lg">{item.icon}</span>
                 <span className="truncate">{item.label}</span>
