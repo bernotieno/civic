@@ -1,104 +1,110 @@
-name: Deploy CivicAI to VPS
+#!/bin/bash
+set -e
 
-on:
-  push:
-    branches: [main, production]
-  workflow_dispatch:
+echo "🚀 CivicAI Production Deployment Script"
+echo "======================================="
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: civicai
+# Setup environment if not exists
+if [ ! -f .env.production ]; then
+    echo "🔧 Creating environment file..."
+    ./setup-env.sh
+    echo "⚠️  Edit .env.production with your domain and API keys, then run ./deploy.sh again"
+    exit 0
+fi
 
-jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+# Load environment variables
+echo "🔧 Loading environment variables..."
+if [ -f .env.production ]; then
+    export $(grep -v '^#' .env.production | xargs)
+fi
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+# Check if required environment variables are set
+if [ -z "$SECRET_KEY" ]; then
+    echo "❌ Error: SECRET_KEY not set in .env.production"
+    exit 1
+fi
 
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+if [ -z "$DB_PASSWORD" ]; then
+    echo "❌ Error: DB_PASSWORD not set in .env.production"
+    exit 1
+fi
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
+echo "✅ Environment configuration validated"
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+# Stop existing services if running
+echo "🛑 Stopping existing services..."
+docker-compose -f docker-compose.prod.yml down --remove-orphans || true
 
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/production'
+# Clean up any conflicting containers
+echo "🧹 Cleaning up conflicting services..."
+docker container stop civicai_db civicai_redis civicai_web civicai_nginx civicai_celery civicai_celery_beat 2>/dev/null || true
+docker container rm civicai_db civicai_redis civicai_web civicai_nginx civicai_celery civicai_celery_beat 2>/dev/null || true
 
-    steps:
-      - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            # Navigate to project directory
-            cd /opt/civicai
-            
-            # Pull latest changes
-            git pull origin main
-            
-            # Update Docker image
-            docker-compose -f docker-compose.prod.yml pull web
-            
-            # Restart services
-            docker-compose -f docker-compose.prod.yml up -d --no-deps web
-            
-            # Run migrations
-            docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate
-            
-            # Collect static files
-            docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
-            
-            # Restart Nginx to pick up changes
-            docker-compose -f docker-compose.prod.yml restart nginx
-            
-            # Clean up old images
-            docker image prune -f
-            
-            echo "Deployment completed successfully!"
+# Build and start services
+echo "🔨 Building Docker images..."
+docker-compose -f docker-compose.prod.yml build --no-cache
 
-  notify:
-    needs: [build-and-push, deploy]
-    runs-on: ubuntu-latest
-    if: always()
+echo "🚀 Starting services..."
+docker-compose -f docker-compose.prod.yml up -d
 
-    steps:
-      - name: Notify deployment status
-        run: |
-          if [[ "${{ needs.deploy.result }}" == "success" ]]; then
-            echo "✅ Deployment successful!"
-          else
-            echo "❌ Deployment failed!"
-            exit 1
-          fi
+echo "⏳ Waiting for services to be healthy..."
+sleep 30
+
+# Check service health with better error handling
+echo "🔍 Checking service health..."
+if ! docker-compose -f docker-compose.prod.yml ps; then
+    echo "❌ Error checking services status"
+    echo "📋 Checking logs..."
+    docker-compose -f docker-compose.prod.yml logs
+    exit 1
+fi
+
+# Wait a bit more for web service to be fully ready
+echo "⏳ Waiting for web service to be ready..."
+for i in {1..30}; do
+    if docker-compose -f docker-compose.prod.yml exec -T web curl -f http://localhost:8000/api/health/ > /dev/null 2>&1; then
+        echo "✅ Web service is ready!"
+        break
+    fi
+    if [ $i -eq 30 ]; then
+        echo "❌ Web service failed to start properly"
+        echo "📋 Web service logs:"
+        docker-compose -f docker-compose.prod.yml logs web
+        exit 1
+    fi
+    echo "Waiting... ($i/30)"
+    sleep 2
+done
+
+# Test the application through nginx
+echo "🧪 Testing application through nginx..."
+sleep 5
+if curl -f http://localhost/api/health/ > /dev/null 2>&1; then
+    echo "✅ Application is running successfully!"
+    echo "🌐 Access your application at: http://localhost"
+    echo "🔧 Admin interface: http://localhost/admin/"
+    echo "📚 API Documentation: http://localhost/api/schema/swagger-ui/"
+else
+    echo "❌ Application health check through nginx failed"
+    echo "📋 Checking nginx logs..."
+    docker-compose -f docker-compose.prod.yml logs nginx
+    echo "📋 Checking web logs..."
+    docker-compose -f docker-compose.prod.yml logs web
+    exit 1
+fi
+
+echo ""
+echo "🎉 Deployment completed successfully!"
+echo ""
+echo "📋 Service Status:"
+docker-compose -f docker-compose.prod.yml ps
+echo ""
+echo "🔧 Useful commands:"
+echo "  - View all logs: docker-compose -f docker-compose.prod.yml logs -f"
+echo "  - View web logs: docker-compose -f docker-compose.prod.yml logs -f web"
+echo "  - Stop services: docker-compose -f docker-compose.prod.yml down"
+echo "  - Restart services: docker-compose -f docker-compose.prod.yml restart"
+echo "  - Access database: docker-compose -f docker-compose.prod.yml exec db psql -U civicai_user civicai_db"
+echo ""
+echo "📊 System Resources:"
+docker stats --no-stream

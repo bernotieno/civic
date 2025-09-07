@@ -12,11 +12,12 @@ media/
 staticfiles/
 
 # Environment variables
-.env*
+.env
 
 # Virtual environment
 venv/
 env/
+.env.render
 ENV/
 
 # IDE
