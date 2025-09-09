@@ -18,7 +18,13 @@ COPY . .
 # Make build script executable
 RUN chmod +x build.sh
 
-# Collect static files and run migrations
+# Set build-time environment variables
+ENV SECRET_KEY=build-time-secret-key
+ENV DEBUG=false
+ENV DATABASE_URL=sqlite:///tmp/build.db
+ENV REDIS_URL=redis://localhost:6379
+
+# Collect static files
 RUN python manage.py collectstatic --noinput
 
 # Expose port
