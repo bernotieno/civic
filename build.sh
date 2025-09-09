@@ -24,8 +24,8 @@ python manage.py migrate
 echo "🏛️ Setting up counties..."
 python manage.py setup_counties || echo "Counties already set up"
 
-# Create superuser (optional, for production access)
+# Create superuser with KSM county (optional, for production access)
 echo "👤 Creating superuser..."
-python manage.py create_civicai_superuser || echo "Superuser already exists"
+python manage.py create_civicai_superuser --national-id=99999999 --email=admin@civicai.ke --name="CivicAI Admin" --county=KSM --noinput || echo "Superuser already exists"
 
 echo "✅ Build completed successfully!"
