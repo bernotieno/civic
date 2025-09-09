@@ -158,11 +158,7 @@ Authorization: Bearer <your-jwt-token>
     },
     'SERVERS': [
         {
-            'url': 'http://localhost:8000',
-            'description': 'Development server'
-        },
-        {
-            'url': 'https://api.civicai.ke',
+            'url': 'https://civicai-backend.onrender.com',
             'description': 'Production server'
         }
     ],
@@ -237,16 +233,7 @@ SIMPLE_JWT = {
 
 # CORS Settings (ENHANCED for Development & Production + PHASE 2 WebSocket)
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",    # React dev server
-    "http://127.0.0.1:3000",
-    "http://localhost:5173",    # Vite dev server (default)
-    "http://127.0.0.1:5173",
-    "http://localhost:8080",    # Vue dev server
-    "http://127.0.0.1:8080",
-    "http://localhost:4200",    # Angular dev server
-    "http://127.0.0.1:4200",
-    "http://localhost:8000",    # Django dev server (for Swagger UI)
-    "http://127.0.0.1:8000",    # Django dev server (for Swagger UI)
+    # Production URLs will be set via environment variables
     "https://civicai.ke",       # Production frontend
     "https://www.civicai.ke",
 ]
@@ -285,8 +272,8 @@ CORS_ALLOW_METHODS = [
 
 # Disable CSRF for API endpoints
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
+    "https://civicai-backend.onrender.com",
+    "https://civicai-frontend.onrender.com",
 ]
 
 # Database (ENHANCED FOR PHASE 2 - Connection Pooling)
