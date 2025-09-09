@@ -32,6 +32,7 @@ THIRD_PARTY_APPS = [
     'drf_spectacular',  # 🚀 SWAGGER/OpenAPI Documentation
     'channels',  # 🚀 PHASE 2: For WebSocket support
     'django_extensions',  # 🚀 PHASE 2: For monitoring and debugging
+    'django_celery_beat',  # 🚀 Celery beat scheduler
 ]
 
 LOCAL_APPS = [
