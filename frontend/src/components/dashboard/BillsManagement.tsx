@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCustomPopup } from '../../hooks/useCustomPopup';
+import BillProcessingProgress from '../ui/BillProcessingProgress';
 
 interface Bill {
   id: string;
@@ -32,6 +33,8 @@ const BillsManagement: React.FC = () => {
     public_participation_open: true,
   });
   const [selectedDocument, setSelectedDocument] = useState<File | null>(null);
+  const [showProgressTracker, setShowProgressTracker] = useState(false);
+  const [processingBillId, setProcessingBillId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchBills();
@@ -191,6 +194,7 @@ const BillsManagement: React.FC = () => {
       if (response.ok) {
         const responseData = await response.json();
         if (responseData.success) {
+          // Close the edit form
           setShowEditForm(false);
           setSelectedBill(null);
           setFormData({
@@ -202,8 +206,16 @@ const BillsManagement: React.FC = () => {
             public_participation_open: true,
           });
           setSelectedDocument(null);
-          fetchBills();
-          showSuccess('Bill updated successfully!');
+          
+          // If processing is async, show progress tracker
+          if (responseData.processing_async && selectedBill.id) {
+            setProcessingBillId(selectedBill.id);
+            setShowProgressTracker(true);
+          } else {
+            // No async processing, just show success
+            fetchBills();
+            showSuccess('Bill updated successfully!');
+          }
         } else {
           showError(`Failed to update bill: ${responseData.message || 'Unknown error'}`);
         }
@@ -250,6 +262,7 @@ const BillsManagement: React.FC = () => {
       if (response.ok) {
         const responseData = await response.json();
         if (responseData.success) {
+          // Close the create form
           setShowCreateForm(false);
           setFormData({
             title: '',
@@ -260,8 +273,16 @@ const BillsManagement: React.FC = () => {
             public_participation_open: true,
           });
           setSelectedDocument(null);
-          fetchBills();
-          showSuccess('Bill created successfully!');
+          
+          // If processing is async, show progress tracker
+          if (responseData.processing_async && responseData.bill_id) {
+            setProcessingBillId(responseData.bill_id);
+            setShowProgressTracker(true);
+          } else {
+            // No async processing, just show success
+            fetchBills();
+            showSuccess('Bill created successfully!');
+          }
         } else {
           showError(`Failed to create bill: ${responseData.message || 'Unknown error'}`);
         }
@@ -669,6 +690,27 @@ const BillsManagement: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+      
+      {/* Processing Progress Tracker */}
+      {showProgressTracker && processingBillId && (
+        <BillProcessingProgress
+          billId={processingBillId}
+          onComplete={(success, data) => {
+            setShowProgressTracker(false);
+            setProcessingBillId(null);
+            if (success) {
+              fetchBills();
+              showSuccess('Bill processed successfully! It is now ready for public engagement.');
+            }
+          }}
+          onError={(error) => {
+            setShowProgressTracker(false);
+            setProcessingBillId(null);
+            showError(`Processing failed: ${error}`);
+            fetchBills(); // Refresh to show current state
+          }}
+        />
       )}
     </div>
   );

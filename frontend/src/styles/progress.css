@@ -1,0 +1,210 @@
+/* Bill Processing Progress Styles */
+
+.progress-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.progress-modal {
+  background: white;
+  border-radius: 8px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background-color: #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  border-radius: 6px;
+  transition: width 0.5s ease-in-out;
+}
+
+.progress-bar-fill.error {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.progress-bar-fill.complete {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.stage-item {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.stage-item.current {
+  background-color: #dbeafe;
+  border: 1px solid #93c5fd;
+}
+
+.stage-item.completed {
+  background-color: #d1fae5;
+}
+
+.stage-item.pending {
+  background-color: #f9fafb;
+}
+
+.stage-icon {
+  font-size: 1.25rem;
+  margin-right: 0.75rem;
+}
+
+.stage-text {
+  flex: 1;
+  font-size: 0.875rem;
+}
+
+.stage-text.current {
+  font-weight: 500;
+  color: #1e40af;
+}
+
+.stage-text.completed {
+  color: #065f46;
+}
+
+.stage-text.pending {
+  color: #6b7280;
+}
+
+.processing-logs {
+  background-color: #1f2937;
+  color: #10b981;
+  padding: 0.75rem;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  max-height: 8rem;
+  overflow-y: auto;
+  line-height: 1.4;
+}
+
+.processing-logs::-webkit-scrollbar {
+  width: 4px;
+}
+
+.processing-logs::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+.processing-logs::-webkit-scrollbar-thumb {
+  background: #6b7280;
+  border-radius: 2px;
+}
+
+.status-card {
+  background-color: #f9fafb;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.status-card.error {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.status-card.success {
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .progress-modal {
+    padding: 1.5rem;
+    width: 95%;
+  }
+  
+  .stage-text {
+    font-size: 0.8rem;
+  }
+  
+  .processing-logs {
+    font-size: 0.7rem;
+    max-height: 6rem;
+  }
+}
+
+/* Accessibility improvements */
+.progress-modal:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.stage-item:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 1px;
+}
+
+/* Animation for stage transitions */
+.stage-item {
+  transform: translateX(0);
+}
+
+.stage-item.current {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
