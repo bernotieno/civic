@@ -30,7 +30,7 @@ class CivicAIApiService {
 
   constructor() {
     // Use environment variable or default to localhost for development
-    this.baseURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
   }
 
   /**
